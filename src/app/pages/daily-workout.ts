@@ -101,7 +101,7 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
           }
           <div class="acoes">
             <button type="button" class="btn btn--escuro" (click)="aceitar()">
-              <app-icon name="check" [size]="20" [stroke]="2.5" /> Aceitar e salvar na ficha
+              <app-icon name="check" [size]="20" [stroke]="2.5" /> Aceitar e iniciar treino
             </button>
             <button type="button" class="btn btn--claro" (click)="variacao.set(variacao() + 1)">
               <app-icon name="refresh" [size]="18" [stroke]="2.2" /> Sugerir outro
