@@ -1,14 +1,29 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 
-/** Mostra as duas fotos do exercício (início e fim) alternando, como um GIF leve. */
+/**
+ * Demonstração do exercício: WebP animado (início e fim, em loop). Com «reduzir movimento»
+ * ativado no sistema, ou se a animação não existir, mostra a foto estática.
+ */
 @Component({
   selector: 'app-exercise-image',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="moldura" role="img" [attr.aria-label]="descricao()">
-      <img [src]="'exercises/' + id() + '/0.jpg'" alt="" decoding="async" />
-      @if (animado()) {
-        <img class="fim" [src]="'exercises/' + id() + '/1.jpg'" alt="" decoding="async" />
+      @if (animado() && !semAnimacao()) {
+        <picture>
+          <source
+            [srcset]="'exercises/' + id() + '/0.jpg'"
+            media="(prefers-reduced-motion: reduce)"
+          />
+          <img
+            [src]="'exercises/' + id() + '/anim.webp'"
+            alt=""
+            decoding="async"
+            (error)="semAnimacao.set(true)"
+          />
+        </picture>
+      } @else {
+        <img [src]="'exercises/' + id() + '/0.jpg'" alt="" decoding="async" />
       }
     </div>
   `,
@@ -25,6 +40,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       background: #fff;
       overflow: hidden;
     }
+    picture {
+      display: contents;
+    }
     img {
       position: absolute;
       inset: 0;
@@ -32,27 +50,11 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       height: 100%;
       object-fit: contain;
     }
-    .fim {
-      opacity: 0;
-      animation: alternar 1.4s steps(1, end) infinite;
-    }
-    @keyframes alternar {
-      0% {
-        opacity: 0;
-      }
-      50% {
-        opacity: 1;
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .fim {
-        animation: none;
-      }
-    }
   `,
 })
 export class ExerciseImage {
   readonly id = input.required<string>();
   readonly descricao = input('');
   readonly animado = input(true);
+  protected readonly semAnimacao = signal(false);
 }

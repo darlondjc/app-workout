@@ -41,10 +41,12 @@ import { ToastService } from '../core/toast.service';
 
         <section aria-labelledby="como-fazer">
           <h2 id="como-fazer" class="sub">Como fazer</h2>
-          <p class="apoio aviso-idioma">As instruções ainda estão em inglês.</p>
-          <ol class="passos">
-            @for (p of e.instructions; track $index) {
-              <li lang="en">{{ p }}</li>
+          @if (!instrucoes().traduzido) {
+            <p class="apoio aviso-idioma">Instruções disponíveis apenas em inglês.</p>
+          }
+          <ol class="passos" [attr.lang]="instrucoes().traduzido ? 'pt-BR' : 'en'">
+            @for (p of instrucoes().passos; track $index) {
+              <li>{{ p }}</li>
             }
           </ol>
         </section>
@@ -143,6 +145,11 @@ export class ExerciseDetail {
   protected readonly nome = computed(() => {
     const e = this.exercicio();
     return e ? this.ex.nome(e) : '';
+  });
+
+  protected readonly instrucoes = computed(() => {
+    const e = this.exercicio();
+    return e ? this.ex.instrucoes(e) : { passos: [], traduzido: true };
   });
 
   protected adicionar(): void {

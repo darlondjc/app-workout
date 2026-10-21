@@ -35,6 +35,7 @@ export class ExerciseService {
   readonly exercises = signal<Exercise[]>([]);
   readonly labels = signal<Labels | null>(null);
   readonly names = signal<Record<string, string>>({});
+  private readonly passos = signal<Record<string, string[]>>({});
   readonly ready = signal(false);
   readonly error = signal(false);
 
@@ -64,11 +65,13 @@ export class ExerciseService {
       exercises: this.http.get<Exercise[]>('data/exercises.json'),
       labels: this.http.get<Labels>('data/i18n/pt-BR.labels.json'),
       names: this.http.get<Record<string, string>>('data/i18n/pt-BR.names.json'),
+      passos: this.http.get<Record<string, string[]>>('data/i18n/pt-BR.instructions.json'),
     }).subscribe({
-      next: ({ exercises, labels, names }) => {
+      next: ({ exercises, labels, names, passos }) => {
         this.exercises.set(exercises);
         this.labels.set(labels);
         this.names.set(names);
+        this.passos.set(passos);
         this.ready.set(true);
       },
       error: () => this.error.set(true),
@@ -81,6 +84,12 @@ export class ExerciseService {
 
   nome(e: Exercise): string {
     return this.names()[e.id] ?? e.name;
+  }
+
+  /** Passos em português; se faltar tradução, devolve o original em inglês. */
+  instrucoes(e: Exercise): { passos: string[]; traduzido: boolean } {
+    const pt = this.passos()[e.id];
+    return pt?.length ? { passos: pt, traduzido: true } : { passos: e.instructions, traduzido: false };
   }
 
   musculo(chave: string): string {
@@ -107,6 +116,10 @@ export class ExerciseService {
 
   imagem(id: string, indice: 0 | 1): string {
     return `exercises/${id}/${indice}.jpg`;
+  }
+
+  animacao(id: string): string {
+    return `exercises/${id}/anim.webp`;
   }
 
   buscar(consulta: string, grupo: string, equipamento: string, nivel: string): Exercise[] {

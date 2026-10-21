@@ -34,17 +34,24 @@ npx http-server dist/app-workout-ng/browser -p 8080 -c-1
 public/data/exercises.json            exercícios (free-exercise-db)
 public/data/i18n/pt-BR.names.json     nome de cada exercício em português (chave = id)
 public/data/i18n/pt-BR.labels.json    músculos, equipamentos, níveis e categorias
-public/exercises/<id>/0.jpg, 1.jpg    fotos de cada exercício
+public/data/i18n/pt-BR.instructions.json   instruções passo a passo em português
+public/exercises/<id>/0.jpg, 1.jpg    fotos de cada exercício (início e fim)
+public/exercises/<id>/anim.webp       animação das duas fotos em loop (gerada)
+tools/gerar_animacoes.py              gera os anim.webp a partir das fotos
 src/app/core/                         serviços (exercícios, fichas, avisos) e componentes de apoio
 src/app/pages/                        telas
 ```
 
 ## Dados e créditos
 
-Os exercícios e as imagens vêm do [free-exercise-db](https://github.com/yuhonas/free-exercise-db), em domínio público (Unlicense). A licença está em `public/data/LICENSE-free-exercise-db.md`. As traduções dos nomes e dos rótulos são deste projeto e merecem revisão.
+Os exercícios e as imagens vêm do [free-exercise-db](https://github.com/yuhonas/free-exercise-db), em domínio público (Unlicense). A licença está em `public/data/LICENSE-free-exercise-db.md`. As traduções dos nomes, dos rótulos e das instruções são deste projeto e merecem revisão.
+
+### Animações
+
+Cada exercício tem um `anim.webp` (as duas fotos alternando, 800 ms, em loop). Escolhi WebP animado no lugar de GIF porque cada arquivo fica com cerca de 35 a 40 KB, contra uns 185 KB do GIF. Com a opção «reduzir movimento» ativada no sistema, o app mostra a foto estática. Para gerar de novo: `pip install pillow` e `python3 tools/gerar_animacoes.py public/exercises`.
 
 ## Próximos passos
 
-- Traduzir as instruções passo a passo (hoje estão em inglês).
+- Revisar as traduções das instruções (algumas expressões técnicas podem melhorar).
 - Publicar o app (por exemplo no GitHub Pages ou no Firebase Hosting) para instalar no celular.
 - Exportar e importar fichas para fazer backup.
