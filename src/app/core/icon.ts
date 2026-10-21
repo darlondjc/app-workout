@@ -14,7 +14,10 @@ export type IconName =
   | 'down'
   | 'settings'
   | 'refresh'
-  | 'chart';
+  | 'chart'
+  | 'heart'
+  | 'comment'
+  | 'people';
 
 @Component({
   selector: 'app-icon',
@@ -41,6 +44,18 @@ export type IconName =
         }
         @case ('chart') {
           <path d="M5 20V11M12 20V4M19 20v-7" />
+        }
+        @case ('heart') {
+          <path d="M12 20s-7.5-4.6-7.5-10.2a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z" />
+        }
+        @case ('comment') {
+          <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 4v-4H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
+        }
+        @case ('people') {
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3 19c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+          <circle cx="17" cy="9" r="2.3" />
+          <path d="M17 14c2.4 0 4.2 1.9 4.2 4.5" />
         }
         @case ('clipboard') {
           <rect x="5" y="4" width="14" height="17" rx="2" />

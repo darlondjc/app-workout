@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
+import { Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
+import { SocialService } from '../core/social.service';
 import { calcularResumo, dataISO, gerarInsights, volumeSessao } from '../core/stats';
 
 const CHAVE_META = 'app-workout:meta-semanal:v1';
@@ -21,20 +23,19 @@ function lerMeta(): number | null {
   imports: [Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="page">
-      <header>
-        <p class="apoio">Seu acompanhamento</p>
-        <h1 class="titulo">Progresso</h1>
-      </header>
-
+    <section class="pagina">
       <article class="card meta" aria-labelledby="t-meta">
         <div class="meta__topo">
           <h2 id="t-meta" class="rot">Meta da semana</h2>
-          <div class="passo" role="group" aria-label="Treinos por semana">
-            <button type="button" aria-label="Diminuir a meta" [disabled]="resumo().metaSemanal <= 1" (click)="mudarMeta(-1)">−</button>
-            <span>{{ resumo().metaSemanal }}×</span>
-            <button type="button" aria-label="Aumentar a meta" [disabled]="resumo().metaSemanal >= 7" (click)="mudarMeta(1)">+</button>
-          </div>
+          @if (editavel()) {
+            <div class="passo" role="group" aria-label="Treinos por semana">
+              <button type="button" aria-label="Diminuir a meta" [disabled]="resumo().metaSemanal <= 1" (click)="mudarMeta(-1)">−</button>
+              <span>{{ resumo().metaSemanal }}×</span>
+              <button type="button" aria-label="Aumentar a meta" [disabled]="resumo().metaSemanal >= 7" (click)="mudarMeta(1)">+</button>
+            </div>
+          } @else {
+            <span class="passo"><span>{{ resumo().metaSemanal }}× por semana</span></span>
+          }
         </div>
         <p class="grande">{{ resumo().treinosSemana }} <small>de {{ resumo().metaSemanal }} treinos</small></p>
         <div class="trilha" role="progressbar" aria-label="Treinos da semana" aria-valuemin="0" [attr.aria-valuemax]="resumo().metaSemanal" [attr.aria-valuenow]="resumo().treinosSemana">
@@ -140,7 +141,7 @@ function lerMeta(): number | null {
     </section>
   `,
   styles: `
-    .page { display: flex; flex-direction: column; gap: 16px; }
+    .pagina { display: flex; flex-direction: column; gap: 16px; }
     .card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .rot { font-size: 15px; font-weight: 500; color: var(--muted); margin: 0; }
     .meta__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -186,7 +187,17 @@ function lerMeta(): number | null {
 })
 export class Progress {
   private readonly plans = inject(PlanService);
+  private readonly social = inject(SocialService);
   private readonly ex = inject(ExerciseService);
+
+  /** Treinos da pessoa exibida: os seus ou os de um amigo. */
+  readonly historico = input.required<Sessao[]>();
+  /** Só a própria pessoa muda a meta. */
+  readonly editavel = input(true);
+  /** Preenchido ao ver um amigo: as mensagens falam dele. */
+  readonly nome = input<string | undefined>(undefined);
+  /** Meta publicada pelo amigo. */
+  readonly metaBase = input<number | undefined>(undefined);
 
   protected readonly letras = LETRAS;
   private readonly hoje = new Date();
@@ -196,15 +207,17 @@ export class Progress {
   protected readonly selecionado = signal<string | null>(dataISO(this.hoje));
 
   /** Sem meta escolhida, usa o número de fichas (entre 2 e 6). */
-  private readonly meta = computed(
-    () => this.metaEscolhida() ?? Math.max(2, Math.min(6, this.plans.fichas().length || 3)),
+  private readonly meta = computed(() =>
+    this.editavel()
+      ? (this.metaEscolhida() ?? Math.max(2, Math.min(6, this.plans.fichas().length || 3)))
+      : (this.metaBase() ?? 3),
   );
-  protected readonly resumo = computed(() => calcularResumo(this.plans.historico(), this.hoje, this.meta()));
-  protected readonly insights = computed(() => gerarInsights(this.resumo(), this.hoje).slice(0, 4));
+  protected readonly resumo = computed(() => calcularResumo(this.historico(), this.hoje, this.meta()));
+  protected readonly insights = computed(() => gerarInsights(this.resumo(), this.hoje, this.nome()).slice(0, 4));
   protected readonly percentualMeta = computed(() =>
     Math.min(100, Math.round((this.resumo().treinosSemana / this.resumo().metaSemanal) * 100)),
   );
-  private readonly diasFeitos = computed(() => new Set(this.plans.historico().map((s) => s.data)));
+  private readonly diasFeitos = computed(() => new Set(this.historico().map((s) => s.data)));
 
   protected readonly tituloMes = computed(() => {
     const m = this.mes().toLocaleDateString('pt-BR', { month: 'long' });
@@ -239,8 +252,7 @@ export class Progress {
 
   protected readonly sessoesDoDia = computed(() => {
     const iso = this.selecionado();
-    return this.plans
-      .historico()
+    return this.historico()
       .filter((s) => s.data === iso)
       .map((s) => {
         const exercicios = s.registros?.length ?? 0;
@@ -276,6 +288,7 @@ export class Progress {
   protected mudarMeta(delta: number): void {
     const nova = Math.max(1, Math.min(7, this.resumo().metaSemanal + delta));
     this.metaEscolhida.set(nova);
+    void this.social.publicarMeta(nova);
     try {
       localStorage.setItem(CHAVE_META, String(nova));
     } catch {

@@ -111,15 +111,17 @@ export function treinosNaSemana(h: Sessao[], hoje: Date): number {
   return porSemana(h).get(k) ?? 0;
 }
 
-function recordesDoUltimo(h: Sessao[]): Resumo['recordes'] {
-  const comReg = [...h]
-    .filter((s) => s.registros?.length)
-    .sort((a, b) => a.data.localeCompare(b.data) || (a.concluidaEm ?? 0) - (b.concluidaEm ?? 0));
-  const ultima = comReg.at(-1);
-  if (!ultima) return [];
-  const antes = comReg.slice(0, -1).flatMap((s) => s.registros ?? []);
+function ordem(a: Sessao, b: Sessao): number {
+  return a.data.localeCompare(b.data) || (a.concluidaEm ?? 0) - (b.concluidaEm ?? 0);
+}
+
+/** Exercícios da sessão com carga acima do melhor que a pessoa tinha antes dela. */
+export function recordesDaSessao(h: Sessao[], alvo: Sessao): Resumo['recordes'] {
+  const antes = h
+    .filter((s) => s !== alvo && s.id !== alvo.id && ordem(s, alvo) < 0)
+    .flatMap((s) => s.registros ?? []);
   const out: Resumo['recordes'] = [];
-  for (const r of ultima.registros ?? []) {
+  for (const r of alvo.registros ?? []) {
     if (r.unidade === 'min') continue;
     const carga = Math.max(0, ...r.series.map((x) => x.carga));
     const anteriores = antes.filter((x) => x.exerciseId === r.exerciseId && x.unidade !== 'min').flatMap((x) => x.series.map((y) => y.carga));
@@ -128,6 +130,11 @@ function recordesDoUltimo(h: Sessao[]): Resumo['recordes'] {
     if (carga > antigo) out.push({ exerciseId: r.exerciseId, carga, antes: antigo });
   }
   return out;
+}
+
+function recordesDoUltimo(h: Sessao[]): Resumo['recordes'] {
+  const ultima = [...h].filter((s) => s.registros?.length).sort(ordem).at(-1);
+  return ultima ? recordesDaSessao(h, ultima) : [];
 }
 
 /** Números do acompanhamento: semana, mês, sequência, volume e recordes. */
@@ -174,66 +181,95 @@ function plural(n: number, um: string, varios: string): string {
   return `${n} ${n === 1 ? um : varios}`;
 }
 
-/** Mensagens de incentivo a partir dos números, das mais relevantes para as menos. */
-export function gerarInsights(r: Resumo, _hoje: Date = new Date()): Insight[] {
+/**
+ * Mensagens de incentivo a partir dos números, das mais relevantes para as menos.
+ * Com `nome`, fala da outra pessoa (estatísticas de um amigo) em vez de falar com quem usa o app.
+ */
+export function gerarInsights(r: Resumo, _hoje: Date = new Date(), nome?: string): Insight[] {
   const out: Insight[] = [];
+  const eu = !nome;
   if (r.totalTreinos === 0) {
-    return [{ tipo: 'incentivo', texto: 'Seu primeiro treino aparece aqui, no calendário. Que tal começar hoje?' }];
+    return [{ tipo: 'incentivo', texto: eu ? 'Seu primeiro treino aparece aqui, no calendário. Que tal começar hoje?' : `${nome} ainda não concluiu nenhum treino.` }];
   }
   const parado = r.diasSemTreinar ?? 0;
 
   if (parado >= 7) {
-    out.push({ tipo: 'incentivo', texto: `Faz ${plural(parado, 'dia', 'dias')} do último treino. Um treino leve hoje já recoloca o ritmo; o mais difícil é começar.` });
+    out.push({
+      tipo: 'incentivo',
+      texto: eu
+        ? `Faz ${plural(parado, 'dia', 'dias')} do último treino. Um treino leve hoje já recoloca o ritmo; o mais difícil é começar.`
+        : `${nome} está há ${plural(parado, 'dia', 'dias')} sem treinar. Um incentivo seu pode ajudar a voltar.`,
+    });
   } else if (r.treinouHoje) {
-    out.push({ tipo: 'conquista', texto: 'Treino de hoje feito. Descanse, coma e durma bem para completar o resultado.' });
+    out.push({
+      tipo: 'conquista',
+      texto: eu ? 'Treino de hoje feito. Descanse, coma e durma bem para completar o resultado.' : `${nome} treinou hoje. Passe na timeline e curta o treino.`,
+    });
   }
 
   if (r.treinosSemana >= r.metaSemanal) {
-    out.push({ tipo: 'conquista', texto: `Meta da semana batida: ${plural(r.treinosSemana, 'treino', 'treinos')} (meta ${r.metaSemanal}). Excelente consistência.` });
+    out.push({
+      tipo: 'conquista',
+      texto: eu
+        ? `Meta da semana batida: ${plural(r.treinosSemana, 'treino', 'treinos')} (meta ${r.metaSemanal}). Excelente consistência.`
+        : `${nome} bateu a meta da semana: ${plural(r.treinosSemana, 'treino', 'treinos')} (meta ${r.metaSemanal}).`,
+    });
   } else if (parado < 7) {
     const faltam = r.metaSemanal - r.treinosSemana;
     const cabe = faltam <= r.diasRestantesSemana + (r.treinouHoje ? 0 : 1);
+    const base = eu ? `${r.treinosSemana} de ${r.metaSemanal} treinos nesta semana.` : `${nome} fez ${r.treinosSemana} de ${r.metaSemanal} treinos nesta semana.`;
     out.push({
       tipo: 'incentivo',
-      texto: cabe
-        ? `${r.treinosSemana} de ${r.metaSemanal} treinos nesta semana. Faltam ${plural(faltam, 'treino', 'treinos')} e ainda dá tempo.`
-        : `${r.treinosSemana} de ${r.metaSemanal} treinos nesta semana. Mesmo sem fechar a meta, cada treino conta.`,
+      texto: eu
+        ? cabe
+          ? `${base} Faltam ${plural(faltam, 'treino', 'treinos')} e ainda dá tempo.`
+          : `${base} Mesmo sem fechar a meta, cada treino conta.`
+        : cabe
+          ? `${base} Ainda faltam ${plural(faltam, 'treino', 'treinos')}.`
+          : base,
     });
   }
 
   if (r.semanasSeguidas >= 2) {
     out.push({
       tipo: 'conquista',
-      texto: `${r.semanasSeguidas} semanas seguidas na meta.` + (r.semanasSeguidas >= r.melhorSequencia ? ' É a sua melhor sequência até agora.' : ` Sua melhor foi de ${r.melhorSequencia}.`),
+      texto:
+        `${r.semanasSeguidas} semanas seguidas na meta.` +
+        (r.semanasSeguidas >= r.melhorSequencia ? ' É a melhor sequência até agora.' : ` A melhor foi de ${r.melhorSequencia}.`),
     });
   }
 
   if (r.recordes.length) {
+    const qtd = r.recordes.length === 1 ? 'um recorde' : `${r.recordes.length} recordes`;
     out.push({
       tipo: 'conquista',
-      texto: r.recordes.length === 1 ? 'Novo recorde de carga no último treino. A evolução está aparecendo.' : `${r.recordes.length} recordes de carga no último treino. A evolução está aparecendo.`,
+      texto: eu ? `${r.recordes.length === 1 ? 'Novo recorde' : r.recordes.length + ' recordes'} de carga no último treino. A evolução está aparecendo.` : `${nome} bateu ${qtd} de carga no último treino.`,
     });
   }
 
   if (r.treinosMes > 0 && r.treinosMesAnterior > 0) {
+    const n = plural(r.treinosMes, 'treino', 'treinos');
     out.push({
       tipo: r.treinosMes > r.treinosMesAnterior ? 'conquista' : 'incentivo',
       texto:
         r.treinosMes > r.treinosMesAnterior
-          ? `${plural(r.treinosMes, 'treino', 'treinos')} neste mês: você já passou o mês passado (${r.treinosMesAnterior}).`
+          ? `${n} neste mês: ${eu ? 'você já passou' : nome + ' já passou'} o mês passado (${r.treinosMesAnterior}).`
           : r.treinosMes === r.treinosMesAnterior
-            ? `${plural(r.treinosMes, 'treino', 'treinos')} neste mês, igualando o mês passado.`
-            : `${plural(r.treinosMes, 'treino', 'treinos')} neste mês. No mês passado foram ${r.treinosMesAnterior}; ainda dá para alcançar.`,
+            ? `${n} neste mês, igualando o mês passado.`
+            : `${n} neste mês. No mês passado foram ${r.treinosMesAnterior}${eu ? '; ainda dá para alcançar' : ''}.`,
     });
   }
 
   const marco = [...MARCOS].reverse().find((n) => r.totalTreinos >= n);
   if (marco && r.totalTreinos - marco < 3) {
-    out.push({ tipo: 'conquista', texto: `${marco} treinos concluídos! Você já soma ${r.totalTreinos}. Isso é constância de verdade.` });
+    out.push({
+      tipo: 'conquista',
+      texto: eu ? `${marco} treinos concluídos! Você já soma ${r.totalTreinos}. Isso é constância de verdade.` : `${nome} chegou a ${marco} treinos concluídos!`,
+    });
   }
 
   if (r.diaFavorito) {
-    out.push({ tipo: 'incentivo', texto: `Seu dia mais forte é ${r.diaFavorito}. Use esse hábito a seu favor.` });
+    out.push({ tipo: 'incentivo', texto: eu ? `Seu dia mais forte é ${r.diaFavorito}. Use esse hábito a seu favor.` : `O dia mais forte de ${nome} é ${r.diaFavorito}.` });
   }
   return out;
 }

@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { ExerciseImage } from '../core/exercise-image';
 import { Carregando } from '../core/spinner';
 import { ExerciseService } from '../core/exercise.service';
@@ -10,7 +9,7 @@ import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-exercise-detail',
-  imports: [RouterLink, Icon, ExerciseImage, Carregando],
+  imports: [Icon, ExerciseImage, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (exercicio(); as e) {

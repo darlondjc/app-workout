@@ -1,6 +1,7 @@
 import type { FirebaseOptions } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import { FirebaseSocial } from './firebase.social';
 import { Sessao } from './models';
 import { Cancelar, DocEstado, NuvemBackend, Usuario } from './sync';
 
@@ -28,6 +29,11 @@ export class FirebaseBackend implements NuvemBackend {
       localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }),
     });
     return new FirebaseBackend({ auth, fs }, auth.getAuth(instancia), db);
+  }
+
+  /** Parte social (amigos, timeline, curtidas e comentários) sobre o mesmo banco. */
+  social(): FirebaseSocial {
+    return new FirebaseSocial(this.m.fs, this.db);
   }
 
   aoMudarUsuario(cb: (u: Usuario | null) => void, erro: (e: unknown) => void): Cancelar {

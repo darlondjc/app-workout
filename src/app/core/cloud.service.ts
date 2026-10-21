@@ -2,7 +2,8 @@ import { Injectable, effect, signal, untracked } from '@angular/core';
 import { FIREBASE_CONFIG } from './firebase.config';
 import type { FirebaseBackend } from './firebase.backend';
 import { PlanService } from './plan.service';
-import { AlvoLocal, Sincronizador, StatusSync, Usuario } from './sync';
+import { SocialBackend } from './social';
+import { AlvoLocal, NuvemBackend, Sincronizador, StatusSync, Usuario } from './sync';
 
 const CHAVE_CONTA = 'app-workout:conta:v1';
 
@@ -18,6 +19,9 @@ export class CloudService {
   readonly online = signal(typeof navigator === 'undefined' ? true : navigator.onLine);
   readonly erro = signal('');
   readonly ocupado = signal(false);
+
+  /** Disponível quando há alguém logado de verdade; a parte social começa daí. */
+  readonly social = signal<{ uid: string; api: SocialBackend; nuvem: NuvemBackend } | null>(null);
 
   private backend?: FirebaseBackend;
   private sinc?: Sincronizador;
@@ -92,6 +96,7 @@ export class CloudService {
       this.sinc?.parar();
       this.sinc = undefined;
       // Os dados continuam na nuvem; o aparelho fica limpo para a próxima pessoa.
+      this.social.set(null);
       this.plans.limparLocal();
       this.esquecer();
       await this.backend?.sair();
@@ -125,6 +130,7 @@ export class CloudService {
     this.usuario.set(u);
     this.pronto.set(true);
     this.resolverPronto();
+    this.social.set(u && this.backend ? { uid: u.uid, api: this.backend.social(), nuvem: this.backend } : null);
     if (!u || !this.backend) return;
     this.lembrar();
     this.sinc ??= new Sincronizador(this.backend, this.alvo, u.uid, (s, e) => {

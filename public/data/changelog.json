@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.8.0",
+    "data": "2026-10-21",
+    "titulo": "Amigos e timeline",
+    "itens": [
+      "Nova aba Social: timeline com os treinos dos seus amigos, curtidas e comentários.",
+      "Estatísticas dos amigos na mesma tela de Progresso: troque entre você e cada amigo no topo.",
+      "Adicione amigos pelo código (convite que a pessoa precisa aceitar). Seus treinos novos aparecem na timeline deles."
+    ]
+  },
+  {
     "versao": "1.7.1",
     "data": "2026-10-21",
     "titulo": "Voltar para onde você estava",

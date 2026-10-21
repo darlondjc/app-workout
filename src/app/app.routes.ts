@@ -46,11 +46,18 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/workout').then((m) => m.Workout),
   },
   {
-    path: 'progresso',
+    path: 'social',
     canActivate: [logado],
-    title: 'Progresso · App Workout',
-    loadComponent: () => import('./pages/progress').then((m) => m.Progress),
+    title: 'Social · App Workout',
+    loadComponent: () => import('./pages/social').then((m) => m.Social),
   },
+  {
+    path: 'amigos',
+    canActivate: [logado],
+    title: 'Amigos · App Workout',
+    loadComponent: () => import('./pages/friends').then((m) => m.Friends),
+  },
+  { path: 'progresso', redirectTo: 'social' },
   {
     path: 'ajustes',
     canActivate: [logado],

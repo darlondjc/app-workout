@@ -97,4 +97,16 @@ No iPhone, o login dentro do app instalado (tela inicial) pode ser bloqueado pel
 
 ## Progresso
 
-A aba **Progresso** mostra um calendário mensal com os dias treinados (toque em um dia para ver o treino), a meta semanal (ajustável; por padrão é o número de fichas), a sequência de semanas cumprindo a meta, a carga total do mês, o gráfico das últimas 8 semanas e os recordes de carga do último treino. As mensagens de motivação são regras simples sobre esses números (retomada após dias parados, meta batida, sequência, comparação com o mês passado, dia favorito). Os cálculos ficam em `src/app/core/stats.ts`, sem dependências. A meta fica salva só no aparelho.
+Dentro da aba **Social → Estatísticas**, o **Progresso** mostra um calendário mensal com os dias treinados (toque em um dia para ver o treino), a meta semanal (ajustável; por padrão é o número de fichas), a sequência de semanas cumprindo a meta, a carga total do mês, o gráfico das últimas 8 semanas e os recordes de carga do último treino. As mensagens de motivação são regras simples sobre esses números (retomada após dias parados, meta batida, sequência, comparação com o mês passado, dia favorito). Os cálculos ficam em `src/app/core/stats.ts`, sem dependências. A meta fica salva só no aparelho.
+
+## Amigos e timeline
+
+A aba **Social** tem a **Timeline** (treinos concluídos seus e dos amigos, com curtidas e comentários; curtidas e comentários que você recebe aparecem como avisos) e as **Estatísticas**, com a mesma tela de Progresso e um seletor no topo para alternar entre você e cada amigo. Em **Amigos** (ícone no canto da aba Social) você vê seu código de 8 caracteres, adiciona alguém pelo código dele e aceita ou recusa convites.
+
+- Um convite só vira amizade quando a outra pessoa aceita. Depois disso, cada um vê o histórico de treinos (calendário, cargas, recordes), os treinos publicados e pode curtir e comentar. Fichas, treino em andamento e demais dados continuam privados. Desfazer a amizade corta o acesso dos dois lados.
+- Ao concluir um treino, ele é publicado na timeline (só treinos recentes são publicados; o histórico antigo não é despejado de uma vez).
+- Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `codigos/{codigo}`, `amizades/{id}` e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`) e `atividades`. As regras estão em `firestore.rules`.
+
+**Importante:** depois de atualizar o app, publique as regras novas: Console do Firebase → Firestore Database → aba **Regras** → cole o conteúdo de `firestore.rules` → **Publicar**. Sem isso os amigos e a timeline mostram "Sem permissão".
+
+Limites desta versão: a timeline mostra os 15 treinos mais recentes de cada pessoa; não há notificações push; os nomes e as fotos vêm do Google no momento do login.

@@ -1,0 +1,141 @@
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
+import { Avatar } from '../core/avatar';
+import { Icon } from '../core/icon';
+import { Comentario, Evento, TAMANHO_COMENTARIO, tempoRelativo } from '../core/social';
+import { SocialService } from '../core/social.service';
+
+/** Treino de alguém na timeline, com curtidas e comentários. */
+@Component({
+  selector: 'app-evento-card',
+  imports: [Avatar, Icon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <article class="card">
+      <header class="topo">
+        <app-avatar [usuario]="{ uid: evento().autor, nome: evento().autorNome, email: '', foto: evento().autorFoto }" [tamanho]="40" />
+        <div class="quem">
+          <strong>{{ minha() ? 'Você' : evento().autorNome }}</strong>
+          <span class="apoio">concluiu um treino · {{ quando() }}</span>
+        </div>
+      </header>
+
+      <div class="corpo">
+        <p class="ficha">{{ evento().fichaNome }}</p>
+        <p class="apoio">{{ resumo() }}</p>
+        @if (evento().marco) {
+          <p class="selo selo--marco">{{ evento().marco }}</p>
+        }
+        @for (r of evento().recordes; track r.nome) {
+          <p class="selo">Recorde: {{ r.nome }} · {{ r.carga }} kg</p>
+        }
+      </div>
+
+      <div class="acoes">
+        <button type="button" class="acao" [class.ativa]="curtido()" [attr.aria-pressed]="curtido()" (click)="curtir()">
+          <app-icon name="heart" [size]="20" [stroke]="2" /> {{ curtidas().length || '' }}
+          <span class="sr-only">{{ curtido() ? 'Descurtir' : 'Curtir' }}</span>
+        </button>
+        <button type="button" class="acao" [attr.aria-expanded]="aberto()" (click)="aberto.set(!aberto())">
+          <app-icon name="comment" [size]="20" [stroke]="2" /> {{ comentarios().length || '' }}
+          <span class="sr-only">Comentários</span>
+        </button>
+      </div>
+
+      @if (aberto()) {
+        <div class="comentarios">
+          @for (c of comentarios(); track c.id) {
+            <div class="comentario">
+              <app-avatar [usuario]="{ uid: c.autor, nome: c.autorNome, email: '', foto: c.autorFoto }" [tamanho]="28" />
+              <p>
+                <strong>{{ c.autor === social.eu()?.uid ? 'Você' : c.autorNome }}</strong> {{ c.texto }}
+              </p>
+              @if (c.autor === social.eu()?.uid || minha()) {
+                <button type="button" class="apagar" aria-label="Apagar comentário" (click)="apagar(c)">
+                  <app-icon name="close" [size]="14" [stroke]="2.4" />
+                </button>
+              }
+            </div>
+          } @empty {
+            <p class="apoio">Seja o primeiro a comentar.</p>
+          }
+          <form class="novo" (submit)="enviar($event, campo)">
+            <input #campo type="text" [attr.maxlength]="limite" placeholder="Escreva um comentário" aria-label="Comentário" />
+            <button type="submit" class="btn btn--escuro">Enviar</button>
+          </form>
+        </div>
+      }
+    </article>
+  `,
+  styles: `
+    .card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .topo { display: flex; align-items: center; gap: 12px; }
+    .quem { display: flex; flex-direction: column; min-width: 0; }
+    .quem .apoio { font-size: 13px; }
+    .ficha { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 0; }
+    .corpo { display: flex; flex-direction: column; gap: 6px; }
+    .corpo p { margin: 0; }
+    .selo { align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: #f1f8cf; font-size: 13px; }
+    .selo--marco { background: var(--ink); color: var(--accent); font-weight: 700; }
+    .acoes { display: flex; gap: 8px; }
+    .acao { min-height: 44px; min-width: 56px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); color: var(--ink); font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .acao.ativa { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+    .comentarios { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .comentario { display: flex; align-items: flex-start; gap: 8px; }
+    .comentario p { margin: 0; flex: 1; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+    .apagar { width: 32px; height: 32px; border: 0; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+    .novo { display: flex; gap: 8px; }
+    .novo input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; background: var(--card); }
+    .novo .btn { min-height: 44px; padding: 0 16px; }
+  `,
+})
+export class EventoCard {
+  readonly evento = input.required<Evento>();
+  protected readonly social = inject(SocialService);
+  protected readonly limite = TAMANHO_COMENTARIO;
+  protected readonly curtidas = signal<string[]>([]);
+  protected readonly comentarios = signal<Comentario[]>([]);
+  protected readonly aberto = signal(false);
+
+  protected readonly minha = computed(() => this.evento().autor === this.social.eu()?.uid);
+  protected readonly curtido = computed(() => this.curtidas().includes(this.social.eu()?.uid ?? ''));
+  protected readonly quando = computed(() => tempoRelativo(this.evento().criadoEm, Date.now()));
+  protected readonly resumo = computed(() => {
+    const e = this.evento();
+    const partes = [e.exercicios ? `${e.exercicios} ${e.exercicios === 1 ? 'exercício' : 'exercícios'}` : '', e.volume ? `${e.volume >= 1000 ? (e.volume / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' t' : e.volume + ' kg'} de carga` : ''];
+    return partes.filter(Boolean).join(' · ') || 'Treino concluído';
+  });
+
+  constructor() {
+    const destruir = inject(DestroyRef);
+    let parar: (() => void)[] = [];
+    effect(() => {
+      const e = this.evento();
+      this.social.eu(); // as reações só podem ser lidas depois que o perfil está pronto
+      parar.forEach((p) => p());
+      parar = [
+        this.social.ouvirCurtidas(e.autor, e.id, (l) => this.curtidas.set(l)),
+        this.social.ouvirComentarios(e.autor, e.id, (l) => this.comentarios.set(l)),
+      ];
+    });
+    destruir.onDestroy(() => parar.forEach((p) => p()));
+  }
+
+  protected curtir(): void {
+    const e = this.evento();
+    void this.social.alternarCurtida(e.autor, e.id, this.curtido());
+  }
+
+  protected enviar(ev: Event, campo: HTMLInputElement): void {
+    ev.preventDefault();
+    const texto = campo.value.trim();
+    if (!texto) return;
+    const e = this.evento();
+    campo.value = '';
+    void this.social.comentar(e.autor, e.id, texto);
+  }
+
+  protected apagar(c: Comentario): void {
+    const e = this.evento();
+    void this.social.apagarComentario(e.autor, e.id, c);
+  }
+}
