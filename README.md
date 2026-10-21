@@ -46,6 +46,10 @@ src/app/pages/                        telas
 
 Em **Fichas → Sugerir fichas para mim** você informa objetivo, experiência, dias por semana e onde treina. O app monta a divisão (corpo inteiro, superior/inferior ou empurrar/puxar/pernas) com exercícios clássicos da base, séries e descanso conforme o objetivo, e você pode gerar outra variação antes de adicionar. A lógica fica em `src/app/core/suggestion.ts`. É uma sugestão geral, sem considerar lesões.
 
+## Ícone e abertura
+
+O ícone é um halter lima sobre fundo grafite. `tools/gerar_icones.py` gera tudo a partir do desenho em código: ícones `any` e `maskable` para Android (o Android recorta no formato do aparelho), `apple-touch-icon` de 180 px para iOS (fundo cheio, sem transparência), favicons e 19 imagens de abertura para iPhone e iPad. No Android a abertura vem do manifesto (cor de fundo e ícone). No iOS usa as imagens `apple-touch-startup-image`. Dentro do app, uma abertura em HTML some com um fade assim que o Angular inicia. Se mudar o desenho, rode `python3 tools/gerar_icones.py` (precisa de `pillow` e `playwright`) e copie os `<link>` de `tools/splash-links.html` para o `index.html`.
+
 ## Carregamento
 
 Uma barra no topo aparece quando há requisições ou troca de tela demorando mais de cerca de 200 ms (`LoadingService` e interceptor). As telas mostram um indicador enquanto os dados chegam, e as fotos têm um esqueleto animado até carregarem.
