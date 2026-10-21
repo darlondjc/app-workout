@@ -83,17 +83,19 @@ import { ToastService } from '../core/toast.service';
         </section>
       </section>
 
-      <div class="rodape">
-        @if (naAtiva(); as ficha) {
-          <button type="button" class="btn btn--claro" disabled>
-            <app-icon name="check" [size]="20" [stroke]="2.5" /> Já está em “{{ ficha.nome }}”
-          </button>
-        } @else {
-          <button type="button" class="btn btn--escuro" (click)="adicionar()">
-            <app-icon name="plus" [size]="20" [stroke]="2.5" /> {{ rotuloAdicionar() }}
-          </button>
-        }
-      </div>
+      @if (!daFicha()) {
+        <div class="rodape">
+          @if (naAtiva(); as ficha) {
+            <button type="button" class="btn btn--claro" disabled>
+              <app-icon name="check" [size]="20" [stroke]="2.5" /> Já está em “{{ ficha.nome }}”
+            </button>
+          } @else {
+            <button type="button" class="btn btn--escuro" (click)="adicionar()">
+              <app-icon name="plus" [size]="20" [stroke]="2.5" /> {{ rotuloAdicionar() }}
+            </button>
+          }
+        </div>
+      }
     } @else if (ex.ready()) {
       <section class="page">
         <h1 class="titulo">Exercício não encontrado</h1>

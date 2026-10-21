@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.8.6",
+    "data": "2026-10-21",
+    "titulo": "Detalhe do exercício: botões por contexto",
+    "itens": [
+      "Vendo um exercício a partir de uma ficha, só aparece «Trocar por equivalente»; o botão de adicionar à ficha fica escondido.",
+      "Vendo pela biblioteca, aparece o botão de adicionar (ou «Já está em…») e não há opção de troca."
+    ]
+  },
+  {
     "versao": "1.8.5",
     "data": "2026-10-21",
     "titulo": "Trocar por exercício equivalente",
