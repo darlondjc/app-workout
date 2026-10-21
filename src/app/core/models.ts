@@ -74,4 +74,6 @@ export interface EmAndamento {
   /** Séries por posição do exercício na ficha. */
   series: Record<string, SerieEmAndamento[]>;
   iniciadoEm: number;
+  /** Exercícios trocados só neste treino: posição na ficha → exercício que entra no lugar. */
+  trocas?: Record<string, string>;
 }

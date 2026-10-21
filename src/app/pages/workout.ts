@@ -31,12 +31,12 @@ import { ToastService } from '../core/toast.service';
           </div>
 
           <div class="exercicio">
-            <a class="foto" [routerLink]="['/exercicio', it.exerciseId]" aria-label="Ver instruções do exercício">
+            <a class="foto" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }" aria-label="Ver instruções do exercício">
               <app-exercise-image [id]="it.exerciseId" [descricao]="'Demonstração: ' + nome()" />
             </a>
             <div>
               <h1>{{ nome() }}</h1>
-              <a class="ver" [routerLink]="['/exercicio', it.exerciseId]">Ver instruções</a>
+              <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções</a>
             </div>
           </div>
 
@@ -297,7 +297,12 @@ export class Workout {
     const max = Math.max(0, (this.ficha()?.itens.length ?? 1) - 1);
     return Math.min(this.estado()?.indice ?? 0, max);
   });
-  protected readonly item = computed(() => this.ficha()?.itens[this.indice()]);
+  /** O exercício da vez: o da ficha, ou o que foi trocado só para este treino. */
+  protected readonly item = computed(() => {
+    const base = this.ficha()?.itens[this.indice()];
+    const troca = this.estado()?.trocas?.[this.indice()];
+    return base && troca ? { ...base, exerciseId: troca } : base;
+  });
   protected readonly ultimo = computed(() => this.indice() >= (this.ficha()?.itens.length ?? 1) - 1);
 
   protected readonly nome = computed(() => {
@@ -392,9 +397,10 @@ export class Workout {
     }
     const f = this.ficha();
     const salvo = this.estado();
+    const efetivos = f ? this.plans.exerciciosEfetivos(f) : [];
     const registros: RegistroExercicio[] = (f?.itens ?? []).flatMap((it, i) => {
       const series = (salvo?.series[i] ?? []).filter((s) => s.feita).map((s) => ({ carga: s.carga, reps: s.reps }));
-      return series.length ? [{ exerciseId: it.exerciseId, ...(it.unidade ? { unidade: it.unidade } : {}), series }] : [];
+      return series.length ? [{ exerciseId: efetivos[i], ...(it.unidade ? { unidade: it.unidade } : {}), series }] : [];
     });
     this.plans.registrarSessao(this.id(), registros);
     this.toast.mostrar('Treino concluído. Bom trabalho!');

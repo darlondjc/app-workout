@@ -123,11 +123,42 @@ export class PlanService {
     return { ficha: atualizada, jaEstava: false };
   }
 
-  /** Troca um exercício da ficha por outro, mantendo séries, repetições e descanso. A carga zera: o equipamento pode mudar. */
-  trocarExercicio(fichaId: string, de: string, para: string): void {
+  /** Exercícios da ficha como estão hoje: com as trocas feitas só no treino em andamento, se houver. */
+  exerciciosEfetivos(ficha: Ficha): string[] {
+    const a = this.emAndamento();
+    const trocas = a && a.fichaId === ficha.id ? a.trocas : undefined;
+    return ficha.itens.map((it, i) => trocas?.[i] ?? it.exerciseId);
+  }
+
+  /** Séries já marcadas na posição passam a "não feitas": eram de outro exercício. Cargas e repetições ficam. */
+  private liberarSeries(a: EmAndamento, pos: number): EmAndamento['series'] {
+    const salvas = a.series[pos];
+    if (!salvas) return a.series;
+    return { ...a.series, [pos]: salvas.map((s) => ({ ...s, feita: false })) };
+  }
+
+  /**
+   * Troca o exercício da posição `pos` da ficha por outro, para sempre. Séries, repetições, carga e
+   * descanso continuam os mesmos. Uma troca só para o treino em andamento nessa posição deixa de valer.
+   */
+  trocarNaFicha(fichaId: string, pos: number, para: string): void {
     this.atualizar(fichaId, (f) => ({
       ...f,
-      itens: f.itens.map((i) => (i.exerciseId === de ? { ...i, exerciseId: para, carga: 0 } : i)),
+      itens: f.itens.map((it, i) => (i === pos ? { ...it, exerciseId: para } : it)),
+    }));
+    const a = this.emAndamento();
+    if (a && a.fichaId === fichaId) {
+      const { [pos]: _removida, ...trocas } = a.trocas ?? {};
+      this.emAndamento.set({ ...a, series: this.liberarSeries(a, pos), trocas });
+    }
+  }
+
+  /** Troca o exercício só no treino atual: a ficha não muda. */
+  trocarNoTreino(fichaId: string, pos: number, para: string): void {
+    this.andamento(fichaId, (a) => ({
+      ...a,
+      series: this.liberarSeries(a, pos),
+      trocas: { ...a.trocas, [pos]: para },
     }));
   }
 

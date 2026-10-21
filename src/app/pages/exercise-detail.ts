@@ -57,6 +57,16 @@ import { ToastService } from '../core/toast.service';
               @if (opcoes().length === 0) {
                 <p class="apoio">Nenhum exercício equivalente disponível.</p>
               }
+              @if (pendente(); as novoId) {
+                <div class="card pergunta" role="group" aria-label="Onde trocar o exercício">
+                  <p><strong>Trocar por “{{ nomeDe(novoId) }}”</strong> só neste treino ou na ficha toda?</p>
+                  <button type="button" class="btn btn--escuro" (click)="aplicar(novoId, 'treino')">Só neste treino</button>
+                  <button type="button" class="btn btn--claro" (click)="aplicar(novoId, 'ficha')">Na ficha “{{ f.nome }}”</button>
+                  <button type="button" class="btn btn--claro" (click)="pendente.set(null)">
+                    <app-icon name="close" [size]="18" [stroke]="2.2" /> Cancelar
+                  </button>
+                </div>
+              }
               <ul class="opcoes">
                 @for (o of opcoes(); track o.id) {
                   <li>
@@ -174,6 +184,16 @@ import { ToastService } from '../core/toast.service';
       width: 100%;
       margin-top: 8px;
     }
+    .pergunta {
+      margin-top: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pergunta p {
+      margin: 0 0 4px;
+    }
     .opcoes {
       list-style: none;
       margin: 12px 0 0;
@@ -231,6 +251,8 @@ export class ExerciseDetail {
   readonly id = input.required<string>();
   /** Ficha de onde a pessoa veio (vem do endereço), para oferecer a troca de exercício. */
   readonly ficha = input<string>();
+  /** "1" quando a pessoa abriu o exercício de dentro do treino (a tela de treino manda isso). */
+  readonly treino = input<string>();
 
   protected readonly ex = inject(ExerciseService);
   private readonly plans = inject(PlanService);
@@ -239,6 +261,8 @@ export class ExerciseDetail {
   private readonly router = inject(Router);
 
   protected readonly trocando = signal(false);
+  /** Exercício escolhido para a troca, esperando a resposta de "só neste treino ou na ficha". */
+  protected readonly pendente = signal<string | null>(null);
 
   protected readonly exercicio = computed(() => this.ex.get(this.id()));
   protected readonly nome = computed(() => {
@@ -264,10 +288,21 @@ export class ExerciseDetail {
     return f ? `Adicionar a “${f.nome}”` : 'Adicionar à ficha';
   });
 
-  /** A ficha de origem, se o exercício realmente estiver nela. */
-  protected readonly daFicha = computed(() => {
+  private readonly efetivos = computed(() => {
     const f = this.plans.get(this.ficha() ?? '');
-    return f?.itens.some((i) => i.exerciseId === this.id()) ? f : null;
+    return f ? this.plans.exerciciosEfetivos(f) : [];
+  });
+
+  /** Posição do exercício na ficha de origem (considera trocas feitas só no treino atual). */
+  private readonly posicao = computed(() => this.efetivos().indexOf(this.id()));
+
+  /** A ficha de origem, se o exercício realmente estiver nela. */
+  protected readonly daFicha = computed(() => (this.posicao() >= 0 ? (this.plans.get(this.ficha() ?? '') ?? null) : null));
+
+  /** Há treino começado dessa ficha (ou a pessoa veio da tela de treino): a troca pode valer só para ele. */
+  private readonly emTreino = computed(() => {
+    const f = this.daFicha();
+    return !!f && (this.treino() === '1' || this.plans.emAndamento()?.fichaId === f.id);
   });
 
   /** Equivalentes que não estão na ficha de origem nem na ficha ativa. */
@@ -275,20 +310,36 @@ export class ExerciseDetail {
     const e = this.exercicio();
     const f = this.daFicha();
     if (!e || !f) return [];
-    const excluidos = new Set([...f.itens, ...(this.fichaAtiva()?.itens ?? [])].map((i) => i.exerciseId));
-    return equivalentes(e, this.ex.exercises(), excluidos);
+    const ids = [...this.efetivos(), ...f.itens.map((i) => i.exerciseId), ...(this.fichaAtiva()?.itens ?? []).map((i) => i.exerciseId)];
+    return equivalentes(e, this.ex.exercises(), new Set(ids));
   });
+
+  protected nomeDe(id: string): string {
+    const e = this.ex.get(id);
+    return e ? this.ex.nome(e) : id;
+  }
 
   protected trocar(novoId: string): void {
     const f = this.daFicha();
     const atual = this.exercicio();
-    const novo = this.ex.get(novoId);
-    if (!f || !atual || !novo) return;
-    if (!confirm(`Trocar “${this.ex.nome(atual)}” por “${this.ex.nome(novo)}” na ficha “${f.nome}”? A carga volta a zero.`)) return;
-    this.plans.trocarExercicio(f.id, this.id(), novoId);
-    this.toast.mostrar(`Trocado por “${this.ex.nome(novo)}”`);
+    if (!f || !atual || !this.ex.get(novoId)) return;
+    if (this.emTreino()) {
+      this.pendente.set(novoId);
+      return;
+    }
+    if (!confirm(`Trocar “${this.ex.nome(atual)}” por “${this.nomeDe(novoId)}” na ficha “${f.nome}”?`)) return;
+    this.aplicar(novoId, 'ficha');
+  }
+
+  protected aplicar(novoId: string, onde: 'treino' | 'ficha'): void {
+    const f = this.daFicha();
+    if (!f) return;
+    if (onde === 'treino') this.plans.trocarNoTreino(f.id, this.posicao(), novoId);
+    else this.plans.trocarNaFicha(f.id, this.posicao(), novoId);
+    this.toast.mostrar(onde === 'treino' ? `Trocado só neste treino por “${this.nomeDe(novoId)}”` : `Trocado por “${this.nomeDe(novoId)}”`);
+    this.pendente.set(null);
     this.trocando.set(false);
-    void this.router.navigate(['/exercicio', novoId], { queryParams: { ficha: f.id }, replaceUrl: true });
+    void this.router.navigate(['/exercicio', novoId], { queryParams: { ficha: f.id, ...(this.treino() ? { treino: this.treino() } : {}) }, replaceUrl: true });
   }
 
   protected voltar(): void {
