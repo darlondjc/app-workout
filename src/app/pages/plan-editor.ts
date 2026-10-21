@@ -237,6 +237,10 @@ export class PlanEditor {
   }
 
   protected remover(indice: number): void {
+    const item = this.ficha()?.itens[indice];
+    if (!item) return;
+    const e = this.ex.get(item.exerciseId);
+    if (!confirm(`Remover “${e ? this.ex.nome(e) : item.exerciseId}” da ficha?`)) return;
     this.plans.removerItem(this.id(), indice);
   }
 
