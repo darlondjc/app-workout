@@ -1,4 +1,4 @@
-import { Atividade, Evento, chaveAmizade, gerarCodigo, idEvento, marcoDoTreino, montarTimeline, normalizarCodigo, tempoRelativo } from './social';
+import { Atividade, Evento, chaveAmizade, gerarCodigo, idEvento, marcoDoTreino, montarTimeline, nomeComMaiuscula, normalizarCodigo, tempoRelativo } from './social';
 
 function evento(autor: string, id: string, criadoEm: number): Evento {
   return { id, autor, autorNome: autor, autorFoto: null, tipo: 'treino', criadoEm, sessaoId: id, data: '2026-10-20', fichaNome: 'A', exercicios: 3, volume: 1000, recordes: [] };
@@ -85,5 +85,17 @@ describe('social', () => {
     it('horário no futuro não dá número negativo', () => {
       expect(tempoRelativo(agora + 60_000, agora)).toBe('agora');
     });
+  });
+});
+
+describe('nomeComMaiuscula', () => {
+  it('põe a primeira letra em maiúscula e mantém o resto', () => {
+    expect(nomeComMaiuscula('ana lima')).toBe('Ana lima');
+    expect(nomeComMaiuscula('João da Silva')).toBe('João da Silva');
+  });
+
+  it('ignora espaços nas pontas e aceita acento e nome vazio', () => {
+    expect(nomeComMaiuscula('  érica ')).toBe('Érica');
+    expect(nomeComMaiuscula('')).toBe('');
   });
 });

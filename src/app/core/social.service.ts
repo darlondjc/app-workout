@@ -15,6 +15,7 @@ import {
   idEvento,
   marcoDoTreino,
   montarTimeline,
+  nomeComMaiuscula,
   normalizarCodigo,
 } from './social';
 import { recordesDaSessao, volumeSessao } from './stats';
@@ -207,7 +208,7 @@ export class SocialService {
 
   /** Nome atual de uma pessoa. Treinos, comentários e avisos guardam o nome da época em que foram feitos. */
   nomeDe(uid: string, gravado: string): string {
-    return this.perfilDe(uid)?.nome || gravado;
+    return nomeComMaiuscula(this.perfilDe(uid)?.nome || gravado);
   }
 
   /** Foto atual de uma pessoa (ou a gravada no item, enquanto o perfil não chega). */

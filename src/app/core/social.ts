@@ -63,6 +63,12 @@ export type ItemTimeline =
   | { tipo: 'evento'; chave: string; criadoEm: number; evento: Evento }
   | { tipo: 'atividade'; chave: string; criadoEm: number; atividade: Atividade };
 
+/** Nome de pessoa começando com letra maiúscula ("ana lima" → "Ana lima"). */
+export function nomeComMaiuscula(nome: string): string {
+  const n = nome.trim();
+  return n.charAt(0).toLocaleUpperCase('pt-BR') + n.slice(1);
+}
+
 export const TAMANHO_COMENTARIO = 280;
 
 /** O que o app precisa da nuvem para a parte social (a implementação real usa Firebase). */

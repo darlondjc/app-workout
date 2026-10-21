@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase/firestore';
-import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend, TAMANHO_COMENTARIO } from './social';
+import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend, TAMANHO_COMENTARIO, nomeComMaiuscula } from './social';
 import { Cancelar } from './sync';
 
 type Fs = typeof import('firebase/firestore');
@@ -28,7 +28,9 @@ export class FirebaseSocial implements SocialBackend {
 
   async lerPerfil(uid: string): Promise<Perfil | null> {
     const snap = await this.fs.getDoc(this.fs.doc(this.db, 'perfis', uid));
-    return snap.exists() ? { ...(snap.data() as Perfil), uid } : null;
+    if (!snap.exists()) return null;
+    const p = snap.data() as Perfil;
+    return { ...p, uid, nome: nomeComMaiuscula(p.nome ?? '') };
   }
 
   gravarPerfil(p: Perfil): Promise<void> {
