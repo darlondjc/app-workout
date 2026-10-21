@@ -73,6 +73,10 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
         </article>
       }
 
+      <a class="btn btn--claro" routerLink="/treino-do-dia">
+        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino do dia: quero treinar outra coisa
+      </a>
+
       @if (plans.fichas().length > 0) {
         <section class="lista" aria-labelledby="titulo-fichas">
           <div class="lista__topo">

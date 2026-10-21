@@ -30,18 +30,18 @@ export const LOCAIS: { key: Local; label: string; detalhe: string }[] = [
 ];
 
 /** Equipamentos (campo `equipment` da base) aceitos em cada local. */
-const EQUIPAMENTOS: Record<Local, (string | null)[]> = {
+export const EQUIPAMENTOS: Record<Local, (string | null)[]> = {
   academia: ['barbell', 'dumbbell', 'cable', 'machine', 'body only', 'other', 'e-z curl bar', 'kettlebells', null],
   halteres: ['dumbbell', 'body only', 'kettlebells', null],
   corpo: ['body only', null],
 };
 
 /** Exercícios que exigem barra fixa, paralelas ou aparelho: só entram na academia. */
-const SO_ACADEMIA = new Set(['Pullups', 'Chin-Up', 'Wide-Grip_Rear_Pull-Up', 'Dips_-_Triceps_Version', 'Hyperextensions_Back_Extensions', 'Jogging_Treadmill', 'Bicycling_Stationary', 'Walking_Treadmill', 'Rope_Jumping', 'Elliptical_Trainer', 'Rowing_Stationary']);
+export const SO_ACADEMIA = new Set(['Pullups', 'Chin-Up', 'Wide-Grip_Rear_Pull-Up', 'Dips_-_Triceps_Version', 'Hyperextensions_Back_Extensions', 'Jogging_Treadmill', 'Bicycling_Stationary', 'Walking_Treadmill', 'Rope_Jumping', 'Elliptical_Trainer', 'Rowing_Stationary']);
 
-const ORDEM_NIVEL: Record<string, number> = { beginner: 0, intermediate: 1, expert: 2 };
+export const ORDEM_NIVEL: Record<string, number> = { beginner: 0, intermediate: 1, expert: 2 };
 
-type Grupo =
+export type Grupo =
   | 'peito' | 'peitoInclinado' | 'peitoIsolado'
   | 'ombro' | 'ombroLateral' | 'ombroPosterior'
   | 'puxada' | 'remada'
@@ -51,7 +51,7 @@ type Grupo =
   | 'cardio' | 'metabolico';
 
 /** Candidatos por movimento, do mais clássico ao menos usual. */
-const CANDIDATOS: Record<Grupo, string[]> = {
+export const CANDIDATOS: Record<Grupo, string[]> = {
   peito: ['Barbell_Bench_Press_-_Medium_Grip', 'Dumbbell_Bench_Press', 'Machine_Bench_Press', 'Pushups', 'Push-Up_Wide', 'Push-Ups_With_Feet_Elevated'],
   peitoInclinado: ['Incline_Dumbbell_Press', 'Barbell_Incline_Bench_Press_-_Medium_Grip', 'Incline_Push-Up', 'Decline_Push-Up', 'Incline_Push-Up_Wide'],
   peitoIsolado: ['Dumbbell_Flyes', 'Cable_Crossover', 'Butterfly'],
@@ -81,7 +81,7 @@ const CANDIDATOS: Record<Grupo, string[]> = {
 /** Movimentos multiarticulares recebem mais séries e descanso. */
 const MINUTOS = new Set<Grupo>(['cardio']);
 
-const COMPOSTOS = new Set<Grupo>(['peito', 'peitoInclinado', 'ombro', 'puxada', 'remada', 'agachamento', 'unilateral', 'posterior']);
+export const COMPOSTOS = new Set<Grupo>(['peito', 'peitoInclinado', 'ombro', 'puxada', 'remada', 'agachamento', 'unilateral', 'posterior']);
 
 interface Dia {
   nome: string;
@@ -145,7 +145,7 @@ function modelo(dias: number): Dia[] {
 
 const MINUTOS_CARDIO: Record<Nivel, number> = { beginner: 15, intermediate: 20, expert: 30 };
 
-function parametros(objetivo: Objetivo, composto: boolean, nivel: Nivel, grupo: Grupo): Omit<ItemFicha, 'exerciseId' | 'carga'> {
+export function parametros(objetivo: Objetivo, composto: boolean, nivel: Nivel, grupo: Grupo): Omit<ItemFicha, 'exerciseId' | 'carga'> {
   if (MINUTOS.has(grupo)) return { series: 1, reps: MINUTOS_CARDIO[nivel], unidade: 'min', descanso: 0 };
   let series: number;
   let reps: number;
