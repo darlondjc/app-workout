@@ -47,7 +47,11 @@ import { ToastService } from '../core/toast.service';
             <h2 id="trocar" class="sub">Trocar por equivalente</h2>
             <p class="apoio">Mesmo grupo muscular e mesmo efeito, fora das suas fichas.</p>
             <button type="button" class="btn btn--claro trocar-btn" (click)="trocando.set(!trocando())" [attr.aria-expanded]="trocando()">
-              {{ trocando() ? 'Fechar opções' : 'Ver opções para “' + f.nome + '”' }}
+              @if (trocando()) {
+                <app-icon name="close" [size]="20" [stroke]="2.5" /> Cancelar
+              } @else {
+                Ver opções para “{{ f.nome }}”
+              }
             </button>
             @if (trocando()) {
               @if (opcoes().length === 0) {
@@ -277,10 +281,12 @@ export class ExerciseDetail {
 
   protected trocar(novoId: string): void {
     const f = this.daFicha();
-    if (!f) return;
+    const atual = this.exercicio();
+    const novo = this.ex.get(novoId);
+    if (!f || !atual || !novo) return;
+    if (!confirm(`Trocar “${this.ex.nome(atual)}” por “${this.ex.nome(novo)}” na ficha “${f.nome}”? A carga volta a zero.`)) return;
     this.plans.trocarExercicio(f.id, this.id(), novoId);
-    const e = this.ex.get(novoId);
-    this.toast.mostrar(`Trocado por “${e ? this.ex.nome(e) : novoId}”`);
+    this.toast.mostrar(`Trocado por “${this.ex.nome(novo)}”`);
     this.trocando.set(false);
     void this.router.navigate(['/exercicio', novoId], { queryParams: { ficha: f.id }, replaceUrl: true });
   }
