@@ -1,5 +1,17 @@
 [
   {
+    "versao": "1.8.8",
+    "data": "2026-10-21",
+    "titulo": "Treino do dia",
+    "itens": [
+      "Novo: «Treino do dia». Escolha grupo muscular, cardio e nível e receba um treino sem nenhum exercício das suas fichas. Dá para aceitar (vira uma ficha), pedir outro ou descartar.",
+      "Pedir confirmação ao remover exercício da ficha e ao recusar ou cancelar convite de amizade.",
+      "O botão de opções equivalentes agora diz «Ver opções para esse exercício».",
+      "Nomes de amigos sempre começam com letra maiúscula.",
+      "O botão «Copiar» do código de amigo fica desativado até você copiar outra coisa."
+    ]
+  },
+  {
     "versao": "1.8.7",
     "data": "2026-10-21",
     "titulo": "Troca de exercício com confirmação",
