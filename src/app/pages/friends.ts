@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { Avatar } from '../core/avatar';
 import { Icon } from '../core/icon';
 import { NavegacaoService } from '../core/navegacao.service';
@@ -30,7 +30,7 @@ import { Carregando } from '../core/spinner';
           <p class="codigo" aria-label="Seu código de amigo">{{ social.eu()?.codigo }}</p>
           <p class="apoio">Passe o código para quem você quer ter como amigo.</p>
           <div class="linha">
-            <button type="button" class="btn btn--claro" (click)="copiar()">{{ copiado() ? 'Copiado!' : 'Copiar código' }}</button>
+            <button type="button" class="btn btn--claro" [disabled]="copiado()" (click)="copiar()">{{ copiado() ? 'Copiado!' : 'Copiar' }}</button>
             @if (podeCompartilhar) {
               <button type="button" class="btn btn--escuro" (click)="compartilhar()">Compartilhar</button>
             }
@@ -127,13 +127,40 @@ export class Friends {
   protected readonly mensagem = signal<{ ok: boolean; texto: string } | null>(null);
   protected readonly podeCompartilhar = typeof navigator !== 'undefined' && !!navigator.share;
 
+  constructor() {
+    // O navegador não avisa quando a área de transferência muda. Então o botão volta quando a pessoa
+    // copia outra coisa nesta página ou volta ao app (e, se der para ler, só se o conteúdo mudou).
+    const aoCopiar = () => setTimeout(() => this.copiado.set(false));
+    const aoVoltar = () => {
+      if (document.visibilityState === 'visible') void this.liberarSeMudou();
+    };
+    document.addEventListener('copy', aoCopiar);
+    document.addEventListener('visibilitychange', aoVoltar);
+    window.addEventListener('focus', aoVoltar);
+    inject(DestroyRef).onDestroy(() => {
+      document.removeEventListener('copy', aoCopiar);
+      document.removeEventListener('visibilitychange', aoVoltar);
+      window.removeEventListener('focus', aoVoltar);
+    });
+  }
+
+  private async liberarSeMudou(): Promise<void> {
+    if (!this.copiado()) return;
+    try {
+      const atual = await navigator.clipboard.readText();
+      if (atual !== this.social.eu()?.codigo) this.copiado.set(false);
+    } catch {
+      // Sem permissão para ler: voltar ao app é o melhor sinal de que pode ter copiado outra coisa.
+      this.copiado.set(false);
+    }
+  }
+
   protected async copiar(): Promise<void> {
     const c = this.social.eu()?.codigo;
     if (!c) return;
     try {
       await navigator.clipboard.writeText(c);
       this.copiado.set(true);
-      setTimeout(() => this.copiado.set(false), 2000);
     } catch {
       this.mensagem.set({ ok: false, texto: 'Não deu para copiar. Selecione o código e copie manualmente.' });
     }
