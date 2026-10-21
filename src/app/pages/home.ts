@@ -74,7 +74,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       }
 
       <a class="btn btn--claro" routerLink="/treino-do-dia">
-        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino aleatório para hoje
+        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino customizado para hoje
       </a>
 
       @if (plans.fichas().length > 0) {

@@ -58,7 +58,7 @@ import { PlanService } from '../core/plan.service';
       </ul>
 
       <a class="btn btn--destaque" routerLink="/treino-do-dia">
-        <app-icon name="play" [size]="18" /> Treino do dia
+        <app-icon name="play" [size]="18" /> Treino customizado para hoje
       </a>
       <a class="btn btn--claro" routerLink="/fichas/sugestao">
         <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Sugerir fichas para mim

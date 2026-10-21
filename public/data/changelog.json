@@ -2,12 +2,14 @@
   {
     "versao": "1.8.9",
     "data": "2026-10-21",
-    "titulo": "Trocas mais flexíveis e treino aleatório com limite",
+    "titulo": "Trocas mais flexíveis, treino customizado e excluir ficha arrastando",
     "itens": [
       "Trocar por exercício equivalente mantém séries, repetições, carga e descanso.",
       "Com um treino em andamento, a troca pode valer só para esse treino ou para a ficha toda.",
-      "No treino aleatório, com mais de um grupo muscular dá para limitar o máximo de exercícios.",
-      "O botão da tela inicial agora se chama «Treino aleatório para hoje»."
+      "«Treino customizado para hoje»: escolha até 2 grupos muscular, cardio e nível; com 2 grupos dá para limitar o máximo de exercícios. Aceite e comece o treino, peça outro ou descarte.",
+      "Nas fichas, arraste uma ficha para a direita para ver a lixeira e excluir (com confirmação).",
+      "Mais confirmações: ao remover exercício da ficha e ao recusar ou cancelar convite de amizade.",
+      "Nomes de amigos sempre começam com letra maiúscula e o botão «Copiar» do código fica desativado até você copiar outra coisa."
     ]
   },
   {
