@@ -24,7 +24,10 @@ export interface Labels {
 export interface ItemFicha {
   exerciseId: string;
   series: number;
+  /** Repetições, ou minutos quando `unidade` for 'min' (cardio). */
   reps: number;
+  /** Ausente = repetições. */
+  unidade?: 'reps' | 'min';
   carga: number;
   descanso: number;
 }

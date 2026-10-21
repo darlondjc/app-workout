@@ -40,7 +40,7 @@ import { ToastService } from '../core/toast.service';
 
           <div class="tabela" role="group" aria-label="Séries">
             <div class="cabecalho" aria-hidden="true">
-              <span>Série</span><span>Carga (kg)</span><span>Reps</span><span>Feito</span>
+              <span>Série</span><span>Carga (kg)</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Feito</span>
             </div>
             @for (s of series(); track s.n) {
               <div class="serie" [class.feita]="s.feita">

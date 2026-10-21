@@ -85,7 +85,7 @@ import { ToastService } from '../core/toast.service';
                 @for (it of f.itens; track it.exerciseId) {
                   <li>
                     <a [routerLink]="['/exercicio', it.exerciseId]">{{ nome(it.exerciseId) }}</a>
-                    <span class="apoio">{{ it.series }}×{{ it.reps }}</span>
+                    <span class="apoio">{{ it.unidade === 'min' ? it.reps + ' min' : it.series + '×' + it.reps }}</span>
                   </li>
                 }
               </ul>

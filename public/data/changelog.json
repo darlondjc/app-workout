@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.4.0",
+    "data": "2026-10-21",
+    "titulo": "Objetivo emagrecimento",
+    "itens": [
+      "Novo objetivo Emagrecimento na sugestão de fichas: circuitos de corpo inteiro, descanso curto e finalização com cardio.",
+      "Exercícios de cardio agora são medidos em minutos, na ficha e no treino."
+    ]
+  },
+  {
     "versao": "1.3.0",
     "data": "2026-10-21",
     "titulo": "Ícone, abertura e atualizações",

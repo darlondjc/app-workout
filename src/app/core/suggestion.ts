@@ -1,6 +1,6 @@
 import { Exercise, ItemFicha } from './models';
 
-export type Objetivo = 'hipertrofia' | 'forca' | 'resistencia';
+export type Objetivo = 'hipertrofia' | 'forca' | 'resistencia' | 'emagrecimento';
 export type Nivel = 'beginner' | 'intermediate' | 'expert';
 export type Local = 'academia' | 'halteres' | 'corpo';
 
@@ -20,6 +20,7 @@ export const OBJETIVOS: { key: Objetivo; label: string; detalhe: string }[] = [
   { key: 'hipertrofia', label: 'Ganhar massa', detalhe: '3 a 4 séries de 8 a 12' },
   { key: 'forca', label: 'Ganhar força', detalhe: '5 séries de 5, descanso longo' },
   { key: 'resistencia', label: 'Resistência', detalhe: '3 séries de 15, descanso curto' },
+  { key: 'emagrecimento', label: 'Emagrecimento', detalhe: 'Circuito, descanso curto e cardio' },
 ];
 
 export const LOCAIS: { key: Local; label: string; detalhe: string }[] = [
@@ -36,7 +37,7 @@ const EQUIPAMENTOS: Record<Local, (string | null)[]> = {
 };
 
 /** Exercícios que exigem barra fixa, paralelas ou aparelho: só entram na academia. */
-const SO_ACADEMIA = new Set(['Pullups', 'Chin-Up', 'Wide-Grip_Rear_Pull-Up', 'Dips_-_Triceps_Version', 'Hyperextensions_Back_Extensions']);
+const SO_ACADEMIA = new Set(['Pullups', 'Chin-Up', 'Wide-Grip_Rear_Pull-Up', 'Dips_-_Triceps_Version', 'Hyperextensions_Back_Extensions', 'Jogging_Treadmill', 'Bicycling_Stationary', 'Walking_Treadmill', 'Rope_Jumping', 'Elliptical_Trainer', 'Rowing_Stationary']);
 
 const ORDEM_NIVEL: Record<string, number> = { beginner: 0, intermediate: 1, expert: 2 };
 
@@ -46,7 +47,8 @@ type Grupo =
   | 'puxada' | 'remada'
   | 'biceps' | 'triceps'
   | 'agachamento' | 'unilateral' | 'posterior' | 'flexora' | 'extensora' | 'gluteo' | 'panturrilha'
-  | 'abdomen' | 'lombar' | 'trapezio';
+  | 'abdomen' | 'lombar' | 'trapezio'
+  | 'cardio' | 'metabolico';
 
 /** Candidatos por movimento, do mais clássico ao menos usual. */
 const CANDIDATOS: Record<Grupo, string[]> = {
@@ -70,14 +72,35 @@ const CANDIDATOS: Record<Grupo, string[]> = {
   abdomen: ['Crunches', 'Cable_Crunch', 'Reverse_Crunch', 'Air_Bike', 'Dead_Bug', 'Oblique_Crunches_-_On_The_Floor', 'Flat_Bench_Lying_Leg_Raise'],
   lombar: ['Hyperextensions_Back_Extensions'],
   trapezio: ['Dumbbell_Shrug', 'Barbell_Shrug'],
+  // Cardio contínuo, medido em minutos. O que exige aparelho só aparece na academia.
+  cardio: ['Jogging_Treadmill', 'Bicycling_Stationary', 'Walking_Treadmill', 'Trail_Running_Walking', 'Rope_Jumping', 'Elliptical_Trainer', 'Rowing_Stationary', 'Fast_Skipping'],
+  // Exercícios dinâmicos de corpo inteiro, feitos em repetições com pouco descanso.
+  metabolico: ['Mountain_Climbers', 'Star_Jump', 'Knee_Tuck_Jump', 'Split_Jump', 'Double_Leg_Butt_Kick', 'Scissors_Jump'],
 };
 
 /** Movimentos multiarticulares recebem mais séries e descanso. */
+const MINUTOS = new Set<Grupo>(['cardio']);
+
 const COMPOSTOS = new Set<Grupo>(['peito', 'peitoInclinado', 'ombro', 'puxada', 'remada', 'agachamento', 'unilateral', 'posterior']);
 
 interface Dia {
   nome: string;
   grupos: Grupo[];
+}
+
+/** Circuitos de corpo inteiro com finalização de cardio; dias extras são cardio e core. */
+function modeloEmagrecimento(dias: number): Dia[] {
+  const circuitos: Dia[] = [
+    { nome: 'Circuito A', grupos: ['agachamento', 'peito', 'remada', 'ombro', 'abdomen', 'metabolico', 'cardio'] },
+    { nome: 'Circuito B', grupos: ['posterior', 'peitoInclinado', 'puxada', 'ombroLateral', 'gluteo', 'metabolico', 'cardio'] },
+    { nome: 'Circuito C', grupos: ['unilateral', 'peito', 'remada', 'triceps', 'abdomen', 'metabolico', 'cardio'] },
+  ];
+  const extras: Dia[] = [
+    { nome: 'Cardio e abdômen', grupos: ['cardio', 'metabolico', 'abdomen', 'abdomen'] },
+    { nome: 'Cardio intervalado', grupos: ['metabolico', 'cardio', 'metabolico', 'abdomen'] },
+    { nome: 'Cardio leve e core', grupos: ['cardio', 'abdomen', 'gluteo', 'metabolico'] },
+  ];
+  return [...circuitos, ...extras].slice(0, Math.max(2, Math.min(dias, 6)));
 }
 
 function modelo(dias: number): Dia[] {
@@ -120,7 +143,10 @@ function modelo(dias: number): Dia[] {
   }
 }
 
-function parametros(objetivo: Objetivo, composto: boolean, nivel: Nivel): Omit<ItemFicha, 'exerciseId' | 'carga'> {
+const MINUTOS_CARDIO: Record<Nivel, number> = { beginner: 15, intermediate: 20, expert: 30 };
+
+function parametros(objetivo: Objetivo, composto: boolean, nivel: Nivel, grupo: Grupo): Omit<ItemFicha, 'exerciseId' | 'carga'> {
+  if (MINUTOS.has(grupo)) return { series: 1, reps: MINUTOS_CARDIO[nivel], unidade: 'min', descanso: 0 };
   let series: number;
   let reps: number;
   let descanso: number;
@@ -128,6 +154,9 @@ function parametros(objetivo: Objetivo, composto: boolean, nivel: Nivel): Omit<I
     [series, reps, descanso] = composto ? [5, 5, 150] : [3, 8, 90];
   } else if (objetivo === 'resistencia') {
     [series, reps, descanso] = [3, 15, 45];
+  } else if (objetivo === 'emagrecimento') {
+    if (grupo === 'metabolico') [series, reps, descanso] = [3, 20, 30];
+    else [series, reps, descanso] = composto ? [3, 12, 45] : [3, 15, 30];
   } else {
     [series, reps, descanso] = composto ? [4, 8, 90] : [3, 12, 60];
   }
@@ -157,7 +186,8 @@ export function sugerirFichas(exercicios: Exercise[], pref: Preferencias, variac
   const ja = new Set<string>();
   const total = Math.min(6, Math.max(2, pref.dias));
   // Sem equipamento há poucos exercícios distintos: acima de 4 dias, repete o ciclo de 4 fichas.
-  const base = modelo(pref.local === 'corpo' ? Math.min(total, 4) : total);
+  const diasBase = pref.local === 'corpo' ? Math.min(total, 4) : total;
+  const base = pref.objetivo === 'emagrecimento' ? modeloEmagrecimento(diasBase) : modelo(diasBase);
   const dias = Array.from({ length: total }, (_, i) => {
     const d = base[i % base.length];
     return i < base.length ? d : { ...d, nome: `${d.nome} (repetição)` };
@@ -182,7 +212,7 @@ export function sugerirFichas(exercicios: Exercise[], pref: Preferencias, variac
       escolhido ??= lista[(n + variacao) % lista.length];
       if (itens.some((i) => i.exerciseId === escolhido.id)) continue;
       ja.add(escolhido.id);
-      itens.push({ exerciseId: escolhido.id, carga: 0, ...parametros(pref.objetivo, COMPOSTOS.has(g), pref.nivel) });
+      itens.push({ exerciseId: escolhido.id, carga: 0, ...parametros(pref.objetivo, COMPOSTOS.has(g), pref.nivel, g) });
     }
     return { nome: dia.nome, itens };
   });

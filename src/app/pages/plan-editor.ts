@@ -52,7 +52,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
                 <label>Séries
                   <input class="campo-num" type="number" inputmode="numeric" min="1" max="20" [value]="l.item.series" (change)="editar(l.i, 'series', $event)" />
                 </label>
-                <label>Reps
+                <label>{{ l.item.unidade === 'min' ? 'Minutos' : 'Reps' }}
                   <input class="campo-num" type="number" inputmode="numeric" min="1" max="100" [value]="l.item.reps" (change)="editar(l.i, 'reps', $event)" />
                 </label>
                 <label>Carga (kg)

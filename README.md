@@ -44,7 +44,7 @@ src/app/pages/                        telas
 
 ## Sugestão automática de fichas
 
-Em **Fichas → Sugerir fichas para mim** você informa objetivo, experiência, dias por semana e onde treina. O app monta a divisão (corpo inteiro, superior/inferior ou empurrar/puxar/pernas) com exercícios clássicos da base, séries e descanso conforme o objetivo, e você pode gerar outra variação antes de adicionar. A lógica fica em `src/app/core/suggestion.ts`. É uma sugestão geral, sem considerar lesões.
+Em **Fichas → Sugerir fichas para mim** você informa objetivo, experiência, dias por semana e onde treina. O app monta a divisão (corpo inteiro, superior/inferior ou empurrar/puxar/pernas) com exercícios clássicos da base, séries e descanso conforme o objetivo, e você pode gerar outra variação antes de adicionar. A lógica fica em `src/app/core/suggestion.ts`. No objetivo **Emagrecimento** as fichas viram circuitos de corpo inteiro (12 a 15 repetições, descanso de 30 a 45 s), com um exercício dinâmico e uma finalização de cardio em minutos (15, 20 ou 30 conforme a experiência); dias extras são de cardio e abdômen. Cardio em aparelho só aparece na academia. É uma sugestão geral, sem considerar lesões.
 
 ## Atualizações e histórico de mudanças
 
