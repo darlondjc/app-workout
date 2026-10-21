@@ -17,7 +17,12 @@
         <app-icon name="clipboard" /> Fichas
       </a>
       <a routerLink="/ajustes" routerLinkActive="ativa">
-        <app-icon name="settings" /> Ajustes
+        @if (nuvem.usuario(); as u) {
+          <app-avatar [usuario]="u" [tamanho]="24" />
+        } @else {
+          <app-icon name="settings" />
+        }
+        Ajustes
       </a>
     </nav>
   }

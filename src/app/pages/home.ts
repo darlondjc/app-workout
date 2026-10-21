@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Avatar } from '../core/avatar';
+import { CloudService } from '../core/cloud.service';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { PlanService, dataLocal } from '../core/plan.service';
@@ -9,13 +11,20 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Icon],
+  imports: [RouterLink, Icon, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <header>
-        <p class="apoio">{{ dataTexto }}</p>
-        <h1 class="titulo">{{ saudacao }}, bora treinar?</h1>
+      <header class="cabeca">
+        <div>
+          <p class="apoio">{{ dataTexto }}</p>
+          <h1 class="titulo">{{ saudacao }}{{ primeiroNome() ? ', ' + primeiroNome() : '' }}, bora treinar?</h1>
+        </div>
+        @if (nuvem.usuario(); as u) {
+          <a class="conta" routerLink="/ajustes" aria-label="Minha conta">
+            <app-avatar [usuario]="u" [tamanho]="44" />
+          </a>
+        }
       </header>
 
       <ol class="semana" aria-label="Semana de treinos">
@@ -85,6 +94,17 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
     </section>
   `,
   styles: `
+    .cabeca {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .conta {
+      flex: none;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--soft);
+    }
     .semana {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -208,6 +228,9 @@ export class Home {
   protected readonly exercicios = inject(ExerciseService);
 
   private readonly agora = new Date();
+
+  protected readonly nuvem = inject(CloudService);
+  protected readonly primeiroNome = computed(() => this.nuvem.usuario()?.nome.trim().split(/\s+/)[0] ?? '');
 
   protected readonly saudacao =
     this.agora.getHours() < 12 ? 'Bom dia' : this.agora.getHours() < 18 ? 'Boa tarde' : 'Boa noite';

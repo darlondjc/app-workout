@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ChangelogService } from '../core/changelog.service';
 import { CloudService } from '../core/cloud.service';
+import { Avatar } from '../core/avatar';
 import { Icon } from '../core/icon';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando],
+  imports: [Icon, Carregando, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -23,9 +24,7 @@ import { UpdateService } from '../core/update.service';
           <app-carregando texto="Verificando conta…" />
         } @else if (nuvem.usuario(); as u) {
           <div class="conta">
-            @if (u.foto) {
-              <img class="avatar" [src]="u.foto" alt="" referrerpolicy="no-referrer" />
-            }
+            <app-avatar [usuario]="u" [tamanho]="44" />
             <div class="rot">
               <strong>{{ u.nome || u.email }}</strong>
               @if (u.nome) {
@@ -249,12 +248,6 @@ import { UpdateService } from '../core/update.service';
       display: flex;
       align-items: center;
       gap: 12px;
-    }
-    .avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      object-fit: cover;
     }
     .erro {
       color: #b3261e;

@@ -22,6 +22,10 @@ export class CloudService {
   private backend?: FirebaseBackend;
   private sinc?: Sincronizador;
   private iniciando?: Promise<void>;
+  private resolverPronto!: () => void;
+  private readonly prontoPromessa = new Promise<void>((r) => (this.resolverPronto = r));
+  /** Falso se o Firebase não carregou (ex.: sem conexão na primeira abertura). */
+  readonly carregado = signal(false);
 
   private readonly alvo: AlvoLocal = {
     lerEstado: () => this.plans.estadoNuvem(),
@@ -31,6 +35,7 @@ export class CloudService {
   };
 
   constructor(private readonly plans: PlanService) {
+    if (!this.configurado) this.resolverPronto();
     window.addEventListener('online', () => this.online.set(true));
     window.addEventListener('offline', () => this.online.set(false));
     effect(() => {
@@ -43,6 +48,17 @@ export class CloudService {
     });
     // Quem já entrou antes retoma a sincronização logo após abrir o app.
     if (this.configurado && this.lembrado()) setTimeout(() => void this.iniciar(), 0);
+  }
+
+  /**
+   * Espera saber se há alguém logado. Quem já entrou antes não fica preso se a verificação
+   * demorar (por exemplo, sem internet): depois de alguns segundos segue com a conta lembrada.
+   */
+  async aguardarPronto(): Promise<void> {
+    await Promise.race([this.prontoPromessa, new Promise<void>((r) => setTimeout(r, 8000))]);
+    if (!this.pronto() && this.lembrado() && !this.usuario()) {
+      this.usuario.set({ uid: 'lembrado', nome: '', email: '', foto: null });
+    }
   }
 
   /** Carrega o Firebase (sob demanda) e passa a acompanhar o login. */
@@ -88,6 +104,7 @@ export class CloudService {
     try {
       const { FirebaseBackend } = await import('./firebase.backend');
       this.backend = await FirebaseBackend.criar(FIREBASE_CONFIG!);
+      this.carregado.set(true);
       this.backend.aoMudarUsuario(
         (u) => this.aoMudarUsuario(u),
         (e) => this.erro.set(this.mensagem((e as { code?: string }).code ?? '')),
@@ -95,6 +112,7 @@ export class CloudService {
     } catch {
       this.iniciando = undefined;
       this.pronto.set(true);
+      this.resolverPronto();
       this.erro.set('Não foi possível carregar o login. Confira a conexão e tente de novo.');
     }
   }
@@ -106,6 +124,7 @@ export class CloudService {
     }
     this.usuario.set(u);
     this.pronto.set(true);
+    this.resolverPronto();
     if (!u || !this.backend) return;
     this.lembrar();
     this.sinc ??= new Sincronizador(this.backend, this.alvo, u.uid, (s, e) => {

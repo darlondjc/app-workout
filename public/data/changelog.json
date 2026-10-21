@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.6.0",
+    "data": "2026-10-21",
+    "titulo": "Tela de login e avatar",
+    "itens": [
+      "O app abre na tela de login; depois de entrar, você vai direto para o início.",
+      "Sua foto aparece no início e na aba Ajustes."
+    ]
+  },
+  {
     "versao": "1.5.0",
     "data": "2026-10-21",
     "titulo": "Conta e backup na nuvem",
