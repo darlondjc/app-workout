@@ -144,10 +144,11 @@ export class SocialService {
 
   private falhou(e: unknown): void {
     const codigo = (e as { code?: string }).code;
+    console.error('[social]', e);
     this.erro.set(
       codigo === 'permission-denied'
         ? 'Sem permissão. Publique as regras novas do Firestore (veja o README) e tente de novo.'
-        : 'Não foi possível falar com o servidor agora. Tente de novo em instantes.',
+        : `Não foi possível falar com o servidor agora. Tente de novo em instantes.${codigo ? ` (${codigo})` : ''}`,
     );
   }
 

@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.8.2",
+    "data": "2026-10-21",
+    "titulo": "Diagnóstico do erro na tela Social",
+    "itens": [
+      "A mensagem de falha no servidor agora mostra o código do erro, para facilitar achar a causa."
+    ]
+  },
+  {
     "versao": "1.8.1",
     "data": "2026-10-21",
     "titulo": "Ajustes na timeline e nas estatísticas dos amigos",
