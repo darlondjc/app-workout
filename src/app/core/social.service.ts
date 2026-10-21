@@ -148,7 +148,7 @@ export class SocialService {
     this.erro.set(
       codigo === 'permission-denied'
         ? 'Sem permissão. Publique as regras novas do Firestore (veja o README) e tente de novo.'
-        : `Não foi possível falar com o servidor agora. Tente de novo em instantes.${codigo ? ` (${codigo})` : ''}`,
+        : `Não foi possível falar com o servidor agora. Tente de novo em instantes.${codigo ? ` (${codigo})` : ''}${codigo === 'failed-precondition' ? ` ${(e as { message?: string }).message ?? ''}` : ''}`,
     );
   }
 

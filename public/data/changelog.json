@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.8.3",
+    "data": "2026-10-21",
+    "titulo": "Diagnóstico do erro na tela Social",
+    "itens": [
+      "Em falhas de pré-condição (ex.: índice faltando), a mensagem traz o detalhe do Firestore."
+    ]
+  },
+  {
     "versao": "1.8.2",
     "data": "2026-10-21",
     "titulo": "Diagnóstico do erro na tela Social",
