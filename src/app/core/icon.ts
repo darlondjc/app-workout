@@ -17,7 +17,8 @@ export type IconName =
   | 'chart'
   | 'heart'
   | 'comment'
-  | 'people';
+  | 'people'
+  | 'trash';
 
 @Component({
   selector: 'app-icon',
@@ -89,6 +90,9 @@ export type IconName =
           <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
           <circle cx="15" cy="7" r="2" />
           <circle cx="9" cy="17" r="2" />
+        }
+        @case ('trash') {
+          <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5" />
         }
         @case ('refresh') {
           <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />
