@@ -50,7 +50,7 @@ import { ToastService } from '../core/toast.service';
               @if (trocando()) {
                 <app-icon name="close" [size]="20" [stroke]="2.5" /> Cancelar
               } @else {
-                Ver opções para “{{ f.nome }}”
+                Ver opções para esse exercício
               }
             </button>
             @if (trocando()) {
