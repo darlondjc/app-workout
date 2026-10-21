@@ -13,7 +13,8 @@ export type IconName =
   | 'up'
   | 'down'
   | 'settings'
-  | 'refresh';
+  | 'refresh'
+  | 'chart';
 
 @Component({
   selector: 'app-icon',
@@ -37,6 +38,9 @@ export type IconName =
         @case ('search') {
           <circle cx="11" cy="11" r="6.5" />
           <path d="M16 16l4.5 4.5" />
+        }
+        @case ('chart') {
+          <path d="M5 20V11M12 20V4M19 20v-7" />
         }
         @case ('clipboard') {
           <rect x="5" y="4" width="14" height="17" rx="2" />

@@ -94,3 +94,7 @@ Como funciona (`src/app/core/sync.ts`): o app lê e grava primeiro no aparelho, 
 7. Faça commit e push: o GitHub Pages publica de novo e o botão **Entrar com Google** passa a funcionar.
 
 No iPhone, o login dentro do app instalado (tela inicial) pode ser bloqueado pelo Safari. Se acontecer, entre uma vez pelo navegador e depois abra o app instalado.
+
+## Progresso
+
+A aba **Progresso** mostra um calendário mensal com os dias treinados (toque em um dia para ver o treino), a meta semanal (ajustável; por padrão é o número de fichas), a sequência de semanas cumprindo a meta, a carga total do mês, o gráfico das últimas 8 semanas e os recordes de carga do último treino. As mensagens de motivação são regras simples sobre esses números (retomada após dias parados, meta batida, sequência, comparação com o mês passado, dia favorito). Os cálculos ficam em `src/app/core/stats.ts`, sem dependências. A meta fica salva só no aparelho.

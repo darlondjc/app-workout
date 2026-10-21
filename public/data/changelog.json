@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.7.0",
+    "data": "2026-10-21",
+    "titulo": "Progresso",
+    "itens": [
+      "Nova aba Progresso com calendário dos dias treinados e o detalhe de cada treino.",
+      "Meta semanal que você ajusta, sequência de semanas e comparação com o mês passado.",
+      "Mensagens de motivação, gráfico das últimas 8 semanas e recordes de carga."
+    ]
+  },
+  {
     "versao": "1.6.0",
     "data": "2026-10-21",
     "titulo": "Tela de login e avatar",

@@ -46,6 +46,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/workout').then((m) => m.Workout),
   },
   {
+    path: 'progresso',
+    canActivate: [logado],
+    title: 'Progresso · App Workout',
+    loadComponent: () => import('./pages/progress').then((m) => m.Progress),
+  },
+  {
     path: 'ajustes',
     canActivate: [logado],
     title: 'Ajustes · App Workout',

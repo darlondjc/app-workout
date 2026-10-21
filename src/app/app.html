@@ -16,6 +16,9 @@
       <a routerLink="/fichas" routerLinkActive="ativa">
         <app-icon name="clipboard" /> Fichas
       </a>
+      <a routerLink="/progresso" routerLinkActive="ativa">
+        <app-icon name="chart" /> Progresso
+      </a>
       <a routerLink="/ajustes" routerLinkActive="ativa">
         @if (nuvem.usuario(); as u) {
           <app-avatar [usuario]="u" [tamanho]="24" />
