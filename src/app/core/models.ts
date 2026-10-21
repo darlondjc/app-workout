@@ -38,8 +38,40 @@ export interface Ficha {
   itens: ItemFicha[];
 }
 
+/** Valores realizados em uma série. */
+export interface SerieRegistro {
+  carga: number;
+  reps: number;
+}
+
+export interface RegistroExercicio {
+  exerciseId: string;
+  unidade?: 'reps' | 'min';
+  series: SerieRegistro[];
+}
+
 export interface Sessao {
+  /** Identificador estável, usado para sincronizar sem duplicar. */
+  id?: string;
   /** Data local no formato yyyy-mm-dd */
   data: string;
   fichaId: string;
+  fichaNome?: string;
+  concluidaEm?: number;
+  registros?: RegistroExercicio[];
+}
+
+export interface SerieEmAndamento {
+  feita: boolean;
+  carga: number;
+  reps: number;
+}
+
+/** Treino começado e ainda não finalizado: permite retomar de onde parou. */
+export interface EmAndamento {
+  fichaId: string;
+  indice: number;
+  /** Séries por posição do exercício na ficha. */
+  series: Record<string, SerieEmAndamento[]>;
+  iniciadoEm: number;
 }

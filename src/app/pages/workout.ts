@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ExerciseImage } from '../core/exercise-image';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
+import { RegistroExercicio } from '../core/models';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
 
@@ -45,8 +46,10 @@ import { ToastService } from '../core/toast.service';
             @for (s of series(); track s.n) {
               <div class="serie" [class.feita]="s.feita">
                 <span class="n">{{ s.n }}</span>
-                <span>{{ it.carga }}</span>
-                <span>{{ it.reps }}</span>
+                <input class="valor" type="number" inputmode="decimal" min="0" step="0.5" [value]="s.carga"
+                  [attr.aria-label]="'Carga da série ' + s.n + ' (kg)'" (change)="editar(s.n - 1, 'carga', $event)" />
+                <input class="valor" type="number" inputmode="numeric" min="0" [value]="s.reps"
+                  [attr.aria-label]="(it.unidade === 'min' ? 'Minutos' : 'Repetições') + ' da série ' + s.n" (change)="editar(s.n - 1, 'reps', $event)" />
                 <button
                   type="button"
                   class="marca"
@@ -59,6 +62,10 @@ import { ToastService } from '../core/toast.service';
               </div>
             }
           </div>
+
+          @if (ultima(); as u) {
+            <p class="ultima">Última vez: {{ u }}</p>
+          }
 
           <div class="descanso" role="timer" aria-live="off">
             <div>
@@ -194,6 +201,21 @@ import { ToastService } from '../core/toast.service';
     .serie.feita {
       background: #232a1b;
     }
+    .valor {
+      width: 100%;
+      min-width: 0;
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid #3a4046;
+      background: #14171a;
+      color: #fff;
+      font: inherit;
+      text-align: center;
+    }
+    .ultima {
+      font-size: 13px;
+      color: #b9c0ba;
+    }
     .marca {
       width: 44px;
       height: 44px;
@@ -257,12 +279,19 @@ export class Workout {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
-  protected readonly indice = signal(0);
-  private readonly marcadas = signal<Record<number, boolean[]>>({});
   protected readonly descansoAtivo = signal(0);
   private intervalo?: ReturnType<typeof setInterval>;
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
+  /** Treino em andamento desta ficha, se houver (salvo no aparelho e na nuvem). */
+  private readonly estado = computed(() => {
+    const a = this.plans.emAndamento();
+    return a && a.fichaId === this.id() ? a : null;
+  });
+  protected readonly indice = computed(() => {
+    const max = Math.max(0, (this.ficha()?.itens.length ?? 1) - 1);
+    return Math.min(this.estado()?.indice ?? 0, max);
+  });
   protected readonly item = computed(() => this.ficha()?.itens[this.indice()]);
   protected readonly ultimo = computed(() => this.indice() >= (this.ficha()?.itens.length ?? 1) - 1);
 
@@ -272,11 +301,29 @@ export class Workout {
     return e ? this.ex.nome(e) : (it?.exerciseId ?? '');
   });
 
+  private readonly anterior_ = computed(() => {
+    const it = this.item();
+    return it ? this.plans.ultimoRegistro(it.exerciseId) : undefined;
+  });
+
   protected readonly series = computed(() => {
     const it = this.item();
     if (!it) return [];
-    const feitas = this.marcadas()[this.indice()] ?? [];
-    return Array.from({ length: it.series }, (_, k) => ({ n: k + 1, feita: !!feitas[k] }));
+    const salvas = this.estado()?.series[this.indice()] ?? [];
+    const ant = this.anterior_()?.series ?? [];
+    return Array.from({ length: it.series }, (_, k) => ({
+      n: k + 1,
+      feita: !!salvas[k]?.feita,
+      carga: salvas[k]?.carga ?? ant[k]?.carga ?? ant.at(-1)?.carga ?? it.carga,
+      reps: salvas[k]?.reps ?? it.reps,
+    }));
+  });
+
+  protected readonly ultima = computed(() => {
+    const r = this.anterior_();
+    if (!r) return '';
+    const min = r.unidade === 'min';
+    return r.series.map((s) => (min ? `${s.reps} min` : `${s.carga} kg × ${s.reps}`)).join(' · ');
   });
 
   protected readonly feitas = computed(() => this.series().filter((s) => s.feita).length);
@@ -300,34 +347,51 @@ export class Workout {
     inject(DestroyRef).onDestroy(() => this.pararDescanso());
   }
 
+  /** Grava a série k (valores atuais da tela + alteração) no treino em andamento. */
+  private gravarSerie(k: number, mudanca: Partial<{ feita: boolean; carga: number; reps: number }>): void {
+    const i = this.indice();
+    const base = this.series().map((s) => ({ feita: s.feita, carga: s.carga, reps: s.reps }));
+    base[k] = { ...base[k], ...mudanca };
+    this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
+  }
+
+  protected editar(k: number, campo: 'carga' | 'reps', evento: Event): void {
+    const v = (evento.target as HTMLInputElement).valueAsNumber;
+    this.gravarSerie(k, { [campo]: Number.isFinite(v) && v >= 0 ? v : 0 });
+  }
+
   protected alternar(k: number): void {
     const it = this.item();
     if (!it) return;
-    const i = this.indice();
-    let ficouFeita = false;
-    this.marcadas.update((m) => {
-      const atual = [...(m[i] ?? Array<boolean>(it.series).fill(false))];
-      atual[k] = !atual[k];
-      ficouFeita = atual[k];
-      return { ...m, [i]: atual };
-    });
-    const todas = (this.marcadas()[i] ?? []).filter(Boolean).length === it.series;
+    const ficouFeita = !this.series()[k].feita;
+    this.gravarSerie(k, { feita: ficouFeita });
+    const todas = this.series().every((s) => s.feita);
     if (ficouFeita && !todas) this.iniciarDescanso(it.descanso);
     else this.pararDescanso();
   }
 
+  private irPara(indice: number): void {
+    this.plans.andamento(this.id(), (a) => ({ ...a, indice }));
+  }
+
   protected anterior(): void {
     this.pararDescanso();
-    this.indice.update((n) => Math.max(0, n - 1));
+    this.irPara(Math.max(0, this.indice() - 1));
   }
 
   protected proximo(): void {
     this.pararDescanso();
     if (!this.ultimo()) {
-      this.indice.update((n) => n + 1);
+      this.irPara(this.indice() + 1);
       return;
     }
-    this.plans.registrarSessao(this.id());
+    const f = this.ficha();
+    const salvo = this.estado();
+    const registros: RegistroExercicio[] = (f?.itens ?? []).flatMap((it, i) => {
+      const series = (salvo?.series[i] ?? []).filter((s) => s.feita).map((s) => ({ carga: s.carga, reps: s.reps }));
+      return series.length ? [{ exerciseId: it.exerciseId, ...(it.unidade ? { unidade: it.unidade } : {}), series }] : [];
+    });
+    this.plans.registrarSessao(this.id(), registros);
     this.toast.mostrar('Treino concluído. Bom trabalho!');
     this.router.navigate(['/']);
   }

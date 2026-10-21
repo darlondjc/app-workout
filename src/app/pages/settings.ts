@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ChangelogService } from '../core/changelog.service';
+import { CloudService } from '../core/cloud.service';
 import { Icon } from '../core/icon';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
@@ -13,6 +14,63 @@ import { UpdateService } from '../core/update.service';
       <header>
         <h1 class="titulo">Ajustes</h1>
       </header>
+
+      <article class="card bloco" aria-labelledby="t-conta">
+        <h2 id="t-conta" class="sub">Conta e backup</h2>
+        @if (!nuvem.configurado) {
+          <p class="apoio">Login indisponível nesta versão. Suas fichas e treinos ficam apenas neste aparelho.</p>
+        } @else if (!nuvem.pronto()) {
+          <app-carregando texto="Verificando conta…" />
+        } @else if (nuvem.usuario(); as u) {
+          <div class="conta">
+            @if (u.foto) {
+              <img class="avatar" [src]="u.foto" alt="" referrerpolicy="no-referrer" />
+            }
+            <div class="rot">
+              <strong>{{ u.nome || u.email }}</strong>
+              @if (u.nome) {
+                <span class="apoio">{{ u.email }}</span>
+              }
+            </div>
+          </div>
+          <p class="status" role="status">
+            @if (!nuvem.online()) {
+              Sem conexão. Tudo fica salvo no aparelho e é enviado quando voltar.
+            } @else {
+              @switch (nuvem.status()) {
+                @case ('ok') { Fichas, treinos e cargas salvos na nuvem. }
+                @case ('erro') { Não foi possível sincronizar agora. }
+                @default { Sincronizando… }
+              }
+            }
+          </p>
+          @if (nuvem.erro()) {
+            <p class="apoio erro" role="alert">{{ nuvem.erro() }}</p>
+          }
+          @if (confirmando()) {
+            <p class="apoio">Ao sair, os dados saem deste aparelho, mas continuam na sua conta. Entre de novo para recuperá-los.</p>
+            <div class="acoes-linha">
+              <button type="button" class="btn btn--claro" (click)="confirmando.set(false)">Cancelar</button>
+              <button type="button" class="btn btn--escuro" [disabled]="nuvem.ocupado()" (click)="sair()">
+                {{ nuvem.ocupado() ? 'Saindo…' : 'Sair' }}
+              </button>
+            </div>
+          } @else {
+            <button type="button" class="btn btn--claro" (click)="confirmando.set(true)">Sair da conta</button>
+          }
+        } @else {
+          <p class="apoio">
+            Entre com o Google para guardar fichas, treinos, cargas e treino em andamento na nuvem. Se trocar de
+            aparelho ou reinstalar o app, é só entrar de novo para recuperar tudo.
+          </p>
+          @if (nuvem.erro()) {
+            <p class="apoio erro" role="alert">{{ nuvem.erro() }}</p>
+          }
+          <button type="button" class="btn btn--escuro" [disabled]="nuvem.ocupado()" (click)="nuvem.entrar()">
+            {{ nuvem.ocupado() ? 'Entrando…' : 'Entrar com Google' }}
+          </button>
+        }
+      </article>
 
       <article class="card bloco" aria-labelledby="t-versao">
         <h2 id="t-versao" class="sub">Versão do app</h2>
@@ -187,6 +245,27 @@ import { UpdateService } from '../core/update.service';
     .versao-item ul {
       padding-bottom: 14px;
     }
+    .conta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .erro {
+      color: #b3261e;
+    }
+    .acoes-linha {
+      display: flex;
+      gap: 10px;
+    }
+    .acoes-linha .btn {
+      flex: 1;
+    }
     button:disabled {
       opacity: 0.6;
     }
@@ -195,6 +274,17 @@ import { UpdateService } from '../core/update.service';
 export class Settings {
   protected readonly up = inject(UpdateService);
   protected readonly log = inject(ChangelogService);
+  protected readonly nuvem = inject(CloudService);
+  protected readonly confirmando = signal(false);
+
+  constructor() {
+    void this.nuvem.iniciar();
+  }
+
+  protected async sair(): Promise<void> {
+    await this.nuvem.sair();
+    this.confirmando.set(false);
+  }
 
   protected formatar(iso: string): string {
     const [a, m, d] = iso.split('-').map(Number);

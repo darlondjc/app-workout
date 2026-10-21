@@ -50,7 +50,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
             }
           </div>
           <a class="btn btn--destaque" [routerLink]="['/treino', ficha.id]">
-            <app-icon name="play" [size]="18" /> Iniciar treino
+            <app-icon name="play" [size]="18" /> {{ plans.emAndamento()?.fichaId === ficha.id ? 'Continuar treino' : 'Iniciar treino' }}
           </a>
         </article>
       } @else {

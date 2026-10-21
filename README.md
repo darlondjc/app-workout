@@ -76,3 +76,21 @@ Cada exercício tem um `anim.webp` (as duas fotos alternando, 800 ms, em loop). 
 ## Publicação
 
 O workflow `.github/workflows/pages.yml` compila e publica no GitHub Pages a cada push no `main`. Na primeira vez, em **Settings → Pages**, escolha **Source: GitHub Actions**. O endereço será `https://darlondjc.github.io/app-workout/`.
+
+## Conta, backup e sincronização (Firebase)
+
+Em **Ajustes → Conta e backup** a pessoa entra com o Google. A partir daí fichas, ficha ativa, treino em andamento e histórico (com carga e repetições de cada série) são enviados para o Firestore e voltam sozinhos em outro aparelho ou após reinstalar. Sem login, tudo continua funcionando só no aparelho.
+
+Como funciona (`src/app/core/sync.ts`): o app lê e grava primeiro no aparelho, então funciona sem internet; o Firestore guarda as gravações pendentes e envia quando a conexão volta. No primeiro login os dados do aparelho e os da conta são unidos (nada se perde). Depois, vale a última gravação nas fichas e a união nas sessões concluídas. Ao sair da conta, os dados saem do aparelho e permanecem na nuvem.
+
+### Configurar o projeto Firebase (uma vez)
+
+1. Em <https://console.firebase.google.com> crie um projeto (o Google Analytics pode ficar desligado).
+2. **Authentication → Começar → Método de login → Google**: ative e escolha um e-mail de suporte.
+3. **Authentication → Configurações → Domínios autorizados**: adicione `darlondjc.github.io`.
+4. **Firestore Database → Criar banco de dados** (modo produção; região `southamerica-east1`).
+5. Aba **Regras** do Firestore: cole o conteúdo de `firestore.rules` e publique. Isso garante que cada pessoa só acessa os próprios dados.
+6. **Configurações do projeto → Seus apps → Web (`</>`)**: registre o app e copie o objeto `firebaseConfig` para `src/app/core/firebase.config.ts` (substitua o `null`). Esses valores não são segredos; quem protege os dados são as regras do passo 5.
+7. Faça commit e push: o GitHub Pages publica de novo e o botão **Entrar com Google** passa a funcionar.
+
+No iPhone, o login dentro do app instalado (tela inicial) pode ser bloqueado pelo Safari. Se acontecer, entre uma vez pelo navegador e depois abra o app instalado.

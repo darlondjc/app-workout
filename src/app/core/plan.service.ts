@@ -1,9 +1,17 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
-import { Ficha, ItemFicha, Sessao } from './models';
+import { EmAndamento, Ficha, ItemFicha, RegistroExercicio, Sessao } from './models';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
 const CHAVE_ATIVA = 'app-workout:ficha-ativa:v1';
 const CHAVE_HISTORICO = 'app-workout:historico:v1';
+const CHAVE_ANDAMENTO = 'app-workout:andamento:v1';
+
+/** Parte do estado que vai para a nuvem num único documento. */
+export interface EstadoNuvem {
+  fichas: Ficha[];
+  ativaId: string | null;
+  emAndamento: EmAndamento | null;
+}
 
 function ler<T>(chave: string, padrao: T): T {
   try {
@@ -32,10 +40,23 @@ export function dataLocal(d: Date = new Date()): string {
 export class PlanService {
   readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []));
   readonly ativaId = signal<string | null>(ler<string | null>(CHAVE_ATIVA, null));
-  readonly historico = signal<Sessao[]>(ler<Sessao[]>(CHAVE_HISTORICO, []));
+  readonly historico = signal<Sessao[]>(
+    ler<Sessao[]>(CHAVE_HISTORICO, []).map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })),
+  );
+  readonly emAndamento = signal<EmAndamento | null>(ler<EmAndamento | null>(CHAVE_ANDAMENTO, null));
+
+  /** Fichas, ficha ativa e treino em andamento: o que o documento da nuvem guarda. */
+  readonly estadoNuvem = computed<EstadoNuvem>(() => ({
+    fichas: this.fichas(),
+    ativaId: this.ativaId(),
+    emAndamento: this.emAndamento(),
+  }));
 
   /** Ficha sugerida para hoje: a seguinte à última concluída (rodízio A, B, C...). */
   readonly proxima = computed<Ficha | null>(() => {
+    const em = this.emAndamento();
+    const emCurso = em ? this.get(em.fichaId) : undefined;
+    if (emCurso && emCurso.itens.length > 0) return emCurso;
     const fichas = this.fichas().filter((f) => f.itens.length > 0);
     if (fichas.length === 0) return null;
     const ultima = this.historico().at(-1);
@@ -47,6 +68,7 @@ export class PlanService {
     effect(() => gravar(CHAVE_FICHAS, this.fichas()));
     effect(() => gravar(CHAVE_ATIVA, this.ativaId()));
     effect(() => gravar(CHAVE_HISTORICO, this.historico()));
+    effect(() => gravar(CHAVE_ANDAMENTO, this.emAndamento()));
   }
 
   get(id: string): Ficha | undefined {
@@ -123,8 +145,74 @@ export class PlanService {
     }));
   }
 
-  registrarSessao(fichaId: string): void {
-    this.historico.update((h) => [...h, { data: dataLocal(), fichaId }]);
+  /**
+   * Altera o treino em andamento da ficha. Se não houver treino começado (ou for de outra
+   * ficha), parte de um treino novo.
+   */
+  andamento(fichaId: string, fn: (a: EmAndamento) => EmAndamento): void {
+    this.emAndamento.update((atual) => {
+      const base: EmAndamento =
+        atual && atual.fichaId === fichaId ? atual : { fichaId, indice: 0, series: {}, iniciadoEm: Date.now() };
+      return fn(base);
+    });
+  }
+
+  descartarAndamento(): void {
+    this.emAndamento.set(null);
+  }
+
+  /** Conclui o treino: grava a sessão com o que foi realizado e limpa o andamento. */
+  registrarSessao(fichaId: string, registros: RegistroExercicio[] = []): void {
+    const ficha = this.get(fichaId);
+    this.historico.update((h) => [
+      ...h,
+      { id: crypto.randomUUID(), data: dataLocal(), fichaId, fichaNome: ficha?.nome, concluidaEm: Date.now(), registros },
+    ]);
+    this.emAndamento.set(null);
+  }
+
+  /** Últimos valores realizados de um exercício, para sugerir a carga do próximo treino. */
+  ultimoRegistro(exerciseId: string): RegistroExercicio | undefined {
+    const h = this.historico();
+    for (let i = h.length - 1; i >= 0; i--) {
+      const r = h[i].registros?.find((x) => x.exerciseId === exerciseId && x.series.length > 0);
+      if (r) return r;
+    }
+    return undefined;
+  }
+
+  /** Aplica o estado vindo da nuvem. Com `mesclar`, junta com o que há no aparelho em vez de trocar. */
+  aplicarEstadoNuvem(remoto: EstadoNuvem, mesclar = false): void {
+    if (mesclar) {
+      const ids = new Set(remoto.fichas.map((f) => f.id));
+      this.fichas.set([...remoto.fichas, ...this.fichas().filter((f) => !ids.has(f.id))]);
+      this.ativaId.set(remoto.ativaId ?? this.ativaId());
+      this.emAndamento.set(remoto.emAndamento ?? this.emAndamento());
+    } else {
+      this.fichas.set(remoto.fichas);
+      this.ativaId.set(remoto.ativaId);
+      this.emAndamento.set(remoto.emAndamento);
+    }
+  }
+
+  /** Junta sessões recebidas da nuvem ao histórico (união por id, em ordem de data). */
+  mesclarSessoes(remotas: Sessao[]): void {
+    const atuais = this.historico();
+    const ids = new Set(atuais.map((s) => s.id));
+    const novas = remotas.filter((s) => s.id && !ids.has(s.id));
+    if (novas.length === 0) return;
+    const todas = [...atuais, ...novas].sort(
+      (a, b) => (a.concluidaEm ?? 0) - (b.concluidaEm ?? 0) || a.data.localeCompare(b.data),
+    );
+    this.historico.set(todas);
+  }
+
+  /** Apaga os dados deste aparelho (usado ao sair da conta). */
+  limparLocal(): void {
+    this.fichas.set([]);
+    this.ativaId.set(null);
+    this.historico.set([]);
+    this.emAndamento.set(null);
   }
 
   private atualizar(id: string, fn: (f: Ficha) => Ficha): void {

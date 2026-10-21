@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.5.0",
+    "data": "2026-10-21",
+    "titulo": "Conta e backup na nuvem",
+    "itens": [
+      "Entre com o Google em Ajustes para guardar fichas, treinos e cargas e recuperá-los em outro aparelho.",
+      "O treino em andamento fica salvo: se fechar o app, é só continuar de onde parou.",
+      "Você pode ajustar carga e repetições de cada série no treino; o app lembra a carga da última vez."
+    ]
+  },
+  {
     "versao": "1.4.0",
     "data": "2026-10-21",
     "titulo": "Objetivo emagrecimento",
