@@ -13,4 +13,4 @@ export const FIREBASE_CONFIG: FirebaseOptions | null = {
   storageBucket: "app-workout-1f96f.firebasestorage.app",
   messagingSenderId: "467681531845",
   appId: "1:467681531845:web:6be0a610da0b0d52769dac"
-};;
+};
