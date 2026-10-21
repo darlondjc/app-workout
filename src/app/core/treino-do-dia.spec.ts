@@ -1,5 +1,5 @@
 import { Exercise } from './models';
-import { treinoDoDia } from './treino-do-dia';
+import { repartir, treinoDoDia } from './treino-do-dia';
 
 function ex(id: string, extra: Partial<Exercise> = {}): Exercise {
   return {
@@ -99,5 +99,34 @@ describe('treinoDoDia', () => {
   it('sem nada disponível devolve treino vazio', () => {
     const r = treinoDoDia(base, { ...pedido, excluidos: new Set(base.map((e) => e.id)) });
     expect(r.itens).toEqual([]);
+  });
+
+  describe('máximo de exercícios', () => {
+    const varios = { ...pedido, grupos: ['peito', 'biceps'] };
+
+    it('limita o total, contando o cardio', () => {
+      expect(treinoDoDia(base, { ...varios, maximo: 4 }).itens.length).toBe(4);
+      const comCardio = treinoDoDia(base, { ...varios, maximo: 4, cardio: true });
+      expect(comCardio.itens.length).toBe(4);
+      expect(ids(comCardio).at(-1)).toBe('Jogging_Treadmill');
+    });
+
+    it('reparte entre os grupos', () => {
+      const r = ids(treinoDoDia(base, { ...varios, maximo: 4 }));
+      expect(r.filter((i) => i.includes('Curl')).length).toBe(2);
+      expect(r.length - r.filter((i) => i.includes('Curl')).length).toBe(2);
+    });
+  });
+});
+
+describe('repartir', () => {
+  it('divide por igual e manda o resto para os primeiros', () => {
+    expect(repartir(8, 3)).toEqual([3, 3, 2]);
+    expect(repartir(6, 2)).toEqual([3, 3]);
+  });
+
+  it('garante ao menos 1 por grupo enquanto houver vaga e não passa do total', () => {
+    expect(repartir(3, 5)).toEqual([1, 1, 1, 0, 0]);
+    expect(repartir(0, 2)).toEqual([0, 0]);
   });
 });

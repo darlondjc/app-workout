@@ -46,6 +46,18 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
           </div>
         </fieldset>
 
+        @if (escolhidos().length > 1) {
+          <fieldset>
+            <legend>Máximo de exercícios</legend>
+            <div class="chips-linha">
+              @for (m of opcoesMaximo(); track m) {
+                <button type="button" class="chip" [attr.aria-pressed]="maximoAtual() === m" (click)="maximo.set(m)">{{ m }}</button>
+              }
+            </div>
+            <p class="apoio nota">Com vários grupos, o treino pode ficar grande. Divido esse limite entre eles{{ cardio() ? ' (o cardio conta)' : '' }}.</p>
+          </fieldset>
+        }
+
         <fieldset>
           <legend>Nível</legend>
           <div class="chips-linha">
@@ -206,9 +218,22 @@ export class DailyWorkout {
   protected readonly escolhidos = signal<string[]>([]);
   protected readonly cardio = signal(false);
   protected readonly nivel = signal<Nivel>('intermediate');
+  protected readonly maximo = signal(8);
   protected readonly variacao = signal(0);
+
+  /** Opções de máximo: pelo menos 1 exercício por grupo (e 1 para o cardio, se pedido). */
+  protected readonly opcoesMaximo = computed(() => {
+    const minimo = this.escolhidos().length + (this.cardio() ? 1 : 0);
+    return [4, 6, 8, 10, 12, 15].filter((m) => m >= minimo);
+  });
+
+  /** O máximo escolhido, ajustado para a opção válida mais próxima quando as escolhas mudam. */
+  protected readonly maximoAtual = computed(() => {
+    const ops = this.opcoesMaximo();
+    return ops.find((m) => m >= this.maximo()) ?? ops.at(-1) ?? this.maximo();
+  });
   /** Só depois de tocar em "Sugerir treino": as escolhas ficam fixas até aceitar ou descartar. */
-  private readonly pedido = signal<{ grupos: string[]; cardio: boolean; nivel: Nivel } | null>(null);
+  private readonly pedido = signal<{ grupos: string[]; cardio: boolean; nivel: Nivel; maximo?: number } | null>(null);
 
   protected readonly resultado = computed<TreinoDoDia | null>(() => {
     const p = this.pedido();
@@ -223,7 +248,8 @@ export class DailyWorkout {
 
   protected sugerir(): void {
     this.variacao.set(0);
-    this.pedido.set({ grupos: this.escolhidos(), cardio: this.cardio(), nivel: this.nivel() });
+    const varios = this.escolhidos().length > 1;
+    this.pedido.set({ grupos: this.escolhidos(), cardio: this.cardio(), nivel: this.nivel(), ...(varios ? { maximo: this.maximoAtual() } : {}) });
   }
 
   protected descartar(): void {

@@ -9,6 +9,8 @@ export interface PedidoTreinoDia {
   nivel: Nivel;
   /** Exercícios que não podem entrar (os que já estão nas fichas da pessoa). */
   excluidos: ReadonlySet<string>;
+  /** Máximo de exercícios do treino (cardio incluído). Sem ele, vale a quantidade padrão por grupo. */
+  maximo?: number;
   /** Muda a escolha para gerar alternativas. */
   variacao?: number;
 }
@@ -33,6 +35,13 @@ const MOVIMENTOS: Record<string, Grupo[]> = {
 /** Quantos exercícios por grupo, conforme quantos grupos foram escolhidos. */
 function porGrupo(qtdGrupos: number): number {
   return [6, 6, 4, 3, 2, 2][qtdGrupos] ?? 1;
+}
+
+/** Reparte `total` exercícios entre `n` grupos, o que sobrar vai para os primeiros; cada grupo ganha ao menos 1 enquanto houver vaga. */
+export function repartir(total: number, n: number): number[] {
+  const base = Math.floor(total / n);
+  const resto = total % n;
+  return Array.from({ length: n }, (_, i) => Math.max(total >= n ? 1 : 0, base + (i < resto ? 1 : 0)));
 }
 
 /** Sorteio repetível: a mesma `variacao` dá sempre a mesma ordem. */
@@ -69,9 +78,13 @@ export function treinoDoDia(todos: Exercise[], pedido: PedidoTreinoDia): TreinoD
   };
 
   const grupos = GRUPOS.filter((g) => pedido.grupos.includes(g.key));
-  const cota = porGrupo(grupos.length);
+  const cotas =
+    pedido.maximo && grupos.length > 0
+      ? repartir(Math.max(0, pedido.maximo - (pedido.cardio ? 1 : 0)), grupos.length)
+      : grupos.map(() => porGrupo(grupos.length));
 
-  for (const g of grupos) {
+  for (const [gi, g] of grupos.entries()) {
+    const cota = cotas[gi];
     const antes = itens.length;
     const usosPorMovimento = new Map<Grupo, number>();
     for (const mov of (MOVIMENTOS[g.key] ?? []).slice(0, cota)) {
