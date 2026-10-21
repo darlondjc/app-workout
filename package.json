@@ -1,13 +1,14 @@
 {
   "name": "app-workout-ng",
-  "version": "0.0.0",
+  "version": "1.8.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "prebuild": "node tools/sincronizar_appdata.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI"
   },
   "prettier": {
     "printWidth": 100,

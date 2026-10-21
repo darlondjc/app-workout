@@ -77,10 +77,11 @@ export class FirebaseBackend implements NuvemBackend {
     return setDoc(doc(this.db, 'usuarios', uid), limpo(dados));
   }
 
-  ouvirSessoes(uid: string, cb: (s: Sessao[]) => void, erro: (e: unknown) => void): Cancelar {
-    const { collection, onSnapshot } = this.m.fs;
+  ouvirSessoes(uid: string, cb: (s: Sessao[]) => void, erro: (e: unknown) => void, limite?: number): Cancelar {
+    const { collection, onSnapshot, query, orderBy, limit } = this.m.fs;
+    const sessoes = collection(this.db, 'usuarios', uid, 'sessoes');
     return onSnapshot(
-      collection(this.db, 'usuarios', uid, 'sessoes'),
+      limite ? query(sessoes, orderBy('data', 'desc'), limit(limite)) : sessoes,
       (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Sessao), id: d.id }))),
       erro,
     );

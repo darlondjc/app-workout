@@ -22,7 +22,11 @@ export type Cancelar = () => void;
 export interface NuvemBackend {
   ouvirEstado(uid: string, cb: (doc: DocEstado | null, pendente: boolean) => void, erro: (e: unknown) => void): Cancelar;
   gravarEstado(uid: string, doc: DocEstado): Promise<void>;
-  ouvirSessoes(uid: string, cb: (sessoes: Sessao[]) => void, erro: (e: unknown) => void): Cancelar;
+  /**
+   * Com `limite`, lê só os treinos mais recentes (usado para amigos). Sem ele lê tudo, o que a
+   * sincronização das próprias sessões exige: sem o histórico inteiro, outro aparelho não o recebe.
+   */
+  ouvirSessoes(uid: string, cb: (sessoes: Sessao[]) => void, erro: (e: unknown) => void, limite?: number): Cancelar;
   gravarSessao(uid: string, sessao: Sessao): Promise<void>;
   aguardarGravacoes(): Promise<void>;
 }

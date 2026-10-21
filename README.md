@@ -10,7 +10,7 @@ PWA em Angular para montar fichas de treino. A biblioteca tem 876 exercícios co
 - **Fichas**: criar, renomear, reordenar, remover exercícios e definir séries, repetições, carga e descanso.
 - **Treino**: marcar séries feitas, cronômetro de descanso e registro do treino concluído.
 
-As fichas e o histórico ficam no `localStorage` do aparelho (não há conta nem servidor).
+As fichas e o histórico ficam no `localStorage` do aparelho e funcionam sem conta. Com o login do Google (opcional), são sincronizados pelo Firestore, e dá para adicionar amigos; veja [Conta, backup e sincronização](#conta-backup-e-sincronização-firebase) e [Amigos e timeline](#amigos-e-timeline).
 
 ## Como rodar
 
@@ -20,6 +20,8 @@ Requer Node 20.19+ (ou 22.12+).
 npm install
 npm start          # desenvolvimento em http://localhost:4200
 npm run build      # build de produção em dist/app-workout-ng/browser
+npm test           # testes no Chrome (Karma + Jasmine), acompanhando as mudanças
+npm run test:ci    # testes uma vez, sem janela (o que a CI roda)
 ```
 
 O service worker só é ativado no build de produção. Para testar o modo offline e a instalação:
@@ -73,9 +75,21 @@ Cada exercício tem um `anim.webp` (as duas fotos alternando, 800 ms, em loop). 
 - Revisar as traduções das instruções (algumas expressões técnicas podem melhorar).
 - Exportar e importar fichas para fazer backup.
 
+## Testes
+
+Os testes ficam ao lado do código, em `src/app/core/*.spec.ts`, e rodam com Karma e Jasmine (`npm test`, ou `npm run test:ci` para uma execução só, sem janela). Cobrem:
+
+- `sync.spec.ts`: o `Sincronizador` (primeiro contato, eco da própria gravação, conflito entre aparelhos, envio e reenvio de sessões), com uma nuvem e um armazenamento falsos.
+- `stats.spec.ts`: semanas, sequências, recordes, volume e as mensagens de incentivo.
+- `social.spec.ts`: código de amigo, ids, timeline, marcos e tempo relativo.
+- `firebase.social.spec.ts`: o que `FirebaseSocial` grava e consulta (avisos de curtida com id fixo, comentários, limite de leitura das sessões), com um Firestore falso.
+- `social.service.spec.ts`: o `SocialService` (quem é ouvido, o que acontece quando uma amizade acaba, quais erros aparecem na tela).
+
+Ainda não há testes das telas (componentes) nem das regras do Firestore; as regras precisam ser testadas no emulador do Firebase.
+
 ## Publicação
 
-O workflow `.github/workflows/pages.yml` compila e publica no GitHub Pages a cada push no `main`. Na primeira vez, em **Settings → Pages**, escolha **Source: GitHub Actions**. O endereço será `https://darlondjc.github.io/app-workout/`.
+O workflow `.github/workflows/pages.yml` roda os testes e o build em todo push, em qualquer branch, e só publica no GitHub Pages quando o push é no `main` e os testes passam. Na primeira vez, em **Settings → Pages**, escolha **Source: GitHub Actions**. O endereço será `https://darlondjc.github.io/app-workout/`.
 
 ## Conta, backup e sincronização (Firebase)
 
@@ -107,6 +121,6 @@ A aba **Social** tem a **Timeline** (treinos concluídos seus e dos amigos, com 
 - Ao concluir um treino, ele é publicado na timeline (só treinos recentes são publicados; o histórico antigo não é despejado de uma vez).
 - Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `codigos/{codigo}`, `amizades/{id}` e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`) e `atividades`. As regras estão em `firestore.rules`.
 
-**Importante:** depois de atualizar o app, publique as regras novas: Console do Firebase → Firestore Database → aba **Regras** → cole o conteúdo de `firestore.rules` → **Publicar**. Sem isso os amigos e a timeline mostram "Sem permissão".
+**Importante:** depois de atualizar o app, publique as regras novas: Console do Firebase → Firestore Database → aba **Regras** → cole o conteúdo de `firestore.rules` → **Publicar**. Sem isso os amigos e a timeline mostram "Sem permissão". A 1.8.1 mudou as regras de `atividades` (quem curtiu pode atualizar o próprio aviso), então publique de novo mesmo que já tenha publicado as da 1.8.0. Sem as regras novas o app continua funcionando, mas curtir de novo um treino que você já curtiu não atualiza o aviso do dono.
 
-Limites desta versão: a timeline mostra os 15 treinos mais recentes de cada pessoa; não há notificações push; os nomes e as fotos vêm do Google no momento do login.
+Limites desta versão: a timeline mostra os 15 treinos mais recentes de cada pessoa; as estatísticas de um amigo usam os 400 treinos mais recentes dele (os seus são lidos por inteiro, porque a sincronização entre aparelhos precisa do histórico completo); não há notificações push; os nomes e as fotos vêm do Google no momento do login.

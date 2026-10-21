@@ -6,6 +6,11 @@ type Fs = typeof import('firebase/firestore');
 
 const limpo = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
+/** Id fixo por pessoa e treino: curtir, descurtir e curtir de novo atualiza o mesmo aviso, sem empilhar. */
+export function idAvisoCurtida(eventoId: string, autorUid: string): string {
+  return `curtida_${eventoId}_${autorUid}`.slice(0, 200);
+}
+
 /** Parte social sobre o mesmo Firestore do login e do backup. */
 export class FirebaseSocial implements SocialBackend {
   constructor(
@@ -83,9 +88,10 @@ export class FirebaseSocial implements SocialBackend {
   }
 
   ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void): Cancelar {
-    const { query, collection, orderBy, documentId, limit, onSnapshot } = this.fs;
+    const { query, collection, orderBy, limit, onSnapshot } = this.fs;
+    // Por `criadoEm` (e não pelo id): o aviso de curtida tem id fixo, sem o horário na frente.
     return onSnapshot(
-      query(collection(this.db, 'usuarios', uid, 'atividades'), orderBy(documentId(), 'desc'), limit(30)),
+      query(collection(this.db, 'usuarios', uid, 'atividades'), orderBy('criadoEm', 'desc'), limit(30)),
       (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Atividade), id: d.id }))),
       erro,
     );
@@ -108,7 +114,7 @@ export class FirebaseSocial implements SocialBackend {
     );
   }
 
-  /** Avisa o dono do treino (a menos que seja a própria pessoa). Id fixo: curtir de novo não duplica. */
+  /** Avisa o dono do treino (a menos que seja a própria pessoa). Com id fixo, repetir o aviso o sobrescreve. */
   private avisar(dono: string, id: string, eu: Perfil, eventoId: string, tipo: Atividade['tipo'], texto?: string): Promise<void> {
     if (dono === eu.uid) return Promise.resolve();
     const dados = limpo({ autor: eu.uid, autorNome: eu.nome, autorFoto: eu.foto, tipo, eventoId, texto, criadoEm: Date.now() });
@@ -117,7 +123,11 @@ export class FirebaseSocial implements SocialBackend {
 
   async curtir(dono: string, eventoId: string, eu: Perfil): Promise<void> {
     await this.fs.setDoc(this.fs.doc(this.db, 'usuarios', dono, 'eventos', eventoId, 'curtidas', eu.uid), { criadoEm: Date.now() });
-    await this.avisar(dono, `${String(Date.now()).padStart(13, '0')}_curtida_${eventoId}_${eu.uid}`.slice(0, 200), eu, eventoId, 'curtida');
+    try {
+      await this.avisar(dono, idAvisoCurtida(eventoId, eu.uid), eu, eventoId, 'curtida');
+    } catch {
+      // A curtida já foi registrada; o aviso ao dono é secundário e não deve virar erro na tela.
+    }
   }
 
   descurtir(dono: string, eventoId: string, euUid: string): Promise<void> {

@@ -23,6 +23,8 @@ import { Cancelar, NuvemBackend } from './sync';
 const CHAVE_PUBLICADOS = 'app-workout:publicados:v1';
 /** Treinos mais antigos que isto não vão para a timeline (evita despejar o histórico ao entrar). */
 const JANELA_PUBLICACAO_MS = 3 * 24 * 3600 * 1000;
+/** Quantos treinos de cada amigo são lidos para as estatísticas (os mais recentes). */
+export const LIMITE_SESSOES_AMIGO = 400;
 
 export interface Pessoa {
   perfil: Perfil;
@@ -239,15 +241,37 @@ export class SocialService {
       if (!uid || this.ouvintesEventos.has(uid)) continue;
       this.ouvintesEventos.set(
         uid,
-        api.ouvirEventos(uid, (l) => this.eventosPor.update((x) => ({ ...x, [uid]: l })), (e) => this.falhou(e)),
+        api.ouvirEventos(uid, (l) => this.eventosPor.update((x) => ({ ...x, [uid]: l })), (e) => this.aoErroDe(uid, e)),
       );
     }
-    for (const [uid, cancelar] of [...this.ouvintesEventos]) {
-      if (ids.has(uid)) continue;
-      cancelar();
-      this.ouvintesEventos.delete(uid);
-      this.eventosPor.update((x) => Object.fromEntries(Object.entries(x).filter(([k]) => k !== uid)));
+    // Quem deixou de ser amigo sai da timeline e das estatísticas: para de ouvir os dois.
+    const sobras = new Set([...this.ouvintesEventos.keys(), ...this.ouvintesSessoes.keys()]);
+    for (const uid of sobras) {
+      if (!ids.has(uid)) this.soltar(uid);
     }
+  }
+
+  /** Para de acompanhar uma pessoa (treinos publicados e histórico) e esquece o que veio dela. */
+  private soltar(uid: string): void {
+    this.ouvintesEventos.get(uid)?.();
+    this.ouvintesEventos.delete(uid);
+    this.ouvintesSessoes.get(uid)?.();
+    this.ouvintesSessoes.delete(uid);
+    const sem = <T>(x: Record<string, T>) => Object.fromEntries(Object.entries(x).filter(([k]) => k !== uid));
+    this.eventosPor.update(sem);
+    this.sessoesPor.update(sem);
+  }
+
+  /**
+   * Erro ao ouvir uma pessoa. Se for um amigo, "sem permissão" quase sempre quer dizer que a amizade
+   * acabou (a lista de amizades ainda não chegou); isso não é problema do app e não vira aviso na tela.
+   */
+  private aoErroDe(uid: string, e: unknown): void {
+    if (uid !== this.uid && (e as { code?: string }).code === 'permission-denied') {
+      this.soltar(uid);
+      return;
+    }
+    this.falhou(e);
   }
 
   /** Publica na timeline os treinos concluídos há pouco que ainda não foram publicados. */
@@ -337,7 +361,7 @@ export class SocialService {
     if (uid && uid !== this.uid && this.nuvem && !this.ouvintesSessoes.has(uid)) {
       this.ouvintesSessoes.set(
         uid,
-        this.nuvem.ouvirSessoes(uid, (l) => this.sessoesPor.update((x) => ({ ...x, [uid]: l })), (e) => this.falhou(e)),
+        this.nuvem.ouvirSessoes(uid, (l) => this.sessoesPor.update((x) => ({ ...x, [uid]: l })), (e) => this.aoErroDe(uid, e), LIMITE_SESSOES_AMIGO),
       );
     }
     return this.sessoesPor()[uid] ?? [];

@@ -1,0 +1,230 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { CloudService } from './cloud.service';
+import { ExerciseService } from './exercise.service';
+import { Sessao } from './models';
+import { PlanService } from './plan.service';
+import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend } from './social';
+import { LIMITE_SESSOES_AMIGO, SocialService } from './social.service';
+import { NuvemBackend } from './sync';
+
+interface Ouvinte<T> {
+  cb: (dados: T) => void;
+  erro: (e: unknown) => void;
+  cancelado: boolean;
+  limite?: number;
+}
+
+function ouvinte<T>(cb: (d: T) => void, erro: (e: unknown) => void, limite?: number): Ouvinte<T> {
+  return { cb, erro, cancelado: false, limite };
+}
+
+/** Backend social de mentira: guarda cada ouvinte aberto e deixa o teste disparar dados e erros. */
+class ApiFalsa implements SocialBackend {
+  amizades?: Ouvinte<Amizade[]>;
+  eventos = new Map<string, Ouvinte<Evento[]>>();
+  perfis: Record<string, Perfil> = {};
+
+  lerPerfil = (uid: string) => Promise.resolve(this.perfis[uid] ?? null);
+  gravarPerfil = () => Promise.resolve();
+  reservarCodigo = () => Promise.resolve(true);
+  uidDoCodigo = () => Promise.resolve(null);
+  pedirAmizade = () => Promise.resolve();
+  aceitarAmizade = () => Promise.resolve();
+  removerAmizade = () => Promise.resolve();
+  publicarEvento = () => Promise.resolve();
+  curtir = () => Promise.resolve();
+  descurtir = () => Promise.resolve();
+  comentar = () => Promise.resolve();
+  apagarComentario = () => Promise.resolve();
+  ouvirCurtidas = () => () => undefined;
+  ouvirComentarios = (_d: string, _e: string, _cb: (c: Comentario[]) => void) => () => undefined;
+  ouvirAtividades = (_uid: string, _cb: (a: Atividade[]) => void) => () => undefined;
+
+  ouvirAmizades(_uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.amizades = o;
+    return () => (o.cancelado = true);
+  }
+
+  ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.eventos.set(uid, o);
+    return () => (o.cancelado = true);
+  }
+}
+
+class NuvemFalsa implements NuvemBackend {
+  sessoes = new Map<string, Ouvinte<Sessao[]>>();
+
+  ouvirEstado = () => () => undefined;
+  gravarEstado = () => Promise.resolve();
+  gravarSessao = () => Promise.resolve();
+  aguardarGravacoes = () => Promise.resolve();
+
+  ouvirSessoes(uid: string, cb: (s: Sessao[]) => void, erro: (e: unknown) => void, limite?: number): () => void {
+    const o = ouvinte(cb, erro, limite);
+    this.sessoes.set(uid, o);
+    return () => (o.cancelado = true);
+  }
+}
+
+const amizade = (outro: string, status: Amizade['status'] = 'aceita'): Amizade => ({
+  id: `eu_${outro}`,
+  membros: ['eu', outro],
+  de: 'eu',
+  status,
+  criadoEm: 1,
+});
+
+describe('SocialService', () => {
+  let api: ApiFalsa;
+  let nuvem: NuvemFalsa;
+  let social: SocialService;
+  let cloud: { social: ReturnType<typeof signal<{ uid: string; api: SocialBackend; nuvem: NuvemBackend } | null>>; usuario: ReturnType<typeof signal> };
+
+  /** Deixa efeitos e promessas terminarem. */
+  async function assentar(): Promise<void> {
+    for (let i = 0; i < 4; i++) {
+      TestBed.tick();
+      for (let j = 0; j < 10; j++) await Promise.resolve();
+    }
+  }
+
+  /** Entra na conta e recebe a lista de amizades. */
+  async function entrarComAmigos(...amigos: Amizade[]): Promise<void> {
+    cloud.social.set({ uid: 'eu', api, nuvem });
+    await assentar();
+    api.amizades?.cb(amigos);
+    await assentar();
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    api = new ApiFalsa();
+    api.perfis['ana'] = { uid: 'ana', nome: 'Ana', foto: null };
+    nuvem = new NuvemFalsa();
+    cloud = { social: signal<{ uid: string; api: SocialBackend; nuvem: NuvemBackend } | null>(null), usuario: signal({ uid: 'eu', nome: 'Eu', email: 'eu@x.com', foto: null }) };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: CloudService, useValue: cloud },
+        { provide: PlanService, useValue: { historico: signal<Sessao[]>([]), get: () => undefined } },
+        { provide: ExerciseService, useValue: { get: () => undefined, nome: () => '' } },
+      ],
+    });
+    social = TestBed.inject(SocialService);
+  });
+
+  it('ao entrar, cria o perfil e passa a ouvir as amizades', async () => {
+    cloud.social.set({ uid: 'eu', api, nuvem });
+    await assentar();
+    expect(social.eu()?.uid).toBe('eu');
+    expect(social.eu()?.codigo).toMatch(/^[A-Z2-9]{8}$/);
+    expect(api.amizades).toBeDefined();
+  });
+
+  it('acompanha os treinos publicados de cada amigo e os próprios', async () => {
+    await entrarComAmigos(amizade('ana'));
+    expect([...api.eventos.keys()].sort()).toEqual(['ana', 'eu']);
+    expect(social.amigos().map((p) => p.perfil.nome)).toEqual(['Ana']);
+  });
+
+  it('convite pendente ainda não dá acesso: ninguém é ouvido', async () => {
+    await entrarComAmigos(amizade('ana', 'pendente'));
+    expect([...api.eventos.keys()]).toEqual(['eu']);
+    expect(social.amigos().length).toBe(0);
+    expect(social.convitesEnviados().length).toBe(1);
+  });
+
+  describe('estatísticas de amigos', () => {
+    it('lê só os treinos mais recentes do amigo', async () => {
+      await entrarComAmigos(amizade('ana'));
+      social.sessoesDe('ana');
+      expect(nuvem.sessoes.get('ana')?.limite).toBe(LIMITE_SESSOES_AMIGO);
+    });
+
+    it('abre uma única leitura por amigo, mesmo consultando várias vezes', async () => {
+      await entrarComAmigos(amizade('ana'));
+      const abrir = spyOn(nuvem, 'ouvirSessoes').and.callThrough();
+      social.sessoesDe('ana');
+      social.sessoesDe('ana');
+      expect(abrir).toHaveBeenCalledTimes(1);
+    });
+
+    it('os próprios treinos não passam por aqui', async () => {
+      await entrarComAmigos(amizade('ana'));
+      social.sessoesDe('eu');
+      expect(nuvem.sessoes.has('eu')).toBeFalse();
+    });
+  });
+
+  describe('quando a amizade acaba', () => {
+    it('para de ouvir os treinos publicados e o histórico do ex-amigo', async () => {
+      await entrarComAmigos(amizade('ana'));
+      social.sessoesDe('ana');
+      nuvem.sessoes.get('ana')?.cb([{ id: 's1', data: '2026-10-20', fichaId: 'f1' }]);
+      expect(social.sessoesCarregadas('ana')).toBeTrue();
+
+      api.amizades?.cb([]);
+      await assentar();
+
+      expect(api.eventos.get('ana')?.cancelado).toBeTrue();
+      expect(nuvem.sessoes.get('ana')?.cancelado).toBeTrue();
+      expect(social.sessoesCarregadas('ana')).toBeFalse();
+      expect(api.eventos.get('eu')?.cancelado).toBeFalse();
+    });
+
+    it('se voltarem a ser amigos, volta a ouvir', async () => {
+      await entrarComAmigos(amizade('ana'));
+      social.sessoesDe('ana');
+      api.amizades?.cb([]);
+      await assentar();
+      api.amizades?.cb([amizade('ana')]);
+      await assentar();
+      social.sessoesDe('ana');
+      expect(api.eventos.get('ana')?.cancelado).toBeFalse();
+      expect(nuvem.sessoes.get('ana')?.cancelado).toBeFalse();
+    });
+
+    it('"sem permissão" de um amigo que nos tirou da lista não vira aviso na tela', async () => {
+      await entrarComAmigos(amizade('ana'));
+      social.sessoesDe('ana');
+
+      api.eventos.get('ana')?.erro({ code: 'permission-denied' });
+      nuvem.sessoes.get('ana')?.erro({ code: 'permission-denied' });
+
+      expect(social.erro()).toBe('');
+      expect(api.eventos.get('ana')?.cancelado).toBeTrue();
+      expect(nuvem.sessoes.get('ana')?.cancelado).toBeTrue();
+    });
+  });
+
+  describe('erros', () => {
+    it('"sem permissão" nos próprios dados pede para publicar as regras do Firestore', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('eu')?.erro({ code: 'permission-denied' });
+      expect(social.erro()).toContain('Publique as regras');
+    });
+
+    it('outro erro ao ouvir um amigo continua avisando', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('ana')?.erro({ code: 'unavailable' });
+      expect(social.erro()).toContain('Não foi possível falar com o servidor');
+    });
+  });
+
+  it('ao sair da conta, para tudo e limpa os dados', async () => {
+    await entrarComAmigos(amizade('ana'));
+    social.sessoesDe('ana');
+
+    cloud.social.set(null);
+    await assentar();
+
+    expect(api.amizades?.cancelado).toBeTrue();
+    expect(api.eventos.get('ana')?.cancelado).toBeTrue();
+    expect(api.eventos.get('eu')?.cancelado).toBeTrue();
+    expect(nuvem.sessoes.get('ana')?.cancelado).toBeTrue();
+    expect(social.eu()).toBeNull();
+    expect(social.amigos()).toEqual([]);
+  });
+});

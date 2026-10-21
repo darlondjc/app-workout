@@ -3,7 +3,7 @@ import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
-import { SocialService } from '../core/social.service';
+import { LIMITE_SESSOES_AMIGO, SocialService } from '../core/social.service';
 import { calcularResumo, dataISO, gerarInsights, volumeSessao } from '../core/stats';
 
 const CHAVE_META = 'app-workout:meta-semanal:v1';
@@ -107,7 +107,7 @@ function lerMeta(): number | null {
 
       <div class="numeros">
         <div class="card num"><strong>{{ resumo().semanasSeguidas }}</strong><span class="apoio">{{ resumo().semanasSeguidas === 1 ? 'semana seguida' : 'semanas seguidas' }} na meta</span></div>
-        <div class="card num"><strong>{{ resumo().totalTreinos }}</strong><span class="apoio">{{ resumo().totalTreinos === 1 ? 'treino' : 'treinos' }} no total</span></div>
+        <div class="card num"><strong>{{ resumo().totalTreinos }}</strong><span class="apoio">{{ resumo().totalTreinos === 1 ? 'treino' : 'treinos' }} {{ totalParcial() ? 'recentes' : 'no total' }}</span></div>
         <div class="card num"><strong>{{ volume(resumo().volumeMes) }}</strong><span class="apoio">carga total no mês</span></div>
         <div class="card num">
           <strong>{{ resumo().diasSemTreinar === null ? '—' : resumo().diasSemTreinar }}</strong>
@@ -213,6 +213,8 @@ export class Progress {
       : (this.metaBase() ?? 3),
   );
   protected readonly resumo = computed(() => calcularResumo(this.historico(), this.hoje, this.meta()));
+  /** Do amigo só se leem os treinos mais recentes: com o limite atingido, o total deixa de ser o total. */
+  protected readonly totalParcial = computed(() => !this.editavel() && this.historico().length >= LIMITE_SESSOES_AMIGO);
   protected readonly insights = computed(() => gerarInsights(this.resumo(), this.hoje, this.nome()).slice(0, 4));
   protected readonly percentualMeta = computed(() =>
     Math.min(100, Math.round((this.resumo().treinosSemana / this.resumo().metaSemanal) * 100)),

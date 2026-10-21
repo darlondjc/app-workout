@@ -66,6 +66,13 @@ service cloud.firestore {
           && request.resource.data.autor == request.auth.uid
           && amigos(request.auth.uid, uid)
           && (!('texto' in request.resource.data) || textoValido(request.resource.data.texto));
+        // O aviso de curtida tem id fixo por pessoa e treino: curtir de novo o sobrescreve.
+        // Só quem o criou o atualiza.
+        allow update: if logado()
+          && resource.data.autor == request.auth.uid
+          && request.resource.data.autor == request.auth.uid
+          && amigos(request.auth.uid, uid)
+          && (!('texto' in request.resource.data) || textoValido(request.resource.data.texto));
       }
     }
 
