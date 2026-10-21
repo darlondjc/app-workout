@@ -102,6 +102,9 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
     }
     .conta {
       flex: none;
+      display: flex;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--soft);
     }

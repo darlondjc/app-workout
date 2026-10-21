@@ -5,7 +5,8 @@
     "titulo": "Tela de login e avatar",
     "itens": [
       "O app abre na tela de login; depois de entrar, você vai direto para o início.",
-      "Sua foto aparece no início e na aba Ajustes."
+      "Sua foto aparece no início e na aba Ajustes.",
+      "Ajuste no contorno do avatar no início."
     ]
   },
   {
