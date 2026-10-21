@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { ExerciseImage } from '../core/exercise-image';
 import { Carregando } from '../core/spinner';
 import { ExerciseService } from '../core/exercise.service';
+import { NavegacaoService } from '../core/navegacao.service';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
@@ -15,9 +16,9 @@ import { ToastService } from '../core/toast.service';
     @if (exercicio(); as e) {
       <div class="foto">
         <app-exercise-image [id]="e.id" [descricao]="'Demonstração: ' + nome()" />
-        <a class="voltar" routerLink="/biblioteca" aria-label="Voltar para a biblioteca">
+        <button type="button" class="voltar" (click)="voltar()" aria-label="Voltar">
           <app-icon name="back" [size]="22" [stroke]="2.2" />
-        </a>
+        </button>
       </div>
 
       <section class="corpo">
@@ -61,7 +62,7 @@ import { ToastService } from '../core/toast.service';
     } @else if (ex.ready()) {
       <section class="page">
         <h1 class="titulo">Exercício não encontrado</h1>
-        <a class="btn btn--claro" routerLink="/biblioteca">Voltar para a biblioteca</a>
+        <button type="button" class="btn btn--claro" (click)="voltar()">Voltar</button>
       </section>
     } @else if (ex.error()) {
       <section class="page">
@@ -91,6 +92,9 @@ import { ToastService } from '../core/toast.service';
       display: flex;
       align-items: center;
       justify-content: center;
+      border: 0;
+      padding: 0;
+      color: var(--ink);
     }
     .corpo {
       padding: 20px 20px 110px;
@@ -147,6 +151,7 @@ export class ExerciseDetail {
   protected readonly ex = inject(ExerciseService);
   private readonly plans = inject(PlanService);
   private readonly toast = inject(ToastService);
+  private readonly nav = inject(NavegacaoService);
 
   protected readonly exercicio = computed(() => this.ex.get(this.id()));
   protected readonly nome = computed(() => {
@@ -158,6 +163,10 @@ export class ExerciseDetail {
     const e = this.exercicio();
     return e ? this.ex.instrucoes(e) : { passos: [], traduzido: true };
   });
+
+  protected voltar(): void {
+    this.nav.voltar('/biblioteca');
+  }
 
   protected adicionar(): void {
     const { ficha, jaEstava } = this.plans.adicionar(this.id());

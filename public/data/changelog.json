@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.7.1",
+    "data": "2026-10-21",
+    "titulo": "Voltar para onde você estava",
+    "itens": [
+      "O botão Voltar agora retorna à tela anterior (ficha, treino ou sugestão) em vez de sempre ir para a biblioteca.",
+      "Na ficha e no treino, a imagem do exercício também abre as instruções, e a ficha mostra o aviso \"Ver instruções\".",
+      "A busca e os filtros da biblioteca são mantidos ao voltar de um exercício."
+    ]
+  },
+  {
     "versao": "1.7.0",
     "data": "2026-10-21",
     "titulo": "Progresso",

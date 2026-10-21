@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { ItemFicha } from '../core/models';
+import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
 
@@ -16,6 +17,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     @if (ficha(); as f) {
       <section class="page">
         <header>
+          <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
           <p class="apoio">Ficha {{ plans.letra(f.id) }}</p>
           <label class="sr-only" for="nome-ficha">Nome da ficha</label>
           <input
@@ -33,10 +35,13 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
             <li class="card item">
               <div class="item__topo">
                 @if (l.ex) {
-                  <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
+                  <a [routerLink]="['/exercicio', l.item.exerciseId]" aria-label="Ver instruções do exercício">
+                    <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
+                  </a>
                 }
                 <a class="item__nome" [routerLink]="['/exercicio', l.item.exerciseId]">
                   {{ l.ex ? ex.nome(l.ex) : l.item.exerciseId }}
+                  <span class="item__ver">Ver instruções ›</span>
                 </a>
                 <button type="button" class="btn-icone btn-icone--neutro" aria-label="Mover para cima" [disabled]="l.i === 0" (click)="mover(l.i, -1)">
                   <app-icon name="up" [size]="20" />
@@ -120,6 +125,24 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       flex-direction: column;
       gap: 10px;
     }
+    .voltar {
+      border: 0;
+      background: none;
+      padding: 0;
+      font: inherit;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 44px;
+      color: var(--muted);
+    }
+    .item__ver {
+      display: block;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--muted);
+    }
     .item__topo {
       display: flex;
       align-items: center;
@@ -191,6 +214,7 @@ export class PlanEditor {
   protected readonly ex = inject(ExerciseService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  protected readonly nav = inject(NavegacaoService);
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
   protected readonly linhas = computed(() =>

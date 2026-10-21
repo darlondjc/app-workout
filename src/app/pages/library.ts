@@ -9,6 +9,14 @@ import { ToastService } from '../core/toast.service';
 
 const PAGINA = 40;
 
+const ESTADO = {
+  consulta: signal(''),
+  grupo: signal(''),
+  equip: signal(''),
+  nivel: signal(''),
+  limite: signal(PAGINA),
+};
+
 @Component({
   selector: 'app-library',
   imports: [RouterLink, Icon, Carregando],
@@ -156,11 +164,12 @@ export class Library {
   private readonly toast = inject(ToastService);
 
   protected readonly grupos = GRUPOS;
-  protected readonly consulta = signal('');
-  protected readonly grupo = signal('');
-  private readonly equip = signal('');
-  private readonly nivel = signal('');
-  private readonly limite = signal(PAGINA);
+  // Busca e filtros ficam guardados fora do componente: ao voltar de um exercício, a lista continua igual.
+  protected readonly consulta = ESTADO.consulta;
+  protected readonly grupo = ESTADO.grupo;
+  private readonly equip = ESTADO.equip;
+  private readonly nivel = ESTADO.nivel;
+  private readonly limite = ESTADO.limite;
 
   protected readonly resultados = computed(() =>
     this.ex.buscar(this.consulta(), this.grupo(), this.equip(), this.nivel()),

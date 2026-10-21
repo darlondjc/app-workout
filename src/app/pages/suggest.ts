@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink } from '@angular/router';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
+import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
 import { Carregando } from '../core/spinner';
 import {
@@ -21,7 +22,7 @@ import { ToastService } from '../core/toast.service';
   template: `
     <section class="page">
       <header>
-        <a class="voltar" routerLink="/fichas"><app-icon name="back" [size]="18" [stroke]="2.2" /> Fichas</a>
+        <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Sugestão de fichas</h1>
         <p class="apoio">Responda quatro perguntas e eu monto as fichas da semana.</p>
       </header>
@@ -123,6 +124,11 @@ import { ToastService } from '../core/toast.service';
       gap: 16px;
     }
     .voltar {
+      border: 0;
+      background: none;
+      padding: 0;
+      font: inherit;
+      font-size: 14px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -232,6 +238,7 @@ import { ToastService } from '../core/toast.service';
   `,
 })
 export class Suggest {
+  protected readonly nav = inject(NavegacaoService);
   protected readonly ex = inject(ExerciseService);
   private readonly plans = inject(PlanService);
   private readonly toast = inject(ToastService);

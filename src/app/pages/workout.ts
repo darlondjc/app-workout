@@ -4,6 +4,7 @@ import { ExerciseImage } from '../core/exercise-image';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { RegistroExercicio } from '../core/models';
+import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
 
@@ -16,9 +17,9 @@ import { ToastService } from '../core/toast.service';
       @if (item(); as it) {
         <div class="treino">
           <header class="topo">
-            <a class="sair" routerLink="/" aria-label="Sair do treino">
+            <button type="button" class="sair" (click)="nav.voltar('/')" aria-label="Sair do treino">
               <app-icon name="close" [size]="20" [stroke]="2.2" />
-            </a>
+            </button>
             <div>
               <p class="rotulo">Ficha {{ plans.letra(f.id) }} · {{ f.nome }}</p>
               <p class="posicao">Exercício {{ indice() + 1 }} de {{ f.itens.length }}</p>
@@ -30,9 +31,9 @@ import { ToastService } from '../core/toast.service';
           </div>
 
           <div class="exercicio">
-            <div class="foto">
+            <a class="foto" [routerLink]="['/exercicio', it.exerciseId]" aria-label="Ver instruções do exercício">
               <app-exercise-image [id]="it.exerciseId" [descricao]="'Demonstração: ' + nome()" />
-            </div>
+            </a>
             <div>
               <h1>{{ nome() }}</h1>
               <a class="ver" [routerLink]="['/exercicio', it.exerciseId]">Ver instruções</a>
@@ -117,6 +118,9 @@ import { ToastService } from '../core/toast.service';
       gap: 12px;
     }
     .sair {
+      border: 0;
+      color: inherit;
+      padding: 0;
       width: 44px;
       height: 44px;
       border-radius: 50%;
@@ -278,6 +282,7 @@ export class Workout {
   private readonly ex = inject(ExerciseService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  protected readonly nav = inject(NavegacaoService);
 
   protected readonly descansoAtivo = signal(0);
   private intervalo?: ReturnType<typeof setInterval>;
