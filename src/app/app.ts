@@ -42,6 +42,11 @@ export class App {
   );
 
   constructor() {
+    // Segurar um link, imagem ou botão abriria o menu do navegador ("abrir em nova aba"...); aqui é um app.
+    document.addEventListener('contextmenu', (e) => {
+      const alvo = e.target as Element | null;
+      if (alvo?.closest?.('a, img, button, svg') && !alvo.closest('input, textarea, [contenteditable]')) e.preventDefault();
+    });
     // Se a sessão terminar (ou sair da conta), volta para a tela de login.
     effect(() => {
       if (this.nuvem.configurado && this.nuvem.pronto() && !this.nuvem.usuario() && !this.url().startsWith('/entrar')) {

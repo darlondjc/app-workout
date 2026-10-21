@@ -39,6 +39,17 @@ a {
   text-decoration: none;
 }
 
+/* Funciona como aplicativo: segurar um link, imagem ou botão não abre menu, pré-visualização nem arrasta. */
+a,
+img,
+button,
+svg {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 button,
 input,
 select {
