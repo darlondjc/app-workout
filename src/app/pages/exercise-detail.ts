@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ExerciseImage } from '../core/exercise-image';
+import { Carregando } from '../core/spinner';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
@@ -8,7 +9,7 @@ import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-exercise-detail',
-  imports: [RouterLink, Icon, ExerciseImage],
+  imports: [RouterLink, Icon, ExerciseImage, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (exercicio(); as e) {
@@ -62,8 +63,14 @@ import { ToastService } from '../core/toast.service';
         <h1 class="titulo">Exercício não encontrado</h1>
         <a class="btn btn--claro" routerLink="/biblioteca">Voltar para a biblioteca</a>
       </section>
+    } @else if (ex.error()) {
+      <section class="page">
+        <h1 class="titulo">Sem conexão</h1>
+        <p class="apoio">Não foi possível carregar os exercícios.</p>
+        <button type="button" class="btn btn--escuro" (click)="ex.carregar()">Tentar de novo</button>
+      </section>
     } @else {
-      <section class="page"><p class="apoio">Carregando…</p></section>
+      <section class="page"><app-carregando texto="Carregando exercício…" /></section>
     }
   `,
   styles: `

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, signal } from '@angular/core';
 
 /**
  * Demonstração do exercício: WebP animado (início e fim, em loop). Com «reduzir movimento»
@@ -8,7 +8,7 @@ import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core
   selector: 'app-exercise-image',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="moldura" role="img" [attr.aria-label]="descricao()">
+    <div class="moldura" [class.carregando]="!carregada()" role="img" [attr.aria-label]="descricao()">
       @if (animado() && !semAnimacao()) {
         <picture>
           <source
@@ -19,11 +19,18 @@ import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core
             [src]="'exercises/' + id() + '/anim.webp'"
             alt=""
             decoding="async"
+            (load)="carregada.set(true)"
             (error)="semAnimacao.set(true)"
           />
         </picture>
       } @else {
-        <img [src]="'exercises/' + id() + '/0.jpg'" alt="" decoding="async" />
+        <img
+          [src]="'exercises/' + id() + '/0.jpg'"
+          alt=""
+          decoding="async"
+          (load)="carregada.set(true)"
+          (error)="carregada.set(true)"
+        />
       }
     </div>
   `,
@@ -39,6 +46,20 @@ import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core
       height: 100%;
       background: #fff;
       overflow: hidden;
+    }
+    .carregando {
+      background: linear-gradient(100deg, #eef0ea 30%, #f8f9f5 50%, #eef0ea 70%) 0 0 / 200% 100%;
+      animation: brilho 1.4s linear infinite;
+    }
+    @keyframes brilho {
+      to {
+        background-position: -200% 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .carregando {
+        animation: none;
+      }
     }
     picture {
       display: contents;
@@ -57,4 +78,14 @@ export class ExerciseImage {
   readonly descricao = input('');
   readonly animado = input(true);
   protected readonly semAnimacao = signal(false);
+  protected readonly carregada = signal(false);
+
+  constructor() {
+    // Ao trocar de exercício, volta ao estado de carregamento.
+    effect(() => {
+      this.id();
+      this.carregada.set(false);
+      this.semAnimacao.set(false);
+    });
+  }
 }

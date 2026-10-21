@@ -1,8 +1,18 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 import { filter, map } from 'rxjs';
 import { Icon } from './core/icon';
+import { LoadingService } from './core/loading.service';
 import { ToastService } from './core/toast.service';
 
 @Component({
@@ -14,6 +24,7 @@ import { ToastService } from './core/toast.service';
 export class App {
   private readonly router = inject(Router);
   protected readonly toast = inject(ToastService);
+  protected readonly loading = inject(LoadingService);
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -22,6 +33,20 @@ export class App {
     ),
     { initialValue: this.router.url },
   );
+
+  constructor() {
+    // Trocar de tela pode baixar o código da página (carregamento sob demanda).
+    this.router.events.subscribe((e) => {
+      if (e instanceof NavigationStart) this.loading.iniciar();
+      else if (
+        e instanceof NavigationEnd ||
+        e instanceof NavigationCancel ||
+        e instanceof NavigationError
+      ) {
+        this.loading.concluir();
+      }
+    });
+  }
 
   /** A barra de abas some nas telas de foco (detalhe do exercício e treino). */
   protected readonly mostrarAbas = computed(() => {

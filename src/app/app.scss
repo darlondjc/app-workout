@@ -57,3 +57,57 @@
   font-weight: 500;
   z-index: 20;
 }
+
+/* Barra de carregamento no topo: só aparece se a espera passar de ~200 ms. */
+.progresso {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 3px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    background: var(--ink);
+    border-radius: 3px;
+  }
+}
+
+.progresso--ativo {
+  opacity: 1;
+  animation: aparecer 0.2s 0.2s backwards;
+
+  &::after {
+    animation: correr 1.1s ease-in-out infinite;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes correr {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progresso--ativo::after {
+    animation-duration: 3s;
+  }
+}

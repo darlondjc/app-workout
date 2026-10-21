@@ -65,6 +65,15 @@ export class PlanService {
     return ficha;
   }
 
+  /** Cria várias fichas de uma vez (ex.: sugestão automática) e ativa a primeira. */
+  criarComItens(modelos: { nome: string; itens: ItemFicha[] }[]): Ficha[] {
+    const novas = modelos.map((m) => ({ id: crypto.randomUUID(), nome: m.nome, itens: m.itens }));
+    if (novas.length === 0) return novas;
+    this.fichas.update((l) => [...l, ...novas]);
+    this.ativaId.set(novas[0].id);
+    return novas;
+  }
+
   remover(id: string): void {
     this.fichas.update((l) => l.filter((f) => f.id !== id));
     if (this.ativaId() === id) this.ativaId.set(this.fichas()[0]?.id ?? null);

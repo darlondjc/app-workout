@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Exercise } from '../core/models';
 import { ExerciseService, GRUPOS } from '../core/exercise.service';
 import { Icon } from '../core/icon';
+import { Carregando } from '../core/spinner';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
 
@@ -10,7 +11,7 @@ const PAGINA = 40;
 
 @Component({
   selector: 'app-library',
-  imports: [RouterLink, Icon],
+  imports: [RouterLink, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -22,7 +23,7 @@ const PAGINA = 40;
           } @else if (ex.error()) {
             Não foi possível carregar os exercícios.
           } @else {
-            Carregando…
+            Carregando exercícios…
           }
         </p>
       </header>
@@ -86,6 +87,12 @@ const PAGINA = 40;
         } @empty {
           @if (ex.ready()) {
             <li class="apoio vazio">Nenhum exercício encontrado. Tente outro termo ou limpe os filtros.</li>
+          } @else if (ex.error()) {
+            <li class="vazio">
+              <button type="button" class="btn btn--escuro" (click)="ex.carregar()">Tentar de novo</button>
+            </li>
+          } @else {
+            <li><app-carregando texto="Carregando exercícios…" /></li>
           }
         }
       </ul>

@@ -61,6 +61,12 @@ export class ExerciseService {
   });
 
   constructor() {
+    this.carregar();
+  }
+
+  /** Baixa os dados; também serve para tentar de novo depois de uma falha. */
+  carregar(): void {
+    this.error.set(false);
     forkJoin({
       exercises: this.http.get<Exercise[]>('data/exercises.json'),
       labels: this.http.get<Labels>('data/i18n/pt-BR.labels.json'),

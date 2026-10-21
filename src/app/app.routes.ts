@@ -23,6 +23,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/plans').then((m) => m.Plans),
   },
   {
+    path: 'fichas/sugestao',
+    title: 'Sugestão de fichas · App Workout',
+    loadComponent: () => import('./pages/suggest').then((m) => m.Suggest),
+  },
+  {
     path: 'ficha/:id',
     title: 'Montar ficha · App Workout',
     loadComponent: () => import('./pages/plan-editor').then((m) => m.PlanEditor),

@@ -37,6 +37,9 @@ import { PlanService } from '../core/plan.service';
         }
       </ul>
 
+      <a class="btn btn--destaque" routerLink="/fichas/sugestao">
+        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Sugerir fichas para mim
+      </a>
       <button type="button" class="btn btn--tracejado" (click)="nova()">
         <app-icon name="plus" [size]="18" [stroke]="2.5" /> Nova ficha
       </button>

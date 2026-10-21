@@ -42,6 +42,14 @@ src/app/core/                         serviços (exercícios, fichas, avisos) e 
 src/app/pages/                        telas
 ```
 
+## Sugestão automática de fichas
+
+Em **Fichas → Sugerir fichas para mim** você informa objetivo, experiência, dias por semana e onde treina. O app monta a divisão (corpo inteiro, superior/inferior ou empurrar/puxar/pernas) com exercícios clássicos da base, séries e descanso conforme o objetivo, e você pode gerar outra variação antes de adicionar. A lógica fica em `src/app/core/suggestion.ts`. É uma sugestão geral, sem considerar lesões.
+
+## Carregamento
+
+Uma barra no topo aparece quando há requisições ou troca de tela demorando mais de cerca de 200 ms (`LoadingService` e interceptor). As telas mostram um indicador enquanto os dados chegam, e as fotos têm um esqueleto animado até carregarem.
+
 ## Dados e créditos
 
 Os exercícios e as imagens vêm do [free-exercise-db](https://github.com/yuhonas/free-exercise-db), em domínio público (Unlicense). A licença está em `public/data/LICENSE-free-exercise-db.md`. As traduções dos nomes, dos rótulos e das instruções são deste projeto e merecem revisão.
