@@ -33,9 +33,10 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
           <legend>Grupo muscular</legend>
           <div class="chips-linha">
             @for (g of grupos; track g.key) {
-              <button type="button" class="chip" [attr.aria-pressed]="escolhidos().includes(g.key)" (click)="alternar(g.key)">{{ g.label }}</button>
+              <button type="button" class="chip" [attr.aria-pressed]="escolhidos().includes(g.key)" [disabled]="!escolhidos().includes(g.key) && escolhidos().length >= maxGrupos" (click)="alternar(g.key)">{{ g.label }}</button>
             }
           </div>
+          <p class="apoio nota">Escolha até {{ maxGrupos }} grupos para o treino não ficar enorme.</p>
         </fieldset>
 
         <fieldset>
@@ -197,7 +198,7 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
       font-size: 12px;
     }
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
     }
   `,
 })
@@ -215,6 +216,8 @@ export class DailyWorkout {
     { key: 'expert', label: 'Avançado' },
   ];
 
+  /** Mais que isso deixaria o treino grande demais. */
+  protected readonly maxGrupos = 2;
   protected readonly escolhidos = signal<string[]>([]);
   protected readonly cardio = signal(false);
   protected readonly nivel = signal<Nivel>('intermediate');
@@ -243,7 +246,10 @@ export class DailyWorkout {
   });
 
   protected alternar(chave: string): void {
-    this.escolhidos.update((l) => (l.includes(chave) ? l.filter((c) => c !== chave) : [...l, chave]));
+    this.escolhidos.update((l) => {
+      if (l.includes(chave)) return l.filter((c) => c !== chave);
+      return l.length >= this.maxGrupos ? l : [...l, chave];
+    });
   }
 
   protected sugerir(): void {
