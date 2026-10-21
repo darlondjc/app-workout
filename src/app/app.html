@@ -16,7 +16,21 @@
       <a routerLink="/fichas" routerLinkActive="ativa">
         <app-icon name="clipboard" /> Fichas
       </a>
+      <a routerLink="/ajustes" routerLinkActive="ativa">
+        <app-icon name="settings" /> Ajustes
+      </a>
     </nav>
+  }
+
+  @if (update.mostrarBotao() && mostrarAviso()) {
+    <div class="atualizacao" role="status">
+      <button type="button" class="atualizacao__botao" (click)="update.atualizar()">
+        <app-icon name="refresh" [size]="18" [stroke]="2.4" /> Atualizar
+      </button>
+      <button type="button" class="atualizacao__fechar" aria-label="Agora não. Atualize depois em Ajustes" (click)="update.dispensar()">
+        <app-icon name="close" [size]="16" [stroke]="2.4" />
+      </button>
+    </div>
   }
 
   @if (toast.mensagem(); as texto) {

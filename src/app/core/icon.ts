@@ -11,7 +11,9 @@ export type IconName =
   | 'check'
   | 'play'
   | 'up'
-  | 'down';
+  | 'down'
+  | 'settings'
+  | 'refresh';
 
 @Component({
   selector: 'app-icon',
@@ -63,6 +65,15 @@ export type IconName =
         }
         @case ('down') {
           <path d="M6 9l6 6 6-6" />
+        }
+        @case ('settings') {
+          <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+          <circle cx="15" cy="7" r="2" />
+          <circle cx="9" cy="17" r="2" />
+        }
+        @case ('refresh') {
+          <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />
+          <path d="M5 3v4h4M19 21v-4h-4" />
         }
       }
     </svg>

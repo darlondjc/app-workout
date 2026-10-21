@@ -21,7 +21,9 @@
       "installMode": "prefetch",
       "updateMode": "prefetch",
       "resources": {
-        "files": ["/data/**"]
+        "files": [
+          "/data/**"
+        ]
       }
     },
     {
@@ -34,5 +36,14 @@
         ]
       }
     }
-  ]
+  ],
+  "appData": {
+    "versao": "1.3.0",
+    "titulo": "Ícone, abertura e atualizações",
+    "novidades": [
+      "Novo ícone para Android e iPhone e tela de abertura.",
+      "Aviso dentro do app quando houver versão nova, com o botão Atualizar.",
+      "Tela de Ajustes para atualizar quando quiser e ver o histórico de mudanças."
+    ]
+  }
 }

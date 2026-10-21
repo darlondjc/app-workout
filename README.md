@@ -46,6 +46,12 @@ src/app/pages/                        telas
 
 Em **Fichas → Sugerir fichas para mim** você informa objetivo, experiência, dias por semana e onde treina. O app monta a divisão (corpo inteiro, superior/inferior ou empurrar/puxar/pernas) com exercícios clássicos da base, séries e descanso conforme o objetivo, e você pode gerar outra variação antes de adicionar. A lógica fica em `src/app/core/suggestion.ts`. É uma sugestão geral, sem considerar lesões.
 
+## Atualizações e histórico de mudanças
+
+Quando você publica uma versão nova, o app instalado a baixa em segundo plano e mostra um botão suspenso **Atualizar** no canto superior direito (some durante o treino). O **×** ao lado dispensa o aviso; a atualização continua disponível em **Ajustes**, que também tem "Verificar atualizações" e o histórico do que mudou. O app procura versão nova ao abrir, ao voltar para a tela e a cada 30 minutos.
+
+Para lançar uma versão: acrescente uma entrada **no topo** de `public/data/changelog.json` (`versao`, `data`, `titulo`, `itens`) e publique. O script `tools/sincronizar_appdata.mjs` (roda sozinho antes de `npm run build`) copia a entrada mais recente para o `appData` do `ngsw-config.json`; é daí que o aviso tira o texto "o que há de novo" antes de o app ser atualizado. A versão exibida em Ajustes é a primeira entrada do changelog.
+
 ## Ícone e abertura
 
 O ícone é um halter lima sobre fundo grafite. `tools/gerar_icones.py` gera tudo a partir do desenho em código: ícones `any` e `maskable` para Android (o Android recorta no formato do aparelho), `apple-touch-icon` de 180 px para iOS (fundo cheio, sem transparência), favicons e 19 imagens de abertura para iPhone e iPad. No Android a abertura vem do manifesto (cor de fundo e ícone). No iOS usa as imagens `apple-touch-startup-image`. Dentro do app, uma abertura em HTML some com um fade assim que o Angular inicia. Se mudar o desenho, rode `python3 tools/gerar_icones.py` (precisa de `pillow` e `playwright`) e copie os `<link>` de `tools/splash-links.html` para o `index.html`.

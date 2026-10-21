@@ -24,7 +24,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx ng build --base-href /app-workout/
+      - run: npm run build -- --base-href /app-workout/
       - name: Fallback para rotas do app (SPA)
         run: cp dist/app-workout-ng/browser/index.html dist/app-workout-ng/browser/404.html
       - uses: actions/upload-pages-artifact@v3

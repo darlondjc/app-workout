@@ -14,6 +14,7 @@ import { filter, map } from 'rxjs';
 import { Icon } from './core/icon';
 import { LoadingService } from './core/loading.service';
 import { ToastService } from './core/toast.service';
+import { UpdateService } from './core/update.service';
 
 @Component({
   selector: 'app-root',
@@ -25,6 +26,7 @@ export class App {
   private readonly router = inject(Router);
   protected readonly toast = inject(ToastService);
   protected readonly loading = inject(LoadingService);
+  protected readonly update = inject(UpdateService);
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -47,6 +49,9 @@ export class App {
       }
     });
   }
+
+  /** Não interrompe o treino em andamento com o aviso de atualização. */
+  protected readonly mostrarAviso = computed(() => !this.url().startsWith('/treino'));
 
   /** A barra de abas some nas telas de foco (detalhe do exercício e treino). */
   protected readonly mostrarAbas = computed(() => {

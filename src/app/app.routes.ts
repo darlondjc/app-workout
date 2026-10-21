@@ -37,5 +37,10 @@ export const routes: Routes = [
     title: 'Treino · App Workout',
     loadComponent: () => import('./pages/workout').then((m) => m.Workout),
   },
+  {
+    path: 'ajustes',
+    title: 'Ajustes · App Workout',
+    loadComponent: () => import('./pages/settings').then((m) => m.Settings),
+  },
   { path: '**', redirectTo: '' },
 ];
