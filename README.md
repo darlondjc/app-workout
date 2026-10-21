@@ -53,5 +53,8 @@ Cada exercício tem um `anim.webp` (as duas fotos alternando, 800 ms, em loop). 
 ## Próximos passos
 
 - Revisar as traduções das instruções (algumas expressões técnicas podem melhorar).
-- Publicar o app (por exemplo no GitHub Pages ou no Firebase Hosting) para instalar no celular.
 - Exportar e importar fichas para fazer backup.
+
+## Publicação
+
+O workflow `.github/workflows/pages.yml` compila e publica no GitHub Pages a cada push no `main`. Na primeira vez, em **Settings → Pages**, escolha **Source: GitHub Actions**. O endereço será `https://darlondjc.github.io/app-workout/`.
