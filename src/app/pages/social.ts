@@ -59,9 +59,9 @@ const pessoaEscolhida = signal<string>('eu');
               <app-evento-card [evento]="item.evento" />
             } @else {
               <div class="card reacao">
-                <app-avatar [usuario]="{ uid: item.atividade.autor, nome: item.atividade.autorNome, email: '', foto: item.atividade.autorFoto }" [tamanho]="36" />
+                <app-avatar [usuario]="{ uid: item.atividade.autor, nome: social.nomeDe(item.atividade.autor, item.atividade.autorNome), email: '', foto: social.fotoDe(item.atividade.autor, item.atividade.autorFoto) }" [tamanho]="36" />
                 <p>
-                  <strong>{{ item.atividade.autorNome }}</strong>
+                  <strong>{{ social.nomeDe(item.atividade.autor, item.atividade.autorNome) }}</strong>
                   @if (item.atividade.tipo === 'curtida') {
                     curtiu o seu treino.
                   } @else {

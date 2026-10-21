@@ -12,9 +12,9 @@ import { SocialService } from '../core/social.service';
   template: `
     <article class="card">
       <header class="topo">
-        <app-avatar [usuario]="{ uid: evento().autor, nome: evento().autorNome, email: '', foto: evento().autorFoto }" [tamanho]="40" />
+        <app-avatar [usuario]="{ uid: evento().autor, nome: social.nomeDe(evento().autor, evento().autorNome), email: '', foto: social.fotoDe(evento().autor, evento().autorFoto) }" [tamanho]="40" />
         <div class="quem">
-          <strong>{{ minha() ? 'Você' : evento().autorNome }}</strong>
+          <strong>{{ minha() ? 'Você' : social.nomeDe(evento().autor, evento().autorNome) }}</strong>
           <span class="apoio">concluiu um treino · {{ quando() }}</span>
         </div>
       </header>
@@ -45,9 +45,9 @@ import { SocialService } from '../core/social.service';
         <div class="comentarios">
           @for (c of comentarios(); track c.id) {
             <div class="comentario">
-              <app-avatar [usuario]="{ uid: c.autor, nome: c.autorNome, email: '', foto: c.autorFoto }" [tamanho]="28" />
+              <app-avatar [usuario]="{ uid: c.autor, nome: social.nomeDe(c.autor, c.autorNome), email: '', foto: social.fotoDe(c.autor, c.autorFoto) }" [tamanho]="28" />
               <p>
-                <strong>{{ c.autor === social.eu()?.uid ? 'Você' : c.autorNome }}</strong> {{ c.texto }}
+                <strong>{{ c.autor === social.eu()?.uid ? 'Você' : social.nomeDe(c.autor, c.autorNome) }}</strong> {{ c.texto }}
               </p>
               @if (c.autor === social.eu()?.uid || minha()) {
                 <button type="button" class="apagar" aria-label="Apagar comentário" (click)="apagar(c)">

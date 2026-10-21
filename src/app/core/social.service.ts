@@ -168,14 +168,23 @@ export class SocialService {
 
   private aoAmizades(lista: Amizade[]): void {
     this.amizades.set(lista);
-    const faltam = lista.flatMap((a) => a.membros).filter((m) => m !== this.uid && !this.perfis()[m] && !this.buscando.has(m));
-    for (const m of new Set(faltam)) {
-      this.buscando.add(m);
-      this.api?.lerPerfil(m).then(
-        (p) => p && this.perfis.update((x) => ({ ...x, [m]: p })),
-        () => this.buscando.delete(m),
-      );
-    }
+    // Quem vem de uma amizade tenta de novo se a busca falhar: a próxima atualização da lista repete.
+    for (const m of new Set(lista.flatMap((a) => a.membros))) this.garantirPerfil(m, true);
+  }
+
+  /** Busca o perfil de uma pessoa uma vez por sessão. Com `repetir`, uma falha libera uma nova tentativa. */
+  private garantirPerfil(uid: string, repetir = false): void {
+    const api = this.api;
+    if (!api || !uid || uid === this.uid || this.perfis()[uid] || this.buscando.has(uid)) return;
+    this.buscando.add(uid);
+    api.lerPerfil(uid).then(
+      (p) => {
+        if (p && this.api === api) this.perfis.update((x) => ({ ...x, [uid]: p }));
+      },
+      () => {
+        if (repetir) this.buscando.delete(uid);
+      },
+    );
   }
 
   /** Atualiza o perfil de um amigo (nome, foto, meta) a partir da nuvem. */
@@ -184,8 +193,26 @@ export class SocialService {
     if (p) this.perfis.update((x) => ({ ...x, [uid]: p }));
   }
 
+  /**
+   * Perfil atual de uma pessoa. Se ainda não é conhecido, começa a buscá-lo em segundo plano e devolve
+   * `undefined` por ora; quem lê isto em um template ou `computed` é atualizado quando o perfil chega.
+   */
   perfilDe(uid: string): Perfil | undefined {
-    return uid === this.uid ? (this.eu() ?? undefined) : this.perfis()[uid];
+    if (uid === this.uid) return this.eu() ?? undefined;
+    const p = this.perfis()[uid];
+    if (!p) this.garantirPerfil(uid);
+    return p;
+  }
+
+  /** Nome atual de uma pessoa. Treinos, comentários e avisos guardam o nome da época em que foram feitos. */
+  nomeDe(uid: string, gravado: string): string {
+    return this.perfilDe(uid)?.nome || gravado;
+  }
+
+  /** Foto atual de uma pessoa (ou a gravada no item, enquanto o perfil não chega). */
+  fotoDe(uid: string, gravada: string | null): string | null {
+    const p = this.perfilDe(uid);
+    return p ? p.foto : gravada;
   }
 
   async adicionarPorCodigo(texto: string): Promise<{ ok: boolean; mensagem: string }> {

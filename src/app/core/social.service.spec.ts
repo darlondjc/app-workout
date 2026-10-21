@@ -258,6 +258,80 @@ describe('SocialService', () => {
     });
   });
 
+  describe('nome e foto atuais', () => {
+    it('prefere o perfil atual ao nome gravado no treino', async () => {
+      api.perfis['ana'] = { uid: 'ana', nome: 'Ana Nova', foto: 'nova.png' };
+      await entrarComAmigos(amizade('ana'));
+      expect(social.nomeDe('ana', 'Ana Antiga')).toBe('Ana Nova');
+      expect(social.fotoDe('ana', 'velha.png')).toBe('nova.png');
+    });
+
+    it('quem tirou a foto aparece sem foto, não com a antiga', async () => {
+      api.perfis['ana'] = { uid: 'ana', nome: 'Ana', foto: null };
+      await entrarComAmigos(amizade('ana'));
+      expect(social.fotoDe('ana', 'velha.png')).toBeNull();
+    });
+
+    it('o próprio perfil vem direto, sem busca', async () => {
+      await entrarComAmigos();
+      const ler = spyOn(api, 'lerPerfil').and.callThrough();
+      expect(social.nomeDe('eu', 'nome antigo')).toBe('Eu');
+      expect(ler).not.toHaveBeenCalled();
+    });
+
+    it('de quem não é amigo, usa o gravado e busca o perfil em segundo plano', async () => {
+      api.perfis['bia'] = { uid: 'bia', nome: 'Bia Atual', foto: null };
+      await entrarComAmigos(amizade('ana'));
+      const ler = spyOn(api, 'lerPerfil').and.callThrough();
+
+      expect(social.nomeDe('bia', 'Bia Gravada')).toBe('Bia Gravada');
+      await assentar();
+
+      expect(social.nomeDe('bia', 'Bia Gravada')).toBe('Bia Atual');
+      expect(ler).toHaveBeenCalledOnceWith('bia');
+    });
+
+    it('não repete a busca de um perfil que não existe', async () => {
+      await entrarComAmigos();
+      const ler = spyOn(api, 'lerPerfil').and.callThrough();
+      for (let i = 0; i < 3; i++) social.nomeDe('zed', 'Zed');
+      await assentar();
+      expect(social.nomeDe('zed', 'Zed')).toBe('Zed');
+      expect(ler).toHaveBeenCalledTimes(1);
+    });
+
+    it('uma falha na busca não gera uma nova tentativa a cada leitura', async () => {
+      await entrarComAmigos();
+      const ler = spyOn(api, 'lerPerfil').and.callFake(() => Promise.reject(new Error('sem rede')));
+      for (let i = 0; i < 3; i++) social.nomeDe('bia', 'Bia');
+      await assentar();
+      social.nomeDe('bia', 'Bia');
+      expect(ler).toHaveBeenCalledTimes(1);
+    });
+
+    it('amigo cujo perfil falhou ao carregar é tentado de novo na próxima atualização da lista', async () => {
+      await entrarComAmigos();
+      let falhar = true;
+      spyOn(api, 'lerPerfil').and.callFake((uid: string) => (falhar ? Promise.reject(new Error('sem rede')) : Promise.resolve(api.perfis[uid] ?? null)));
+
+      api.amizades?.cb([amizade('ana')]);
+      await assentar();
+      expect(social.amigos()[0].perfil.nome).toBe('Amigo');
+
+      falhar = false;
+      api.amizades?.cb([amizade('ana')]);
+      await assentar();
+      expect(social.amigos()[0].perfil.nome).toBe('Ana');
+    });
+
+    it('sem conta, devolve o gravado e não busca nada', () => {
+      const ler = spyOn(api, 'lerPerfil').and.callThrough();
+      expect(social.nomeDe('ana', 'Ana Gravada')).toBe('Ana Gravada');
+      expect(social.fotoDe('ana', 'foto.png')).toBe('foto.png');
+      expect(ler).not.toHaveBeenCalled();
+    });
+  });
+
   it('ao sair da conta, para tudo e limpa os dados', async () => {
     await entrarComAmigos(amizade('ana'));
     social.sessoesDe('ana');

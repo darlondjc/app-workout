@@ -83,7 +83,7 @@ Os testes ficam ao lado do código, em `src/app/core/*.spec.ts`, e rodam com Kar
 - `stats.spec.ts`: semanas, sequências, recordes, volume e as mensagens de incentivo.
 - `social.spec.ts`: código de amigo, ids, timeline, marcos e tempo relativo.
 - `firebase.social.spec.ts`: o que `FirebaseSocial` grava e consulta (avisos de curtida com id fixo, comentários, limite de leitura das sessões), com um Firestore falso.
-- `social.service.spec.ts`: o `SocialService` (quem é ouvido, o que acontece quando uma amizade acaba, quais erros aparecem na tela).
+- `social.service.spec.ts`: o `SocialService` (quem é ouvido, o que acontece quando uma amizade acaba, quais erros aparecem na tela, nome e foto atuais de quem fez cada treino ou comentário).
 
 Ainda não há testes das telas (componentes) nem das regras do Firestore; as regras precisam ser testadas no emulador do Firebase.
 

@@ -6,7 +6,9 @@
     "itens": [
       "Curtir e descurtir várias vezes não gera mais avisos repetidos para o dono do treino.",
       "Ao desfazer uma amizade, o app para de acompanhar a pessoa e não mostra mais erro de permissão.",
-      "As estatísticas de um amigo usam os 400 treinos mais recentes dele; acima disso, o total aparece como «treinos recentes»."
+      "As estatísticas de um amigo usam os 400 treinos mais recentes dele; acima disso, o total aparece como «treinos recentes».",
+      "Nome e foto na timeline, nos comentários e nos avisos mostram o perfil atual de quem os fez, não o da época.",
+      "Se curtidas ou comentários não carregarem, o app avisa em vez de mostrar «0»."
     ]
   },
   {
