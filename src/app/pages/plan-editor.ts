@@ -35,11 +35,11 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
             <li class="card item">
               <div class="item__topo">
                 @if (l.ex) {
-                  <a [routerLink]="['/exercicio', l.item.exerciseId]" aria-label="Ver instruções do exercício">
+                  <a [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
                     <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
                   </a>
                 }
-                <a class="item__nome" [routerLink]="['/exercicio', l.item.exerciseId]">
+                <a class="item__nome" [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }">
                   {{ l.ex ? ex.nome(l.ex) : l.item.exerciseId }}
                   <span class="item__ver">Ver instruções ›</span>
                 </a>

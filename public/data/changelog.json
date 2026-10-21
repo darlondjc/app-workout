@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.8.5",
+    "data": "2026-10-21",
+    "titulo": "Trocar por exercício equivalente",
+    "itens": [
+      "Ao abrir um exercício a partir de uma ficha, aparece «Trocar por equivalente»: exercícios do mesmo grupo muscular e mesmo efeito, que ainda não estão nas suas fichas.",
+      "Ao trocar, séries, repetições e descanso são mantidos e a carga volta a zero."
+    ]
+  },
+  {
     "versao": "1.8.4",
     "data": "2026-10-21",
     "titulo": "Detalhe do exercício mais claro",

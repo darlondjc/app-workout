@@ -123,6 +123,14 @@ export class PlanService {
     return { ficha: atualizada, jaEstava: false };
   }
 
+  /** Troca um exercício da ficha por outro, mantendo séries, repetições e descanso. A carga zera: o equipamento pode mudar. */
+  trocarExercicio(fichaId: string, de: string, para: string): void {
+    this.atualizar(fichaId, (f) => ({
+      ...f,
+      itens: f.itens.map((i) => (i.exerciseId === de ? { ...i, exerciseId: para, carga: 0 } : i)),
+    }));
+  }
+
   removerItem(fichaId: string, indice: number): void {
     this.atualizar(fichaId, (f) => ({ ...f, itens: f.itens.filter((_, i) => i !== indice) }));
   }
