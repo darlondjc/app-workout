@@ -317,12 +317,13 @@ export class SocialService {
 
   // --- Reações -----------------------------------------------------------------------------
 
+  /** Falha ao ler as reações de um treino: mesmo tratamento dos demais ouvintes da pessoa dona dele. */
   ouvirCurtidas(dono: string, eventoId: string, cb: (uids: string[]) => void): Cancelar {
-    return this.api?.ouvirCurtidas(dono, eventoId, cb) ?? (() => undefined);
+    return this.api?.ouvirCurtidas(dono, eventoId, cb, (e) => this.aoErroDe(dono, e)) ?? (() => undefined);
   }
 
   ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void): Cancelar {
-    return this.api?.ouvirComentarios(dono, eventoId, cb) ?? (() => undefined);
+    return this.api?.ouvirComentarios(dono, eventoId, cb, (e) => this.aoErroDe(dono, e)) ?? (() => undefined);
   }
 
   async alternarCurtida(dono: string, eventoId: string, curtido: boolean): Promise<void> {

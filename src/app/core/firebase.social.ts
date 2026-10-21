@@ -97,20 +97,20 @@ export class FirebaseSocial implements SocialBackend {
     );
   }
 
-  ouvirCurtidas(dono: string, eventoId: string, cb: (uids: string[]) => void): Cancelar {
+  ouvirCurtidas(dono: string, eventoId: string, cb: (uids: string[]) => void, erro: (e: unknown) => void): Cancelar {
     return this.fs.onSnapshot(
       this.fs.collection(this.db, 'usuarios', dono, 'eventos', eventoId, 'curtidas'),
       (snap) => cb(snap.docs.map((d) => d.id)),
-      () => cb([]),
+      erro,
     );
   }
 
-  ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void): Cancelar {
+  ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void, erro: (e: unknown) => void): Cancelar {
     const { query, collection, orderBy, onSnapshot } = this.fs;
     return onSnapshot(
       query(collection(this.db, 'usuarios', dono, 'eventos', eventoId, 'comentarios'), orderBy('criadoEm', 'asc')),
       (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Comentario), id: d.id }))),
-      () => cb([]),
+      erro,
     );
   }
 

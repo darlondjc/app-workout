@@ -79,8 +79,8 @@ export interface SocialBackend {
   ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void): Cancelar;
   publicarEvento(evento: Evento): Promise<void>;
   ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void): Cancelar;
-  ouvirCurtidas(dono: string, eventoId: string, cb: (uids: string[]) => void): Cancelar;
-  ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void): Cancelar;
+  ouvirCurtidas(dono: string, eventoId: string, cb: (uids: string[]) => void, erro: (e: unknown) => void): Cancelar;
+  ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void, erro: (e: unknown) => void): Cancelar;
   curtir(dono: string, eventoId: string, eu: Perfil): Promise<void>;
   descurtir(dono: string, eventoId: string, euUid: string): Promise<void>;
   comentar(dono: string, eventoId: string, eu: Perfil, texto: string): Promise<void>;

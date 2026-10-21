@@ -37,13 +37,25 @@ class ApiFalsa implements SocialBackend {
   descurtir = () => Promise.resolve();
   comentar = () => Promise.resolve();
   apagarComentario = () => Promise.resolve();
-  ouvirCurtidas = () => () => undefined;
-  ouvirComentarios = (_d: string, _e: string, _cb: (c: Comentario[]) => void) => () => undefined;
+  curtidas = new Map<string, Ouvinte<string[]>>();
+  comentarios = new Map<string, Ouvinte<Comentario[]>>();
   ouvirAtividades = (_uid: string, _cb: (a: Atividade[]) => void) => () => undefined;
 
   ouvirAmizades(_uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): () => void {
     const o = ouvinte(cb, erro);
     this.amizades = o;
+    return () => (o.cancelado = true);
+  }
+
+  ouvirCurtidas(dono: string, eventoId: string, cb: (u: string[]) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.curtidas.set(`${dono}/${eventoId}`, o);
+    return () => (o.cancelado = true);
+  }
+
+  ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.comentarios.set(`${dono}/${eventoId}`, o);
     return () => (o.cancelado = true);
   }
 
@@ -210,6 +222,39 @@ describe('SocialService', () => {
       await entrarComAmigos(amizade('ana'));
       api.eventos.get('ana')?.erro({ code: 'unavailable' });
       expect(social.erro()).toContain('Não foi possível falar com o servidor');
+    });
+
+    describe('curtidas e comentários de um treino', () => {
+      it('"sem permissão" nas reações de um treino seu pede para publicar as regras', async () => {
+        await entrarComAmigos(amizade('ana'));
+        social.ouvirCurtidas('eu', 'e1', () => undefined);
+        social.ouvirComentarios('eu', 'e1', () => undefined);
+        api.curtidas.get('eu/e1')?.erro({ code: 'permission-denied' });
+        expect(social.erro()).toContain('Publique as regras');
+      });
+
+      it('o erro ao ler os comentários também aparece (não vira "sem comentários")', async () => {
+        await entrarComAmigos(amizade('ana'));
+        const recebeu = jasmine.createSpy('recebeu');
+        social.ouvirComentarios('ana', 'e1', recebeu);
+        api.comentarios.get('ana/e1')?.erro({ code: 'unavailable' });
+        expect(social.erro()).toContain('Não foi possível falar com o servidor');
+        expect(recebeu).not.toHaveBeenCalled();
+      });
+
+      it('"sem permissão" nas reações de um ex-amigo não vira aviso e solta a pessoa', async () => {
+        await entrarComAmigos(amizade('ana'));
+        social.ouvirCurtidas('ana', 'e1', () => undefined);
+        api.curtidas.get('ana/e1')?.erro({ code: 'permission-denied' });
+        expect(social.erro()).toBe('');
+        expect(api.eventos.get('ana')?.cancelado).toBeTrue();
+      });
+
+      it('sem conta, não há o que ouvir e nada quebra', () => {
+        const parar = social.ouvirCurtidas('ana', 'e1', () => undefined);
+        expect(() => parar()).not.toThrow();
+        expect(api.curtidas.size).toBe(0);
+      });
     });
   });
 

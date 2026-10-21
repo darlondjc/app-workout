@@ -118,6 +118,35 @@ describe('FirebaseSocial', () => {
     });
   });
 
+  describe('reações: falha ao ler', () => {
+    /** Pega o callback de erro que foi entregue ao `onSnapshot`. */
+    function erroEntregue(fs: ReturnType<typeof firestoreFalso>['fs']): (e: unknown) => void {
+      return fs.onSnapshot.calls.mostRecent().args[2] as (e: unknown) => void;
+    }
+
+    it('curtidas: repassa o erro em vez de fingir que não há curtidas', () => {
+      const { social, fs } = criar();
+      const cb = jasmine.createSpy('cb');
+      const erro = jasmine.createSpy('erro');
+      social.ouvirCurtidas('dono', 'ev1', cb, erro);
+      const falha = { code: 'permission-denied' };
+      erroEntregue(fs)(falha);
+      expect(erro).toHaveBeenCalledOnceWith(falha);
+      expect(cb).not.toHaveBeenCalled();
+    });
+
+    it('comentários: repassa o erro em vez de fingir que não há comentários', () => {
+      const { social, fs } = criar();
+      const cb = jasmine.createSpy('cb');
+      const erro = jasmine.createSpy('erro');
+      social.ouvirComentarios('dono', 'ev1', cb, erro);
+      const falha = { code: 'unavailable' };
+      erroEntregue(fs)(falha);
+      expect(erro).toHaveBeenCalledOnceWith(falha);
+      expect(cb).not.toHaveBeenCalled();
+    });
+  });
+
   describe('consultas', () => {
     it('as atividades vêm pela data, não pelo id (o aviso de curtida tem id fixo)', () => {
       const { social, consultas } = criar();
