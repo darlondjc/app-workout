@@ -60,7 +60,7 @@ import { Carregando } from '../core/spinner';
                 <app-avatar [usuario]="{ uid: p.perfil.uid, nome: p.perfil.nome, email: '', foto: p.perfil.foto }" [tamanho]="44" />
                 <strong class="nome">{{ p.perfil.nome }}</strong>
                 <button type="button" class="btn btn--escuro mini" (click)="social.aceitar(p.amizade)">Aceitar</button>
-                <button type="button" class="btn btn--claro mini" (click)="social.remover(p.amizade)">Recusar</button>
+                <button type="button" class="btn btn--claro mini" (click)="recusar(p.amizade, p.perfil.nome)">Recusar</button>
               </div>
             }
           </section>
@@ -92,7 +92,7 @@ import { Carregando } from '../core/spinner';
                 <app-avatar [usuario]="{ uid: p.perfil.uid, nome: p.perfil.nome, email: '', foto: p.perfil.foto }" [tamanho]="44" />
                 <strong class="nome">{{ p.perfil.nome }}</strong>
                 <span class="apoio">aguardando</span>
-                <button type="button" class="btn btn--claro mini" (click)="social.remover(p.amizade)">Cancelar</button>
+                <button type="button" class="btn btn--claro mini" (click)="cancelarConvite(p.amizade, p.perfil.nome)">Cancelar</button>
               </div>
             }
           </section>
@@ -184,6 +184,14 @@ export class Friends {
     this.enviando.set(false);
     this.mensagem.set({ ok: r.ok, texto: r.mensagem });
     if (r.ok) campo.value = '';
+  }
+
+  protected async recusar(a: Amizade, nome: string): Promise<void> {
+    if (confirm(`Recusar o convite de ${nome}?`)) await this.social.remover(a);
+  }
+
+  protected async cancelarConvite(a: Amizade, nome: string): Promise<void> {
+    if (confirm(`Cancelar o convite enviado para ${nome}?`)) await this.social.remover(a);
   }
 
   protected async confirmarRemocao(a: Amizade): Promise<void> {
