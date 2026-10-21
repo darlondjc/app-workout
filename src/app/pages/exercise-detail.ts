@@ -54,9 +54,15 @@ import { ToastService } from '../core/toast.service';
       </section>
 
       <div class="rodape">
-        <button type="button" class="btn btn--escuro" (click)="adicionar()">
-          <app-icon name="plus" [size]="20" [stroke]="2.5" /> Adicionar à ficha
-        </button>
+        @if (naAtiva(); as ficha) {
+          <button type="button" class="btn btn--claro" disabled>
+            <app-icon name="check" [size]="20" [stroke]="2.5" /> Já está em “{{ ficha.nome }}”
+          </button>
+        } @else {
+          <button type="button" class="btn btn--escuro" (click)="adicionar()">
+            <app-icon name="plus" [size]="20" [stroke]="2.5" /> {{ rotuloAdicionar() }}
+          </button>
+        }
       </div>
     } @else if (ex.ready()) {
       <section class="page">
@@ -161,6 +167,19 @@ export class ExerciseDetail {
   protected readonly instrucoes = computed(() => {
     const e = this.exercicio();
     return e ? this.ex.instrucoes(e) : { passos: [], traduzido: true };
+  });
+
+  private readonly fichaAtiva = computed(() => this.plans.fichas().find((f) => f.id === this.plans.ativaId()) ?? this.plans.fichas()[0]);
+
+  /** A ficha ativa, se o exercício já estiver nela (é nela que o botão adicionaria). */
+  protected readonly naAtiva = computed(() => {
+    const f = this.fichaAtiva();
+    return f?.itens.some((i) => i.exerciseId === this.id()) ? f : null;
+  });
+
+  protected readonly rotuloAdicionar = computed(() => {
+    const f = this.fichaAtiva();
+    return f ? `Adicionar a “${f.nome}”` : 'Adicionar à ficha';
   });
 
   protected voltar(): void {

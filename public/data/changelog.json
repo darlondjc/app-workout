@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.8.4",
+    "data": "2026-10-21",
+    "titulo": "Detalhe do exercício mais claro",
+    "itens": [
+      "Se o exercício já está na ficha ativa, o botão mostra «Já está em…» em vez de «Adicionar à ficha».",
+      "Antes de adicionar, o botão diz em qual ficha o exercício vai entrar."
+    ]
+  },
+  {
     "versao": "1.8.3",
     "data": "2026-10-21",
     "titulo": "Diagnóstico do erro na tela Social",
