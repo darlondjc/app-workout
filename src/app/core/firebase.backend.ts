@@ -5,10 +5,10 @@ import { FirebaseSocial } from './firebase.social';
 import { Sessao } from './models';
 import { Cancelar, DocEstado, NuvemBackend, Usuario } from './sync';
 
-type Fb = {
+interface Fb {
   auth: typeof import('firebase/auth');
   fs: typeof import('firebase/firestore');
-};
+}
 
 /** Remove `undefined` e deixa só dados simples, que o Firestore aceita. */
 const limpo = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;

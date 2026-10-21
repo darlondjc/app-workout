@@ -22,6 +22,7 @@ npm start          # desenvolvimento em http://localhost:4200
 npm run build      # build de produção em dist/app-workout-ng/browser
 npm test           # testes no Chrome (Karma + Jasmine), acompanhando as mudanças
 npm run test:ci    # testes uma vez, sem janela (o que a CI roda)
+npm run lint       # ESLint (angular-eslint) em src/**/*.ts e nos templates
 ```
 
 O service worker só é ativado no build de produção. Para testar o modo offline e a instalação:
@@ -89,7 +90,7 @@ Ainda não há testes das telas (componentes) nem das regras do Firestore; as re
 
 ## Publicação
 
-O workflow `.github/workflows/pages.yml` roda os testes e o build em todo push, em qualquer branch, e só publica no GitHub Pages quando o push é no `main` e os testes passam. Na primeira vez, em **Settings → Pages**, escolha **Source: GitHub Actions**. O endereço será `https://darlondjc.github.io/app-workout/`.
+O workflow `.github/workflows/pages.yml` roda o lint, os testes e o build em todo push, em qualquer branch, e só publica no GitHub Pages quando o push é no `main` e tudo passa. Na primeira vez, em **Settings → Pages**, escolha **Source: GitHub Actions**. O endereço será `https://darlondjc.github.io/app-workout/`.
 
 ## Conta, backup e sincronização (Firebase)
 

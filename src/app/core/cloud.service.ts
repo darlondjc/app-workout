@@ -1,4 +1,4 @@
-import { Injectable, effect, signal, untracked } from '@angular/core';
+import { Injectable, effect, inject, signal, untracked } from '@angular/core';
 import { FIREBASE_CONFIG } from './firebase.config';
 import type { FirebaseBackend } from './firebase.backend';
 import { PlanService } from './plan.service';
@@ -31,6 +31,8 @@ export class CloudService {
   /** Falso se o Firebase não carregou (ex.: sem conexão na primeira abertura). */
   readonly carregado = signal(false);
 
+  private readonly plans = inject(PlanService);
+
   private readonly alvo: AlvoLocal = {
     lerEstado: () => this.plans.estadoNuvem(),
     aplicarEstado: (e, mesclar) => this.plans.aplicarEstadoNuvem(e, mesclar),
@@ -38,7 +40,7 @@ export class CloudService {
     mesclarSessoes: (s) => this.plans.mesclarSessoes(s),
   };
 
-  constructor(private readonly plans: PlanService) {
+  constructor() {
     if (!this.configurado) this.resolverPronto();
     window.addEventListener('online', () => this.online.set(true));
     window.addEventListener('offline', () => this.online.set(false));

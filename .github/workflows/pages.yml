@@ -1,6 +1,6 @@
 name: Publicar no GitHub Pages
 
-# Os testes e o build rodam em todo push, em qualquer branch. Só o push no `main` publica.
+# O lint, os testes e o build rodam em todo push, em qualquer branch. Só o push no `main` publica.
 on:
   push:
     branches: ['**']
@@ -25,6 +25,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm run test:ci
 
   build:
