@@ -1,0 +1,23 @@
+<div class="quadro" [class.com-abas]="mostrarAbas()">
+  <main>
+    <router-outlet />
+  </main>
+
+  @if (mostrarAbas()) {
+    <nav class="abas" aria-label="Navegação principal">
+      <a routerLink="/" routerLinkActive="ativa" [routerLinkActiveOptions]="{ exact: true }">
+        <app-icon name="home" /> Início
+      </a>
+      <a routerLink="/biblioteca" routerLinkActive="ativa">
+        <app-icon name="search" /> Biblioteca
+      </a>
+      <a routerLink="/fichas" routerLinkActive="ativa">
+        <app-icon name="clipboard" /> Fichas
+      </a>
+    </nav>
+  }
+
+  @if (toast.mensagem(); as texto) {
+    <div class="aviso" role="status">{{ texto }}</div>
+  }
+</div>

@@ -1,0 +1,126 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
+import { Exercise, Labels } from './models';
+
+export interface GrupoMuscular {
+  key: string;
+  label: string;
+  muscles: string[];
+}
+
+export const GRUPOS: GrupoMuscular[] = [
+  { key: 'peito', label: 'Peito', muscles: ['chest'] },
+  { key: 'costas', label: 'Costas', muscles: ['lats', 'middle back', 'lower back', 'traps'] },
+  { key: 'ombros', label: 'Ombros', muscles: ['shoulders'] },
+  { key: 'biceps', label: 'Bíceps', muscles: ['biceps'] },
+  { key: 'triceps', label: 'Tríceps', muscles: ['triceps'] },
+  {
+    key: 'pernas',
+    label: 'Pernas',
+    muscles: ['quadriceps', 'hamstrings', 'glutes', 'calves', 'abductors', 'adductors'],
+  },
+  { key: 'abdomen', label: 'Abdômen', muscles: ['abdominals'] },
+  { key: 'antebracos', label: 'Antebraços', muscles: ['forearms'] },
+  { key: 'pescoco', label: 'Pescoço', muscles: ['neck'] },
+];
+
+const normalizar = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+@Injectable({ providedIn: 'root' })
+export class ExerciseService {
+  private readonly http = inject(HttpClient);
+
+  readonly exercises = signal<Exercise[]>([]);
+  readonly labels = signal<Labels | null>(null);
+  readonly names = signal<Record<string, string>>({});
+  readonly ready = signal(false);
+  readonly error = signal(false);
+
+  private readonly porId = computed(() => new Map(this.exercises().map((e) => [e.id, e])));
+
+  /** Texto normalizado (nome em português + original em inglês) usado na busca. */
+  private readonly indice = computed(() =>
+    this.exercises().map((e) => ({ e, texto: normalizar(`${this.nome(e)} ${e.name}`) })),
+  );
+
+  readonly equipamentos = computed(() => {
+    const l = this.labels();
+    if (!l) return [];
+    return Object.entries(l.equipment)
+      .map(([key, label]) => ({ key, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  });
+
+  readonly niveis = computed(() => {
+    const l = this.labels();
+    if (!l) return [];
+    return ['beginner', 'intermediate', 'expert'].map((key) => ({ key, label: l.level[key] }));
+  });
+
+  constructor() {
+    forkJoin({
+      exercises: this.http.get<Exercise[]>('data/exercises.json'),
+      labels: this.http.get<Labels>('data/i18n/pt-BR.labels.json'),
+      names: this.http.get<Record<string, string>>('data/i18n/pt-BR.names.json'),
+    }).subscribe({
+      next: ({ exercises, labels, names }) => {
+        this.exercises.set(exercises);
+        this.labels.set(labels);
+        this.names.set(names);
+        this.ready.set(true);
+      },
+      error: () => this.error.set(true),
+    });
+  }
+
+  get(id: string): Exercise | undefined {
+    return this.porId().get(id);
+  }
+
+  nome(e: Exercise): string {
+    return this.names()[e.id] ?? e.name;
+  }
+
+  musculo(chave: string): string {
+    return this.labels()?.muscles[chave] ?? chave;
+  }
+
+  equipamento(chave: string | null): string {
+    if (!chave) return 'Sem equipamento';
+    return this.labels()?.equipment[chave] ?? chave;
+  }
+
+  nivel(chave: string): string {
+    return this.labels()?.level[chave] ?? chave;
+  }
+
+  mecanica(chave: string | null): string | null {
+    if (!chave) return null;
+    return this.labels()?.mechanic[chave] ?? chave;
+  }
+
+  categoria(chave: string): string {
+    return this.labels()?.category[chave] ?? chave;
+  }
+
+  imagem(id: string, indice: 0 | 1): string {
+    return `exercises/${id}/${indice}.jpg`;
+  }
+
+  buscar(consulta: string, grupo: string, equipamento: string, nivel: string): Exercise[] {
+    const q = normalizar(consulta);
+    const musculos = GRUPOS.find((g) => g.key === grupo)?.muscles;
+    return this.indice()
+      .filter(({ e, texto }) => {
+        if (q && !texto.includes(q)) return false;
+        if (musculos && !e.primaryMuscles.some((m) => musculos.includes(m))) return false;
+        if (equipamento && (e.equipment ?? 'none') !== equipamento) return false;
+        if (nivel && e.level !== nivel) return false;
+        return true;
+      })
+      .map(({ e }) => e)
+      .sort((a, b) => this.nome(a).localeCompare(this.nome(b), 'pt-BR'));
+  }
+}
