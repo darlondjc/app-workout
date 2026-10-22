@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
 
@@ -43,6 +44,15 @@ import { PlanService } from '../core/plan.service';
               <span class="linha__texto">
                 <span class="linha__nome">{{ f.nome }}</span>
                 <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
+                @if (grupos(f.itens); as gs) {
+                  @if (gs.length > 0) {
+                    <ul class="grupos" aria-label="Grupos musculares">
+                      @for (g of gs; track g) {
+                        <li class="grupo">{{ g }}</li>
+                      }
+                    </ul>
+                  }
+                }
               </span>
             </a>
             @if (f.itens.length > 0) {
@@ -130,6 +140,7 @@ import { PlanService } from '../core/plan.service';
 })
 export class Plans {
   protected readonly plans = inject(PlanService);
+  private readonly exercicios = inject(ExerciseService);
   private readonly router = inject(Router);
 
   /** Largura da lixeira que aparece ao arrastar a ficha para a direita. */
@@ -160,6 +171,10 @@ export class Plans {
     };
     host.addEventListener('click', aoClicar, true);
     inject(DestroyRef).onDestroy(() => host.removeEventListener('click', aoClicar, true));
+  }
+
+  protected grupos(itens: { exerciseId: string }[]): string[] {
+    return this.exercicios.gruposDe(itens.map((i) => i.exerciseId));
   }
 
   protected deslocamento(id: string): number {

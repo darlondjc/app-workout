@@ -50,6 +50,15 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
             </div>
             <span class="selo">{{ ficha.itens.length }} {{ ficha.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
           </div>
+          @if (grupos(ficha.itens); as gs) {
+            @if (gs.length > 0) {
+              <ul class="grupos grupos--escuro" aria-label="Grupos musculares do treino">
+                @for (g of gs; track g) {
+                  <li class="grupo">{{ g }}</li>
+                }
+              </ul>
+            }
+          }
           <div class="miniaturas">
             @for (item of ficha.itens.slice(0, 3); track item.exerciseId) {
               <img [src]="exercicios.imagem(item.exerciseId, 0)" alt="" loading="lazy" />
@@ -89,6 +98,15 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
               <span class="linha__texto">
                 <span class="linha__nome">{{ f.nome }}</span>
                 <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
+                @if (grupos(f.itens); as gs) {
+                  @if (gs.length > 0) {
+                    <ul class="grupos" aria-label="Grupos musculares">
+                      @for (g of gs; track g) {
+                        <li class="grupo">{{ g }}</li>
+                      }
+                    </ul>
+                  }
+                }
               </span>
               <app-icon name="chevron" [size]="18" />
             </a>
@@ -233,6 +251,10 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
 export class Home {
   protected readonly plans = inject(PlanService);
   protected readonly exercicios = inject(ExerciseService);
+
+  protected grupos(itens: { exerciseId: string }[]): string[] {
+    return this.exercicios.gruposDe(itens.map((i) => i.exerciseId));
+  }
 
   private readonly agora = new Date();
 

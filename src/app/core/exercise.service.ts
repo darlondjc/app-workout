@@ -128,6 +128,29 @@ export class ExerciseService {
     return `exercises/${id}/anim.webp`;
   }
 
+  /**
+   * Grupos musculares trabalhados por uma lista de exercícios, do mais frequente para o menos.
+   * Cardio só entra se a lista não tiver mais nada, para não colocar "Pernas" em todo treino com esteira.
+   */
+  gruposDe(exerciseIds: readonly string[]): string[] {
+    const exercicios = exerciseIds.map((id) => this.get(id)).filter((e): e is Exercise => !!e);
+    const musculacao = exercicios.filter((e) => e.category !== 'cardio');
+    const base = musculacao.length > 0 ? musculacao : exercicios;
+    const contagem = new Map<string, number>();
+    for (const e of base) {
+      const grupos = new Set(
+        e.primaryMuscles
+          .map((m) => GRUPOS.find((g) => g.muscles.includes(m))?.label)
+          .filter((l): l is string => !!l),
+      );
+      for (const l of grupos) contagem.set(l, (contagem.get(l) ?? 0) + 1);
+    }
+    const ordem = GRUPOS.map((g) => g.label);
+    return [...contagem.entries()]
+      .sort((a, b) => b[1] - a[1] || ordem.indexOf(a[0]) - ordem.indexOf(b[0]))
+      .map(([label]) => label);
+  }
+
   buscar(consulta: string, grupo: string, equipamento: string, nivel: string): Exercise[] {
     const q = normalizar(consulta);
     const musculos = GRUPOS.find((g) => g.key === grupo)?.muscles;
