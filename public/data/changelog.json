@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.9.0",
+    "data": "2026-10-21",
+    "titulo": "Mais com cara de aplicativo",
+    "itens": [
+      "Segurar um link, imagem ou botão não abre mais o menu do navegador (nova aba, pré-visualização) nem arrasta o elemento."
+    ]
+  },
+  {
     "versao": "1.8.9",
     "data": "2026-10-21",
     "titulo": "Trocas mais flexíveis, treino customizado e excluir ficha arrastando",
