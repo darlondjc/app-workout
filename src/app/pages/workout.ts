@@ -17,7 +17,7 @@ import { ToastService } from '../core/toast.service';
       @if (item(); as it) {
         <div class="treino">
           <header class="topo">
-            <button type="button" class="sair" (click)="nav.voltar('/')" aria-label="Sair do treino">
+            <button type="button" class="sair" (click)="sair()" aria-label="Sair do treino">
               <app-icon name="close" [size]="20" [stroke]="2.2" />
             </button>
             <div>
@@ -25,6 +25,17 @@ import { ToastService } from '../core/toast.service';
               <p class="posicao">Exercício {{ indice() + 1 }} de {{ f.itens.length }}</p>
             </div>
           </header>
+
+          @if (confirmandoSaida()) {
+            <div class="fundo" (click)="confirmandoSaida.set(false)"></div>
+            <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="saida-titulo" aria-describedby="saida-texto" (keydown.escape)="confirmandoSaida.set(false)">
+              <h2 id="saida-titulo" class="folha__titulo">Sair do treino?</h2>
+              <p id="saida-texto" class="folha__texto">Pausando, o treino fica guardado e você continua de onde parou. Cancelando, o que você marcou neste treino é descartado.</p>
+              <button type="button" class="btn btn--destaque" (click)="pausar()">Pausar treino</button>
+              <button type="button" class="btn btn--perigo" (click)="cancelarTreino()">Cancelar treino</button>
+              <button type="button" class="btn btn--escuro-suave" (click)="confirmandoSaida.set(false)">Continuar treinando</button>
+            </div>
+          }
 
           <div class="barra" role="progressbar" aria-label="Progresso do treino" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progresso()">
             <div class="barra__cheia" [style.width.%]="progresso()"></div>
@@ -116,6 +127,47 @@ import { ToastService } from '../core/toast.service';
       display: flex;
       align-items: center;
       gap: 12px;
+    }
+    .fundo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 30;
+    }
+    .folha {
+      position: fixed;
+      z-index: 31;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+      width: 100%;
+      max-width: 480px;
+      box-sizing: border-box;
+      padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+      border-radius: 24px 24px 0 0;
+      background: var(--dark2);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .folha__titulo {
+      font-family: var(--font-display);
+      font-size: 22px;
+    }
+    .folha__texto {
+      font-size: 14px;
+      color: #b9c0ba;
+      margin-bottom: 6px;
+    }
+    .btn--perigo {
+      background: transparent;
+      color: #ff8a80;
+      border: 1.5px solid #6b2a26;
+    }
+    .btn--escuro-suave {
+      background: transparent;
+      color: #fff;
     }
     .sair {
       border: 0;
@@ -285,6 +337,7 @@ export class Workout {
   protected readonly nav = inject(NavegacaoService);
 
   protected readonly descansoAtivo = signal(0);
+  protected readonly confirmandoSaida = signal(false);
   private intervalo?: ReturnType<typeof setInterval>;
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
@@ -376,6 +429,25 @@ export class Workout {
       indice: i,
       series: { ...a.series, [i]: base.map((s) => ({ feita: s.feita, carga: s.carga, reps: s.reps })) },
     }));
+  }
+
+  /** O X: com treino começado pergunta se pausa, cancela ou continua; sem nada marcado, só sai. */
+  protected sair(): void {
+    if (this.plans.emAndamento()?.fichaId === this.id()) this.confirmandoSaida.set(true);
+    else this.nav.voltar('/');
+  }
+
+  protected pausar(): void {
+    this.confirmandoSaida.set(false);
+    this.toast.mostrar('Treino pausado. Continue quando quiser.');
+    this.nav.voltar('/');
+  }
+
+  protected cancelarTreino(): void {
+    this.confirmandoSaida.set(false);
+    this.plans.descartarAndamento();
+    this.toast.mostrar('Treino cancelado.');
+    this.nav.voltar('/');
   }
 
   protected alternar(k: number): void {
