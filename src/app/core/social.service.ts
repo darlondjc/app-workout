@@ -22,6 +22,8 @@ import { recordesDaSessao, volumeSessao } from './stats';
 import { Cancelar, NuvemBackend } from './sync';
 
 const CHAVE_PUBLICADOS = 'app-workout:publicados:v1';
+/** Até quando a timeline já foi vista, por conta (a chave leva o uid no fim). */
+const CHAVE_VISTO = 'app-workout:social-visto:v1';
 /** Treinos mais antigos que isto não vão para a timeline (evita despejar o histórico ao entrar). */
 const JANELA_PUBLICACAO_MS = 3 * 24 * 3600 * 1000;
 /** Quantos treinos de cada amigo são lidos para as estatísticas (os mais recentes). */
@@ -72,6 +74,26 @@ export class SocialService {
 
   readonly timeline = computed(() => montarTimeline(Object.values(this.eventosPor()).flat(), this.atividades()));
 
+  /** `criadoEm` da novidade mais recente que a pessoa já viu na timeline (neste aparelho). */
+  private readonly vistoAte = signal(0);
+
+  /** Quantas novidades de outras pessoas (treinos de amigos, curtidas, comentários) chegaram depois da última vez que a timeline foi vista. */
+  readonly novidades = computed(() => {
+    const visto = this.vistoAte();
+    const eu = this.eu()?.uid;
+    if (!eu) return 0;
+    return this.timeline().filter((i) => i.criadoEm > visto && (i.tipo === 'evento' ? i.evento.autor : i.atividade.autor) !== eu).length;
+  });
+
+  /** A pessoa está olhando a timeline: tudo o que há nela passa a ser visto. */
+  marcarTimelineVista(): void {
+    if (!this.uid) return;
+    const mais = this.timeline().reduce((m, i) => Math.max(m, i.criadoEm), this.vistoAte());
+    if (mais <= this.vistoAte()) return;
+    this.vistoAte.set(mais);
+    gravarVisto(this.uid, mais);
+  }
+
   constructor() {
     effect(() => {
       const s = this.cloud.social();
@@ -96,6 +118,7 @@ export class SocialService {
     this.uid = uid;
     this.api = api;
     this.nuvem = nuvem;
+    this.vistoAte.set(lerVisto(uid));
     const u = this.cloud.usuario();
     try {
       const existente = await api.lerPerfil(uid);
@@ -134,6 +157,7 @@ export class SocialService {
     this.api = undefined;
     this.nuvem = undefined;
     this.uid = '';
+    this.vistoAte.set(0);
     this.eu.set(null);
     this.amizades.set([]);
     this.perfis.set({});
@@ -399,6 +423,27 @@ export class SocialService {
 
   sessoesCarregadas(uid: string): boolean {
     return uid in this.sessoesPor();
+  }
+}
+
+/** Primeira vez nesta conta e aparelho: o que já existe conta como visto, para não acusar o histórico todo. */
+function lerVisto(uid: string): number {
+  try {
+    const salvo = Number(localStorage.getItem(`${CHAVE_VISTO}:${uid}`));
+    if (Number.isFinite(salvo) && salvo > 0) return salvo;
+  } catch {
+    // sem armazenamento: vale só nesta sessão
+  }
+  const agora = Date.now();
+  gravarVisto(uid, agora);
+  return agora;
+}
+
+function gravarVisto(uid: string, t: number): void {
+  try {
+    localStorage.setItem(`${CHAVE_VISTO}:${uid}`, String(t));
+  } catch {
+    // sem armazenamento: vale só nesta sessão
   }
 }
 

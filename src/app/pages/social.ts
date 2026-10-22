@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
 import { CloudService } from '../core/cloud.service';
@@ -139,6 +139,15 @@ export class Social {
   protected readonly plans = inject(PlanService);
   protected readonly aba = aba;
   protected readonly pessoaEscolhida = pessoaEscolhida;
+
+  constructor() {
+    // Com a timeline na tela, o que chega (agora ou enquanto olha) já nasce visto e o aviso da aba some.
+    effect(() => {
+      if (aba() !== 'timeline' || !this.social.ativo()) return;
+      this.social.timeline();
+      untracked(() => this.social.marcarTimelineVista());
+    });
+  }
 
   /** Se o amigo escolhido deixou de ser amigo, volta para "Eu". */
   protected readonly pessoa = computed(() => {

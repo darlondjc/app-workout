@@ -39,7 +39,11 @@ class ApiFalsa implements SocialBackend {
   apagarComentario = () => Promise.resolve();
   curtidas = new Map<string, Ouvinte<string[]>>();
   comentarios = new Map<string, Ouvinte<Comentario[]>>();
-  ouvirAtividades = (_uid: string, _cb: (a: Atividade[]) => void) => () => undefined;
+  atividadesCb?: (a: Atividade[]) => void;
+  ouvirAtividades = (_uid: string, cb: (a: Atividade[]) => void) => {
+    this.atividadesCb = cb;
+    return () => undefined;
+  };
 
   ouvirAmizades(_uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): () => void {
     const o = ouvinte(cb, erro);
@@ -80,6 +84,21 @@ class NuvemFalsa implements NuvemBackend {
     return () => (o.cancelado = true);
   }
 }
+
+const evento = (autor: string, criadoEm: number): Evento => ({
+  id: `ev${criadoEm}`,
+  autor,
+  autorNome: autor,
+  autorFoto: null,
+  tipo: 'treino',
+  criadoEm,
+  sessaoId: 's',
+  data: '2026-10-22',
+  fichaNome: 'A',
+  exercicios: 3,
+  volume: 100,
+  recordes: [],
+});
 
 const amizade = (outro: string, status: Amizade['status'] = 'aceita'): Amizade => ({
   id: `eu_${outro}`,
@@ -345,5 +364,48 @@ describe('SocialService', () => {
     expect(nuvem.sessoes.get('ana')?.cancelado).toBeTrue();
     expect(social.eu()).toBeNull();
     expect(social.amigos()).toEqual([]);
+  });
+  describe('novidades na timeline', () => {
+    const futuro = () => Date.now() + 60_000;
+
+    it('um treino novo de amigo vira novidade e some quando a timeline é vista', async () => {
+      await entrarComAmigos(amizade('ana'));
+      expect(social.novidades()).toBe(0);
+      api.eventos.get('ana')?.cb([evento('ana', futuro())]);
+      await assentar();
+      expect(social.novidades()).toBe(1);
+      social.marcarTimelineVista();
+      expect(social.novidades()).toBe(0);
+    });
+
+    it('o que já existia antes da primeira entrada não conta como novidade', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('ana')?.cb([evento('ana', 1000)]);
+      await assentar();
+      expect(social.novidades()).toBe(0);
+    });
+
+    it('os próprios treinos não contam', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('eu')?.cb([evento('eu', futuro())]);
+      await assentar();
+      expect(social.novidades()).toBe(0);
+    });
+
+    it('curtidas e comentários de amigos também contam', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.atividadesCb?.([{ id: 'a1', autor: 'ana', autorNome: 'Ana', autorFoto: null, tipo: 'curtida', eventoId: 'e1', criadoEm: futuro() }]);
+      await assentar();
+      expect(social.novidades()).toBe(1);
+    });
+
+    it('guarda até onde foi visto, por conta, para não avisar de novo ao reabrir o app', async () => {
+      await entrarComAmigos(amizade('ana'));
+      const t = futuro();
+      api.eventos.get('ana')?.cb([evento('ana', t)]);
+      await assentar();
+      social.marcarTimelineVista();
+      expect(localStorage.getItem('app-workout:social-visto:v1:eu')).toBe(String(t));
+    });
   });
 });
