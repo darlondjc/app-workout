@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.9.1",
+    "data": "2026-10-22",
+    "titulo": "Grupos musculares nas fichas e botão de play flutuante",
+    "itens": [
+      "A tela inicial e a lista de fichas mostram os grupos musculares trabalhados em cada ficha (o cardio não conta quando há musculação).",
+      "Na tela da ficha, o botão de iniciar treino virou um botão de play flutuante no canto da tela."
+    ]
+  },
+  {
     "versao": "1.9.0",
     "data": "2026-10-21",
     "titulo": "Mais com cara de aplicativo",
