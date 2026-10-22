@@ -15,6 +15,7 @@ import { Avatar } from './core/avatar';
 import { CloudService } from './core/cloud.service';
 import { Icon } from './core/icon';
 import { NavegacaoService } from './core/navegacao.service';
+import { SocialService } from './core/social.service';
 import { LoadingService } from './core/loading.service';
 import { ToastService } from './core/toast.service';
 import { UpdateService } from './core/update.service';
@@ -31,6 +32,7 @@ export class App {
   protected readonly loading = inject(LoadingService);
   protected readonly update = inject(UpdateService);
   protected readonly nuvem = inject(CloudService);
+  protected readonly social = inject(SocialService); // acompanha a timeline desde o início, para avisar na aba Social
   private readonly navegacao = inject(NavegacaoService); // começa a contar as telas desde a primeira
 
   private readonly url = toSignal(

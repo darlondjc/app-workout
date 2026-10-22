@@ -42,6 +42,30 @@
   }
 }
 
+.aba-icone {
+  position: relative;
+  display: inline-flex;
+}
+
+.aba-aviso {
+  position: absolute;
+  top: -6px;
+  left: calc(100% - 10px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .aviso {
   position: fixed;
   left: 50%;
