@@ -82,7 +82,7 @@ import { ToastService } from '../core/toast.service';
           <div class="descanso" role="timer" aria-live="off">
             <div>
               <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
-              <p class="tempo" [class.estourou]="descansoAtivo() >= limiteDescanso">{{ tempo() }}</p>
+              <p class="tempo" [class.estourou]="descansoAtivo() >= limiteDescanso()">{{ tempo() }}</p>
             </div>
             <span class="selo">{{ feitas() }} de {{ series().length }} séries</span>
           </div>
@@ -92,7 +92,7 @@ import { ToastService } from '../core/toast.service';
               <button type="button" class="btn btn--claro-escuro" (click)="anterior()">Anterior</button>
             }
             <button type="button" class="btn btn--destaque" (click)="proximo()">
-              {{ ultimo() ? 'Finalizar treino' : 'Próximo exercício' }}
+              {{ ultimo() ? 'Finalizar treino' : indice() > 0 ? 'Próximo' : 'Próximo exercício' }}
               @if (!ultimo()) {
                 <app-icon name="chevron" [size]="18" [stroke]="2.5" />
               }
@@ -345,8 +345,8 @@ export class Workout {
   /** Segundos de descanso decorridos desde a última série marcada (o timer é progressivo). */
   protected readonly descansoAtivo = signal(0);
   protected readonly descansando = signal(false);
-  /** Passado esse tempo o cronômetro fica vermelho, mas continua contando. */
-  protected readonly limiteDescanso = 60;
+  /** O descanso definido na ficha é a referência: passado esse tempo o cronômetro fica vermelho, mas continua contando. */
+  protected readonly limiteDescanso = computed(() => this.item()?.descanso || 60);
   private descansoDesde = 0;
   protected readonly confirmandoSaida = signal(false);
   private intervalo?: ReturnType<typeof setInterval>;
@@ -517,7 +517,8 @@ export class Workout {
       const antes = this.descansoAtivo();
       const agora = Math.floor((Date.now() - this.descansoDesde) / 1000);
       this.descansoAtivo.set(agora);
-      if (antes < this.limiteDescanso && agora >= this.limiteDescanso) navigator.vibrate?.(200);
+      const limite = this.limiteDescanso();
+      if (antes < limite && agora >= limite) navigator.vibrate?.(200);
     }, 500);
   }
 
