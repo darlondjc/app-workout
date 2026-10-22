@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.9.2",
+    "data": "2026-10-22",
+    "titulo": "Treino mais prático",
+    "itens": [
+      "Na tela do exercício durante o treino, Reps ficou à esquerda e Carga à direita.",
+      "Ao alterar reps ou carga de uma série, as séries de baixo que ainda não foram feitas recebem o mesmo valor.",
+      "O X do treino agora pergunta se você quer pausar (e continuar depois), cancelar o treino ou continuar treinando."
+    ]
+  },
+  {
     "versao": "1.9.1",
     "data": "2026-10-22",
     "titulo": "Grupos musculares nas fichas e botão de play flutuante",
