@@ -116,7 +116,7 @@ Dentro da aba **Social → Estatísticas**, o **Progresso** mostra um calendári
 
 ## Amigos e timeline
 
-A aba **Social** tem a **Timeline** (treinos concluídos seus e dos amigos, com curtidas e comentários; curtidas e comentários que você recebe aparecem como avisos) e as **Estatísticas**, com a mesma tela de Progresso e um seletor no topo para alternar entre você e cada amigo. Em **Amigos** (ícone no canto da aba Social) você vê seu código de 8 caracteres, adiciona alguém pelo código dele e aceita ou recusa convites.
+A aba **Social** tem a **Timeline** (treinos concluídos seus e dos amigos, com curtidas e comentários; curtidas e comentários que você recebe aparecem como avisos; um selo no ícone da aba mostra quantas novidades chegaram desde a última vez que você a viu) e as **Estatísticas**, com a mesma tela de Progresso e um seletor no topo para alternar entre você e cada amigo. Em **Amigos** (ícone no canto da aba Social) você vê seu código de 8 caracteres, adiciona alguém pelo código dele e aceita ou recusa convites.
 
 - Um convite só vira amizade quando a outra pessoa aceita. Depois disso, cada um vê o histórico de treinos (calendário, cargas, recordes), os treinos publicados e pode curtir e comentar. Fichas, treino em andamento e demais dados continuam privados. Desfazer a amizade corta o acesso dos dois lados.
 - Ao concluir um treino, ele é publicado na timeline (só treinos recentes são publicados; o histórico antigo não é despejado de uma vez).

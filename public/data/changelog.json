@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.9.4",
+    "data": "2026-10-22",
+    "titulo": "Aviso de novidades na aba Social",
+    "itens": [
+      "A aba Social mostra um selo com o número de novidades da timeline (treinos de amigos, curtidas e comentários) desde a última vez que você a viu.",
+      "O botão \"Treino customizado para hoje\" some do Início e das Fichas depois que você conclui um treino no dia."
+    ]
+  },
+  {
     "versao": "1.9.3",
     "data": "2026-10-22",
     "titulo": "Cronômetro de descanso progressivo e troca de exercício mais clara",
