@@ -27,7 +27,7 @@ import { ToastService } from '../core/toast.service';
           </header>
 
           @if (confirmandoSaida()) {
-            <div class="fundo" (click)="confirmandoSaida.set(false)"></div>
+            <button type="button" class="fundo" tabindex="-1" aria-label="Fechar e continuar treinando" (click)="confirmandoSaida.set(false)"></button>
             <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="saida-titulo" aria-describedby="saida-texto" (keydown.escape)="confirmandoSaida.set(false)">
               <h2 id="saida-titulo" class="folha__titulo">Sair do treino?</h2>
               <p id="saida-texto" class="folha__texto">Pausando, o treino fica guardado e você continua de onde parou. Cancelando, o que você marcou neste treino é descartado.</p>
@@ -129,6 +129,9 @@ import { ToastService } from '../core/toast.service';
       gap: 12px;
     }
     .fundo {
+      border: 0;
+      padding: 0;
+      cursor: default;
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.6);
