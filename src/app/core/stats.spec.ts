@@ -1,5 +1,5 @@
 import { Sessao } from './models';
-import { calcularResumo, dataISO, gerarInsights, inicioSemana, recordesDaSessao, sequenciaSemanas, treinosPorDia, volumeSessao } from './stats';
+import { calcularResumo, dataISO, descansoMedio, gerarInsights, inicioSemana, recordesDaSessao, sequenciaSemanas, treinosPorDia, volumeSessao } from './stats';
 
 /** Soma `n` dias a uma data yyyy-mm-dd. */
 function dia(iso: string, n = 0): string {
@@ -156,5 +156,36 @@ describe('stats', () => {
       const r = calcularResumo([sessao('2026-10-19'), sessao('2026-10-20')], hoje, 2);
       expect(gerarInsights(r, hoje).some((i) => i.tipo === 'conquista' && i.texto.includes('Meta da semana batida'))).toBeTrue();
     });
+  });
+});
+
+describe('descansoMedio', () => {
+  const comDescanso = (...descansos: (number | undefined)[]): Sessao =>
+    sessao('2026-10-20', {
+      registros: [
+        { exerciseId: 'a', series: descansos.map((descanso) => ({ carga: 10, reps: 10, ...(descanso !== undefined ? { descanso } : {}) })) },
+      ],
+    });
+
+  it('é nulo sem nenhum descanso registrado (treinos antigos ou sem séries)', () => {
+    expect(descansoMedio([])).toBeNull();
+    expect(descansoMedio([sessao('2026-10-20'), comDescanso(undefined, undefined)])).toBeNull();
+  });
+
+  it('faz a média dos descansos entre as séries de todos os treinos', () => {
+    expect(descansoMedio([comDescanso(undefined, 60, 90), comDescanso(undefined, 30)])).toBe(60);
+  });
+
+  it('arredonda para o segundo mais próximo', () => {
+    expect(descansoMedio([comDescanso(undefined, 45, 46)])).toBe(46);
+  });
+
+  it('ignora pausas acima de 10 minutos e valores inválidos', () => {
+    expect(descansoMedio([comDescanso(undefined, 60, 3000, 0, -5)])).toBe(60);
+  });
+
+  it('aparece no resumo', () => {
+    const r = calcularResumo([comDescanso(undefined, 80)], new Date(2026, 9, 21), 3);
+    expect(r.descansoMedio).toBe(80);
   });
 });

@@ -19,6 +19,8 @@ export interface Resumo {
   /** Exercícios do último treino com carga acima do melhor anterior. */
   recordes: { exerciseId: string; carga: number; antes: number }[];
   diaFavorito: string | null;
+  /** Descanso médio entre séries, em segundos; null enquanto não há nenhum registrado. */
+  descansoMedio: number | null;
 }
 
 export interface Insight {
@@ -138,6 +140,19 @@ function recordesDoUltimo(h: Sessao[]): Resumo['recordes'] {
 }
 
 /** Números do acompanhamento: semana, mês, sequência, volume e recordes. */
+/** Descansos acima disso (10 min) são pausas no treino, não descanso entre séries, e ficam fora da média. */
+export const DESCANSO_MAXIMO = 600;
+
+/** Média, em segundos, do descanso registrado entre as séries de todos os treinos. */
+export function descansoMedio(h: Sessao[]): number | null {
+  const valores = h
+    .flatMap((s) => s.registros ?? [])
+    .flatMap((r) => r.series)
+    .map((s) => s.descanso)
+    .filter((d): d is number => typeof d === 'number' && d > 0 && d <= DESCANSO_MAXIMO);
+  return valores.length ? Math.round(valores.reduce((t, d) => t + d, 0) / valores.length) : null;
+}
+
 export function calcularResumo(h: Sessao[], hoje: Date, meta: number): Resumo {
   const m = porSemana(h);
   const segunda = inicioSemana(hoje);
@@ -172,6 +187,7 @@ export function calcularResumo(h: Sessao[], hoje: Date, meta: number): Resumo {
     ultimasSemanas,
     recordes: recordesDoUltimo(h),
     diaFavorito: favorito,
+    descansoMedio: descansoMedio(h),
   };
 }
 

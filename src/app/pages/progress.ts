@@ -113,6 +113,10 @@ function lerMeta(): number | null {
           <strong>{{ resumo().diasSemTreinar === null ? '—' : resumo().diasSemTreinar }}</strong>
           <span class="apoio">{{ resumo().diasSemTreinar === 1 ? 'dia' : 'dias' }} desde o último</span>
         </div>
+        <div class="card num num--largo">
+          <strong>{{ duracao(resumo().descansoMedio) }}</strong>
+          <span class="apoio">descanso médio entre séries</span>
+        </div>
       </div>
 
       <article class="card" aria-labelledby="t-sem">
@@ -172,6 +176,7 @@ function lerMeta(): number | null {
     .dia-detalhe { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
     .sessao { display: flex; flex-direction: column; gap: 2px; }
     .numeros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .num--largo { grid-column: 1 / -1; }
     .num { gap: 4px; }
     .num strong { font-family: var(--font-display); font-size: 28px; line-height: 1.1; }
     .num span { font-size: 13px; }
@@ -312,6 +317,14 @@ export class Progress {
     const [a, m, d] = iso.split('-').map(Number);
     const t = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  /** 45 → "45 s"; 72 → "1 min 12 s"; sem registro → "—". */
+  protected duracao(segundos: number | null): string {
+    if (segundos === null) return '—';
+    const m = Math.floor(segundos / 60);
+    const s = segundos % 60;
+    return m === 0 ? `${s} s` : s === 0 ? `${m} min` : `${m} min ${s} s`;
   }
 
   protected volume(kg: number): string {

@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ExerciseImage } from '../core/exercise-image';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
-import { RegistroExercicio } from '../core/models';
+import { RegistroExercicio, SerieEmAndamento } from '../core/models';
 import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
@@ -81,8 +81,8 @@ import { ToastService } from '../core/toast.service';
 
           <div class="descanso" role="timer" aria-live="off">
             <div>
-              <p class="rotulo">{{ descansoAtivo() > 0 ? 'Descansando' : 'Descanso' }}</p>
-              <p class="tempo">{{ tempo() }}</p>
+              <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
+              <p class="tempo" [class.estourou]="descansoAtivo() >= limiteDescanso">{{ tempo() }}</p>
             </div>
             <span class="selo">{{ feitas() }} de {{ series().length }} séries</span>
           </div>
@@ -304,6 +304,9 @@ import { ToastService } from '../core/toast.service';
       font-size: 34px;
       line-height: 1.1;
     }
+    .tempo.estourou {
+      color: #ff6b5e;
+    }
     .selo {
       background: var(--accent);
       color: var(--ink);
@@ -336,7 +339,12 @@ export class Workout {
   private readonly router = inject(Router);
   protected readonly nav = inject(NavegacaoService);
 
+  /** Segundos de descanso decorridos desde a última série marcada (o timer é progressivo). */
   protected readonly descansoAtivo = signal(0);
+  protected readonly descansando = signal(false);
+  /** Passado esse tempo o cronômetro fica vermelho, mas continua contando. */
+  protected readonly limiteDescanso = 60;
+  private descansoDesde = 0;
   protected readonly confirmandoSaida = signal(false);
   private intervalo?: ReturnType<typeof setInterval>;
 
@@ -379,6 +387,7 @@ export class Workout {
       feita: !!salvas[k]?.feita,
       carga: salvas[k]?.carga ?? ant[k]?.carga ?? ant.at(-1)?.carga ?? it.carga,
       reps: salvas[k]?.reps ?? it.reps,
+      descanso: salvas[k]?.descanso,
     }));
   });
 
@@ -400,7 +409,7 @@ export class Workout {
   });
 
   protected readonly tempo = computed(() => {
-    const segundos = this.descansoAtivo() > 0 ? this.descansoAtivo() : (this.item()?.descanso ?? 0);
+    const segundos = this.descansoAtivo();
     const m = String(Math.floor(segundos / 60)).padStart(2, '0');
     const s = String(segundos % 60).padStart(2, '0');
     return `${m}:${s}`;
@@ -410,11 +419,16 @@ export class Workout {
     inject(DestroyRef).onDestroy(() => this.pararDescanso());
   }
 
+  /** Só guarda `descanso` quando existe: o Firestore não aceita campos `undefined`. */
+  private paraSalvar(s: { feita: boolean; carga: number; reps: number; descanso?: number }): SerieEmAndamento {
+    return { feita: s.feita, carga: s.carga, reps: s.reps, ...(s.descanso != null ? { descanso: s.descanso } : {}) };
+  }
+
   /** Grava a série k (valores atuais da tela + alteração) no treino em andamento. */
-  private gravarSerie(k: number, mudanca: Partial<{ feita: boolean; carga: number; reps: number }>): void {
+  private gravarSerie(k: number, mudanca: Partial<{ feita: boolean; carga: number; reps: number; descanso: number | undefined }>): void {
     const i = this.indice();
-    const base = this.series().map((s) => ({ feita: s.feita, carga: s.carga, reps: s.reps }));
-    base[k] = { ...base[k], ...mudanca };
+    const base = this.series().map((s) => this.paraSalvar(s));
+    base[k] = this.paraSalvar({ ...base[k], ...mudanca });
     this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
   }
 
@@ -427,7 +441,7 @@ export class Workout {
     this.plans.andamento(this.id(), (a) => ({
       ...a,
       indice: i,
-      series: { ...a.series, [i]: base.map((s) => ({ feita: s.feita, carga: s.carga, reps: s.reps })) },
+      series: { ...a.series, [i]: base.map((s) => this.paraSalvar(s)) },
     }));
   }
 
@@ -454,9 +468,11 @@ export class Workout {
     const it = this.item();
     if (!it) return;
     const ficouFeita = !this.series()[k].feita;
-    this.gravarSerie(k, { feita: ficouFeita });
+    // O descanso desta série é o tempo corrido desde a anterior; sem timer rodando (primeira série), não há o que guardar.
+    const descanso = ficouFeita && this.descansando() ? Math.round((Date.now() - this.descansoDesde) / 1000) : undefined;
+    this.gravarSerie(k, { feita: ficouFeita, descanso });
     const todas = this.series().every((s) => s.feita);
-    if (ficouFeita && !todas) this.iniciarDescanso(it.descanso);
+    if (ficouFeita && !todas) this.iniciarDescanso();
     else this.pararDescanso();
   }
 
@@ -479,7 +495,9 @@ export class Workout {
     const salvo = this.estado();
     const efetivos = f ? this.plans.exerciciosEfetivos(f) : [];
     const registros: RegistroExercicio[] = (f?.itens ?? []).flatMap((it, i) => {
-      const series = (salvo?.series[i] ?? []).filter((s) => s.feita).map((s) => ({ carga: s.carga, reps: s.reps }));
+      const series = (salvo?.series[i] ?? [])
+        .filter((s) => s.feita)
+        .map((s) => ({ carga: s.carga, reps: s.reps, ...(s.descanso != null ? { descanso: s.descanso } : {}) }));
       return series.length ? [{ exerciseId: efetivos[i], ...(it.unidade ? { unidade: it.unidade } : {}), series }] : [];
     });
     this.plans.registrarSessao(this.id(), registros);
@@ -487,22 +505,23 @@ export class Workout {
     this.router.navigate(['/']);
   }
 
-  private iniciarDescanso(segundos: number): void {
+  /** Cronômetro progressivo: conta a partir de zero e não para sozinho. Usa a hora real para não atrasar com a tela apagada. */
+  private iniciarDescanso(): void {
     this.pararDescanso();
-    if (segundos <= 0) return;
-    this.descansoAtivo.set(segundos);
+    this.descansoDesde = Date.now();
+    this.descansando.set(true);
     this.intervalo = setInterval(() => {
-      this.descansoAtivo.update((v) => v - 1);
-      if (this.descansoAtivo() <= 0) {
-        this.pararDescanso();
-        navigator.vibrate?.(200);
-      }
-    }, 1000);
+      const antes = this.descansoAtivo();
+      const agora = Math.floor((Date.now() - this.descansoDesde) / 1000);
+      this.descansoAtivo.set(agora);
+      if (antes < this.limiteDescanso && agora >= this.limiteDescanso) navigator.vibrate?.(200);
+    }, 500);
   }
 
   private pararDescanso(): void {
     clearInterval(this.intervalo);
     this.intervalo = undefined;
+    this.descansando.set(false);
     this.descansoAtivo.set(0);
   }
 }
