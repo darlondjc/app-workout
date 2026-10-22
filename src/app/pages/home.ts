@@ -82,9 +82,11 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
         </article>
       }
 
-      <a class="btn btn--claro" routerLink="/treino-do-dia">
-        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino customizado para hoje
-      </a>
+      @if (!plans.treinouHoje()) {
+        <a class="btn btn--claro" routerLink="/treino-do-dia">
+          <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino customizado para hoje
+        </a>
+      }
 
       @if (plans.fichas().length > 0) {
         <section class="lista" aria-labelledby="titulo-fichas">

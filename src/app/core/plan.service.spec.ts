@@ -58,3 +58,25 @@ describe('PlanService: troca de exercício', () => {
     expect(plans.exerciciosEfetivos(plans.get(outra.id)!)).toEqual(['supino']);
   });
 });
+
+describe('PlanService.treinouHoje', () => {
+  let plans: PlanService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+  });
+
+  it('é falso sem treinos e verdadeiro depois de concluir um hoje', () => {
+    const [f] = plans.criarComItens([{ nome: 'A', itens: [item('supino', 60)] }]);
+    expect(plans.treinouHoje()).toBeFalse();
+    plans.registrarSessao(f.id, []);
+    expect(plans.treinouHoje()).toBeTrue();
+  });
+
+  it('treino de outro dia não conta', () => {
+    plans.historico.set([{ id: 'x', data: '2020-01-01', fichaId: 'f' }]);
+    expect(plans.treinouHoje()).toBeFalse();
+  });
+});

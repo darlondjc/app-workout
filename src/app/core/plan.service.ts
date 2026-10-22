@@ -196,6 +196,12 @@ export class PlanService {
     });
   }
 
+  /** Já há um treino concluído hoje (pela data local do aparelho). */
+  treinouHoje(): boolean {
+    const hoje = dataLocal();
+    return this.historico().some((s) => s.data === hoje);
+  }
+
   descartarAndamento(): void {
     this.emAndamento.set(null);
   }
