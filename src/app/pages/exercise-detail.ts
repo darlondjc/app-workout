@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { equivalentes } from '../core/equivalentes';
 import { ExerciseImage } from '../core/exercise-image';
@@ -57,29 +57,40 @@ import { ToastService } from '../core/toast.service';
               @if (opcoes().length === 0) {
                 <p class="apoio">Nenhum exercício equivalente disponível.</p>
               }
-              @if (pendente(); as novoId) {
-                <div class="card pergunta" role="group" aria-label="Onde trocar o exercício">
-                  <p><strong>Trocar por “{{ nomeDe(novoId) }}”</strong> só neste treino ou na ficha toda?</p>
-                  <button type="button" class="btn btn--escuro" (click)="aplicar(novoId, 'treino')">Só neste treino</button>
-                  <button type="button" class="btn btn--claro" (click)="aplicar(novoId, 'ficha')">Na ficha “{{ f.nome }}”</button>
-                  <button type="button" class="btn btn--claro" (click)="pendente.set(null)">
-                    <app-icon name="close" [size]="18" [stroke]="2.2" /> Cancelar
-                  </button>
-                </div>
-              }
               <ul class="opcoes">
                 @for (o of opcoes(); track o.id) {
-                  <li>
-                    <button type="button" class="opcao" (click)="trocar(o.id)">
+                  <li class="opcao-linha" [class.selecionada]="pendente() === o.id">
+                    <button type="button" class="opcao" [attr.aria-pressed]="pendente() === o.id" (click)="trocar(o.id)">
                       <img class="opcao__img" [src]="ex.imagem(o.id, 0)" alt="" loading="lazy" />
                       <span class="opcao__txt">
                         <span class="opcao__nome">{{ ex.nome(o) }}</span>
                         <span class="apoio">{{ ex.equipamento(o.equipment) }} · {{ ex.nivel(o.level) }}</span>
                       </span>
+                      @if (pendente() === o.id) {
+                        <span class="opcao__marca" aria-hidden="true"><app-icon name="check" [size]="16" [stroke]="3" /></span>
+                      }
+                    </button>
+                    <button type="button" class="lupa" [attr.aria-label]="'Ver imagem de ' + ex.nome(o)" (click)="verImagem(o.id)">
+                      <app-icon name="search" [size]="20" [stroke]="2.2" />
                     </button>
                   </li>
                 }
               </ul>
+              @if (pendente(); as novoId) {
+                <div class="card pergunta pergunta--fixa" role="group" aria-label="Confirmar a troca do exercício">
+                  @if (emTreino()) {
+                    <p><strong>Trocar por “{{ nomeDe(novoId) }}”</strong> só neste treino ou na ficha toda?</p>
+                    <button type="button" class="btn btn--escuro" (click)="aplicar(novoId, 'treino')">Só neste treino</button>
+                    <button type="button" class="btn btn--claro" (click)="aplicar(novoId, 'ficha')">Na ficha “{{ f.nome }}”</button>
+                  } @else {
+                    <p><strong>Trocar por “{{ nomeDe(novoId) }}”</strong> na ficha “{{ f.nome }}”?</p>
+                    <button type="button" class="btn btn--escuro" (click)="aplicar(novoId, 'ficha')">Confirmar troca</button>
+                  }
+                  <button type="button" class="btn btn--claro" (click)="pendente.set(null)">
+                    <app-icon name="close" [size]="18" [stroke]="2.2" /> Cancelar
+                  </button>
+                </div>
+              }
             }
           </section>
         }
@@ -96,6 +107,19 @@ import { ToastService } from '../core/toast.service';
           </ol>
         </section>
       </section>
+
+      @if (previaEx(); as p) {
+        <button type="button" class="fundo" tabindex="-1" aria-label="Fechar a imagem" (click)="fecharImagem()"></button>
+        <div class="dialogo" role="dialog" aria-modal="true" [attr.aria-label]="'Imagem de ' + ex.nome(p)">
+          <div class="dialogo__img">
+            <app-exercise-image [id]="p.id" [descricao]="'Demonstração: ' + ex.nome(p)" />
+          </div>
+          <h3 class="dialogo__nome">{{ ex.nome(p) }}</h3>
+          <p class="apoio">{{ ex.equipamento(p.equipment) }} · {{ ex.nivel(p.level) }}</p>
+          <button type="button" class="btn btn--escuro" (click)="escolherDaImagem(p.id)">Selecionar este exercício</button>
+          <button #fecharBtn type="button" class="btn btn--claro" (click)="fecharImagem()">Fechar</button>
+        </div>
+      }
 
       @if (!daFicha()) {
         <div class="rodape">
@@ -202,6 +226,84 @@ import { ToastService } from '../core/toast.service';
       flex-direction: column;
       gap: 8px;
     }
+    .opcao-linha {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .opcao-linha .opcao {
+      flex: 1;
+      min-width: 0;
+    }
+    .opcao-linha.selecionada .opcao {
+      border: 2px solid var(--accent-ink);
+      background: #f3f9d6;
+    }
+    .opcao__marca {
+      margin-left: auto;
+      flex: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lupa {
+      flex: none;
+      width: 48px;
+      border: 1px solid var(--line, rgba(20, 23, 26, 0.12));
+      border-radius: 14px;
+      background: #fff;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pergunta--fixa {
+      position: sticky;
+      bottom: calc(12px + env(safe-area-inset-bottom));
+      z-index: 5;
+      box-shadow: 0 8px 24px rgba(20, 23, 26, 0.22);
+    }
+    .fundo {
+      position: fixed;
+      inset: 0;
+      border: 0;
+      padding: 0;
+      cursor: default;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 30;
+    }
+    .dialogo {
+      position: fixed;
+      z-index: 31;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(92%, 440px);
+      max-height: 90vh;
+      overflow: auto;
+      box-sizing: border-box;
+      padding: 16px;
+      border-radius: 24px;
+      background: var(--card, #fff);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .dialogo__img {
+      height: 260px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .dialogo__nome {
+      font-family: var(--font-display);
+      font-size: 20px;
+      margin: 4px 0 0;
+    }
     .opcao {
       width: 100%;
       display: flex;
@@ -261,7 +363,7 @@ export class ExerciseDetail {
   private readonly router = inject(Router);
 
   protected readonly trocando = signal(false);
-  /** Exercício escolhido para a troca, esperando a resposta de "só neste treino ou na ficha". */
+  /** Exercício escolhido para a troca, esperando a confirmação (e, em treino, "só neste treino ou na ficha"). */
   protected readonly pendente = signal<string | null>(null);
 
   protected readonly exercicio = computed(() => this.ex.get(this.id()));
@@ -300,7 +402,7 @@ export class ExerciseDetail {
   protected readonly daFicha = computed(() => (this.posicao() >= 0 ? (this.plans.get(this.ficha() ?? '') ?? null) : null));
 
   /** Há treino começado dessa ficha (ou a pessoa veio da tela de treino): a troca pode valer só para ele. */
-  private readonly emTreino = computed(() => {
+  protected readonly emTreino = computed(() => {
     const f = this.daFicha();
     return !!f && (this.treino() === '1' || this.plans.emAndamento()?.fichaId === f.id);
   });
@@ -319,16 +421,37 @@ export class ExerciseDetail {
     return e ? this.ex.nome(e) : id;
   }
 
+  /** Marca o exercício como escolhido (com destaque na lista); a troca só acontece ao confirmar. Tocar de novo desmarca. */
   protected trocar(novoId: string): void {
-    const f = this.daFicha();
-    const atual = this.exercicio();
-    if (!f || !atual || !this.ex.get(novoId)) return;
-    if (this.emTreino()) {
-      this.pendente.set(novoId);
-      return;
-    }
-    if (!confirm(`Trocar “${this.ex.nome(atual)}” por “${this.nomeDe(novoId)}” na ficha “${f.nome}”?`)) return;
-    this.aplicar(novoId, 'ficha');
+    if (!this.daFicha() || !this.ex.get(novoId)) return;
+    this.pendente.update((atual) => (atual === novoId ? null : novoId));
+  }
+
+  /** Exercício aberto na imagem ampliada (a lupa de cada opção). */
+  private readonly previa = signal<string | null>(null);
+  protected readonly previaEx = computed(() => {
+    const id = this.previa();
+    return id ? this.ex.get(id) : undefined;
+  });
+  private readonly botaoFechar = viewChild<ElementRef<HTMLButtonElement>>('fecharBtn');
+
+  protected verImagem(id: string): void {
+    this.previa.set(id);
+    setTimeout(() => this.botaoFechar()?.nativeElement.focus());
+  }
+
+  protected fecharImagem(): void {
+    this.previa.set(null);
+  }
+
+  protected escolherDaImagem(id: string): void {
+    this.previa.set(null);
+    this.pendente.set(id);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected aoApertarEsc(): void {
+    if (this.previa()) this.previa.set(null);
   }
 
   protected aplicar(novoId: string, onde: 'treino' | 'ficha'): void {
