@@ -79,12 +79,19 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
 
         <div class="acoes">
           <button type="button" class="btn btn--claro" (click)="salvar()">Salvar ficha</button>
-          @if (f.itens.length > 0) {
-            <a class="btn btn--escuro" [routerLink]="['/treino', f.id]">Iniciar treino</a>
-          }
         </div>
 
         <button type="button" class="excluir" (click)="excluir()">Excluir ficha</button>
+
+        @if (f.itens.length > 0) {
+          <a
+            class="fab"
+            [routerLink]="['/treino', f.id]"
+            [attr.aria-label]="plans.emAndamento()?.fichaId === f.id ? 'Continuar treino' : 'Iniciar treino'"
+          >
+            <app-icon name="play" [size]="26" />
+          </a>
+        }
       </section>
     } @else {
       <section class="page">
@@ -184,6 +191,26 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       font-size: 12px;
       color: var(--muted);
     }
+    .fab {
+      position: fixed;
+      z-index: 9;
+      bottom: calc(84px + 16px + env(safe-area-inset-bottom));
+      /* O app tem no máximo 480px de largura e fica centralizado. */
+      right: max(20px, calc(50% - 240px + 20px));
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 16px rgba(20, 23, 26, 0.28);
+      transition: transform 0.15s ease;
+    }
+    .fab:active {
+      transform: scale(0.94);
+    }
     .acoes {
       display: flex;
       gap: 10px;
@@ -193,6 +220,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     }
     .excluir {
       align-self: center;
+      margin-bottom: 64px; /* espaço para o botão de play flutuante não cobrir o fim da tela */
       min-height: 44px;
       padding: 0 12px;
       border: none;
