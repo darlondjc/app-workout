@@ -42,15 +42,15 @@ import { ToastService } from '../core/toast.service';
 
           <div class="tabela" role="group" aria-label="Séries">
             <div class="cabecalho" aria-hidden="true">
-              <span>Série</span><span>Carga (kg)</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Feito</span>
+              <span>Série</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Carga (kg)</span><span>Feito</span>
             </div>
             @for (s of series(); track s.n) {
               <div class="serie" [class.feita]="s.feita">
                 <span class="n">{{ s.n }}</span>
-                <input class="valor" type="number" inputmode="decimal" min="0" step="0.5" [value]="s.carga"
-                  [attr.aria-label]="'Carga da série ' + s.n + ' (kg)'" (change)="editar(s.n - 1, 'carga', $event)" />
                 <input class="valor" type="number" inputmode="numeric" min="0" [value]="s.reps"
                   [attr.aria-label]="(it.unidade === 'min' ? 'Minutos' : 'Repetições') + ' da série ' + s.n" (change)="editar(s.n - 1, 'reps', $event)" />
+                <input class="valor" type="number" inputmode="decimal" min="0" step="0.5" [value]="s.carga"
+                  [attr.aria-label]="'Carga da série ' + s.n + ' (kg)'" (change)="editar(s.n - 1, 'carga', $event)" />
                 <button
                   type="button"
                   class="marca"
@@ -365,9 +365,17 @@ export class Workout {
     this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
   }
 
+  /** Ao mudar carga ou repetições de uma série, as de baixo que ainda não foram feitas ganham o mesmo valor. */
   protected editar(k: number, campo: 'carga' | 'reps', evento: Event): void {
     const v = (evento.target as HTMLInputElement).valueAsNumber;
-    this.gravarSerie(k, { [campo]: Number.isFinite(v) && v >= 0 ? v : 0 });
+    const valor = Number.isFinite(v) && v >= 0 ? v : 0;
+    const i = this.indice();
+    const base = this.series().map((s, j) => (j >= k && (j === k || !s.feita) ? { ...s, [campo]: valor } : s));
+    this.plans.andamento(this.id(), (a) => ({
+      ...a,
+      indice: i,
+      series: { ...a.series, [i]: base.map((s) => ({ feita: s.feita, carga: s.carga, reps: s.reps })) },
+    }));
   }
 
   protected alternar(k: number): void {
