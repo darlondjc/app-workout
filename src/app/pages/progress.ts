@@ -115,7 +115,7 @@ function lerMeta(): number | null {
         </div>
         <div class="card num num--largo">
           <strong>{{ duracao(resumo().descansoMedio) }}</strong>
-          <span class="apoio">descanso médio entre séries</span>
+          <span class="apoio">tempo médio entre séries</span>
         </div>
       </div>
 

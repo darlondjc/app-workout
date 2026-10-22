@@ -19,7 +19,7 @@ export interface Resumo {
   /** Exercícios do último treino com carga acima do melhor anterior. */
   recordes: { exerciseId: string; carga: number; antes: number }[];
   diaFavorito: string | null;
-  /** Descanso médio entre séries, em segundos; null enquanto não há nenhum registrado. */
+  /** Tempo médio entre séries, em segundos; null enquanto não há nenhum registrado. */
   descansoMedio: number | null;
 }
 
@@ -140,10 +140,10 @@ function recordesDoUltimo(h: Sessao[]): Resumo['recordes'] {
 }
 
 /** Números do acompanhamento: semana, mês, sequência, volume e recordes. */
-/** Descansos acima disso (10 min) são pausas no treino, não descanso entre séries, e ficam fora da média. */
+/** Intervalos acima disso (10 min) são pausas no treino, não tempo entre séries, e ficam fora da média. */
 export const DESCANSO_MAXIMO = 600;
 
-/** Média, em segundos, do descanso registrado entre as séries de todos os treinos. */
+/** Média, em segundos, do tempo registrado entre uma série e a seguinte, em todos os treinos. */
 export function descansoMedio(h: Sessao[]): number | null {
   const valores = h
     .flatMap((s) => s.registros ?? [])

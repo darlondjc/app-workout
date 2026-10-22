@@ -42,7 +42,7 @@ export interface Ficha {
 export interface SerieRegistro {
   carga: number;
   reps: number;
-  /** Segundos descansados desde a série anterior do exercício (ausente na primeira série). */
+  /** Segundos entre marcar a série anterior e marcar esta, com descanso e execução juntos (ausente na primeira série do exercício). */
   descanso?: number;
 }
 
@@ -67,7 +67,7 @@ export interface SerieEmAndamento {
   feita: boolean;
   carga: number;
   reps: number;
-  /** Segundos descansados antes de marcar esta série como feita. */
+  /** Segundos desde que a série anterior foi marcada até marcar esta. */
   descanso?: number;
 }
 
