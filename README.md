@@ -8,7 +8,7 @@ PWA em Angular para montar fichas de treino. A biblioteca tem 876 exercícios co
 - **Biblioteca**: busca por nome em português ou inglês, filtro por grupo muscular, equipamento e nível.
 - **Exercício**: foto alternando entre as duas posições, músculos, equipamento e instruções.
 - **Fichas**: criar, renomear, reordenar, remover exercícios e definir séries, repetições, carga e descanso; cada ficha mostra os grupos musculares trabalhados, e um botão de play flutuante inicia o treino.
-- **Treino**: marcar séries feitas (reps e carga editadas valem para as séries seguintes), cronômetro de descanso, pausar ou cancelar pelo X e registro do treino concluído.
+- **Treino**: marcar séries feitas (reps e carga editadas valem para as séries seguintes), cronômetro de descanso progressivo (vermelho no descanso da ficha), pausar ou cancelar pelo X, tempo entre séries e registro do treino concluído.
 
 As fichas e o histórico ficam no `localStorage` do aparelho e funcionam sem conta. Com o login do Google (opcional), são sincronizados pelo Firestore, e dá para adicionar amigos; veja [Conta, backup e sincronização](#conta-backup-e-sincronização-firebase) e [Amigos e timeline](#amigos-e-timeline).
 

@@ -1,5 +1,17 @@
 [
   {
+    "versao": "1.9.3",
+    "data": "2026-10-22",
+    "titulo": "Cronômetro de descanso progressivo e troca de exercício mais clara",
+    "itens": [
+      "O cronômetro de descanso agora conta para cima e fica vermelho no tempo de descanso da ficha, sem parar de contar.",
+      "Ao marcar uma série, o app guarda o tempo desde a série anterior. A tela de estatísticas mostra o tempo médio entre séries.",
+      "Exercícios de uma série só, como o cardio, não mostram mais o cronômetro de descanso.",
+      "Com os botões Anterior e Próximo na tela, o segundo agora diz só \"Próximo\".",
+      "Na troca por equivalente, a opção escolhida fica destacada antes de confirmar, e a lupa abre a imagem do exercício."
+    ]
+  },
+  {
     "versao": "1.9.2",
     "data": "2026-10-22",
     "titulo": "Treino mais prático",
