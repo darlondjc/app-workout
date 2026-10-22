@@ -79,13 +79,16 @@ import { ToastService } from '../core/toast.service';
             <p class="ultima">Última vez: {{ u }}</p>
           }
 
-          <div class="descanso" role="timer" aria-live="off">
-            <div>
-              <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
-              <p class="tempo" [class.estourou]="descansoAtivo() >= limiteDescanso()">{{ tempo() }}</p>
+          <!-- Com uma série só (como o cardio) não há descanso entre séries: o cronômetro não faz sentido. -->
+          @if (series().length > 1) {
+            <div class="descanso" role="timer" aria-live="off">
+              <div>
+                <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
+                <p class="tempo" [class.estourou]="descansoAtivo() >= limiteDescanso()">{{ tempo() }}</p>
+              </div>
+              <span class="selo">{{ feitas() }} de {{ series().length }} séries</span>
             </div>
-            <span class="selo">{{ feitas() }} de {{ series().length }} séries</span>
-          </div>
+          }
 
           <div class="rodape">
             @if (indice() > 0) {
