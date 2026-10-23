@@ -24,20 +24,23 @@ import { PlanService } from '../core/plan.service';
         @for (b of blocos(); track b.chave) {
           @if (b.conjunto; as c) {
             <li class="conjunto">
-              <div class="conjunto__topo">
+              <button type="button" class="conjunto__topo" [attr.aria-expanded]="aberto(b)" [attr.aria-controls]="'conj-' + c.id" (click)="alternar(b)">
                 <span class="conjunto__texto">
                   <strong class="conjunto__nome">{{ c.nome }}</strong>
-                  <span class="apoio">{{ b.fichas.length }} {{ b.fichas.length === 1 ? 'treino' : 'treinos' }}</span>
+                  <span class="apoio">{{ b.fichas.length }} {{ b.fichas.length === 1 ? 'treino' : 'treinos' }}@if (!aberto(b)) { · {{ resumo(b) }} }</span>
                 </span>
-                <button type="button" class="conjunto__excluir" [attr.aria-label]="'Excluir a ficha ' + c.nome + ' com todos os treinos'" aria-haspopup="dialog" (click)="excluindoConjunto.set({ id: c.id, nome: c.nome, treinos: b.fichas.length })">
-                  <app-icon name="trash" [size]="20" [stroke]="2" />
+                <app-icon [name]="aberto(b) ? 'up' : 'down'" [size]="22" [stroke]="2.2" />
+              </button>
+              @if (aberto(b)) {
+                <ul class="lista" [id]="'conj-' + c.id">
+                  @for (f of b.fichas; track f.id) {
+                    <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: f }" />
+                  }
+                </ul>
+                <button type="button" class="conjunto__excluir" aria-haspopup="dialog" (click)="excluindoConjunto.set({ id: c.id, nome: c.nome, treinos: b.fichas.length })">
+                  <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
                 </button>
-              </div>
-              <ul class="lista">
-                @for (f of b.fichas; track f.id) {
-                  <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: f }" />
-                }
-              </ul>
+              }
             </li>
           } @else {
             <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: b.fichas[0] }" />
@@ -144,28 +147,43 @@ import { PlanService } from '../core/plan.service';
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 0 4px 0 6px;
+      width: 100%;
+      min-height: 52px;
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 16px;
+      background: transparent;
+      font: inherit;
+      color: inherit;
+      text-align: left;
     }
     .conjunto__texto {
       display: flex;
       flex-direction: column;
       min-width: 0;
     }
+    .conjunto__texto .apoio {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .conjunto__nome {
       font-family: var(--font-display);
       font-size: 17px;
     }
     .conjunto__excluir {
-      flex: none;
-      width: 44px;
-      height: 44px;
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 10px;
       border: 0;
-      border-radius: 50%;
       background: transparent;
       color: #b3261e;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
     }
     .conjunto .lista {
       padding-left: 10px;
@@ -241,6 +259,24 @@ export class Plans {
     }
     return out;
   });
+  /** Fichas que a pessoa abriu ou fechou à mão; as demais seguem o padrão: só a ficha atual fica aberta. */
+  private readonly manual = signal<Record<string, boolean>>({});
+
+  protected aberto(b: { chave: string; fichas: Ficha[] }): boolean {
+    const escolha = this.manual()[b.chave];
+    return escolha ?? b.fichas.some((f) => f.id === this.plans.ativaId());
+  }
+
+  protected alternar(b: { chave: string; fichas: Ficha[] }): void {
+    const agora = !this.aberto(b);
+    this.manual.update((m) => ({ ...m, [b.chave]: agora }));
+  }
+
+  /** Nomes dos treinos, para a ficha fechada mostrar do que se trata. */
+  protected resumo(b: { fichas: Ficha[] }): string {
+    return b.fichas.map((f) => f.nome).join(' · ');
+  }
+
   protected readonly excluindoConjunto = signal<{ id: string; nome: string; treinos: number } | null>(null);
 
   /** Largura da lixeira que aparece ao arrastar a ficha para a direita. */

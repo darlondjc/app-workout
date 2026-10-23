@@ -45,4 +45,44 @@ describe('Plans — fichas com vários treinos', () => {
     expect(plans.fichas().map((f) => f.nome)).toEqual(['Antiga']);
     expect(el().querySelector('.conjunto')).toBeNull();
   });
+
+  describe('abrir e fechar', () => {
+    const topos = () => [...el().querySelectorAll('.conjunto__topo')] as HTMLButtonElement[];
+    const abertos = () => topos().map((t) => t.getAttribute('aria-expanded') === 'true');
+
+    beforeEach(() => {
+      // Uma segunda ficha com vários treinos: passa a ser a atual.
+      plans.criarConjunto('Segunda', ['Peito', 'Costas'].map((nome) => ({ nome, itens: [item('y' + nome)] })));
+      fixture.detectChanges();
+    });
+
+    it('só a ficha atual começa aberta; as outras mostram o resumo dos treinos', () => {
+      expect(abertos()).toEqual([false, true]);
+      expect(el().querySelectorAll('.conjunto')[0].querySelector('.item')).toBeNull();
+      expect(el().querySelectorAll('.conjunto')[0].querySelector('.apoio')!.textContent).toContain('Peito · Costas · Pernas · Braços');
+      expect(el().querySelectorAll('.conjunto')[1].querySelectorAll('.item').length).toBe(2);
+    });
+
+    it('tocar na ficha fechada a abre, e tocar de novo fecha; a outra não muda', () => {
+      topos()[0].click();
+      fixture.detectChanges();
+      expect(abertos()).toEqual([true, true]);
+      expect(el().querySelectorAll('.conjunto')[0].querySelectorAll('.item').length).toBe(4);
+      topos()[0].click();
+      fixture.detectChanges();
+      expect(abertos()).toEqual([false, true]);
+    });
+
+    it('dá para fechar a ficha atual', () => {
+      topos()[1].click();
+      fixture.detectChanges();
+      expect(abertos()).toEqual([false, false]);
+    });
+
+    it('a ficha solta continua sempre à vista', () => {
+      topos()[1].click();
+      fixture.detectChanges();
+      expect(el().querySelectorAll('.item').length).toBe(1);
+    });
+  });
 });
