@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.9.12",
+    "data": "2026-10-23",
+    "titulo": "Recuperar foto que não foi enviada",
+    "itens": [
+      "Se a foto de um treino seu não for encontrada, o card agora mostra o botão para adicionar a foto de novo, mesmo depois de 24 horas."
+    ]
+  },
+  {
     "versao": "1.9.11",
     "data": "2026-10-23",
     "titulo": "Equivalentes em ordem alfabética e aviso quando a foto não carrega",
