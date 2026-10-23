@@ -67,10 +67,25 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
     .sub { margin: 0; font-size: 15px; color: var(--muted); font-weight: 500; }
     .grande { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1; margin: 0; }
     .grande small { font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--muted); }
-    .form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
-    .form .btn { grid-column: 1 / -1; }
+    .form { display: flex; flex-direction: column; gap: 10px; }
     .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .campo input { min-height: 46px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); width: 100%; }
+    /* No iOS o campo de data tem largura mínima e aparência próprias: sem isto ele estoura o card e fica mais baixo que o de peso. */
+    .campo input {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      height: 48px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--card);
+      -webkit-appearance: none;
+      appearance: none;
+      text-align: left;
+    }
+    .campo input::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
+    .campo input::-webkit-datetime-edit { padding: 0; }
     .erro { color: #b3261e; }
     .historico summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; font-size: 14px; cursor: pointer; }
     .historico ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
