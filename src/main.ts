@@ -10,6 +10,10 @@ function esconderAbertura(): void {
   setTimeout(() => el.remove(), 500);
 }
 
+// Trava em retrato onde o navegador permite (Android com o app instalado); nos demais, vale o aviso do CSS.
+const orientacao = screen.orientation as (ScreenOrientation & { lock?: (o: string) => Promise<void> }) | undefined;
+orientacao?.lock?.('portrait')?.catch(() => undefined);
+
 bootstrapApplication(App, appConfig)
   .then(() => requestAnimationFrame(() => setTimeout(esconderAbertura, 250)))
   .catch((err) => {
