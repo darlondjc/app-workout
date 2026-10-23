@@ -10,6 +10,16 @@ import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
 import { ToastService } from '../core/toast.service';
 
+const CHAVE_MARCAR_AO_FINALIZAR = 'app-workout:marcar-tudo-ao-finalizar:v1';
+
+function lerPreferencia(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_MARCAR_AO_FINALIZAR) === '1';
+  } catch {
+    return false;
+  }
+}
+
 @Component({
   selector: 'app-workout',
   imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino],
@@ -39,6 +49,20 @@ import { ToastService } from '../core/toast.service';
             </div>
           }
 
+          @if (perguntandoFaltantes()) {
+            <button type="button" class="fundo" tabindex="-1" aria-label="Voltar ao treino" (click)="perguntandoFaltantes.set(false)"></button>
+            <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="falta-titulo" aria-describedby="falta-texto" (keydown.escape)="perguntandoFaltantes.set(false)">
+              <h2 id="falta-titulo" class="folha__titulo">Marcar o que falta como feito?</h2>
+              <p id="falta-texto" class="folha__texto">
+                {{ faltantes() === 1 ? 'Falta 1 série' : 'Faltam ' + faltantes() + ' séries' }} sem marcar. Posso marcar
+                {{ faltantes() === 1 ? 'ela' : 'todas' }} como feita{{ faltantes() === 1 ? '' : 's' }}, com as repetições e cargas que estão na tela.
+              </p>
+              <button type="button" class="btn btn--destaque" (click)="finalizarMarcandoTudo()">Marcar e finalizar</button>
+              <button type="button" class="btn btn--escuro-suave" (click)="finalizarSemMarcar()">Finalizar sem marcar</button>
+              <button type="button" class="btn btn--escuro-suave" (click)="perguntandoFaltantes.set(false)">Voltar ao treino</button>
+            </div>
+          }
+
           @if (concluindo()) {
             <app-concluir-treino (concluir)="finalizar($event)" (cancelar)="concluindo.set(false)" />
           }
@@ -58,6 +82,12 @@ import { ToastService } from '../core/toast.service';
           </div>
 
           <div class="tabela" role="group" aria-label="Séries">
+            <div class="todos">
+              <button type="button" class="todos__botao" (click)="marcarTodos()">
+                <app-icon name="check" [size]="16" [stroke]="3" />
+                {{ feitas() === series().length ? 'Desmarcar todos' : 'Marcar todos' }}
+              </button>
+            </div>
             <div class="cabecalho" aria-hidden="true">
               <span>Série</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Carga (kg)</span><span>Feito</span>
             </div>
@@ -95,6 +125,12 @@ import { ToastService } from '../core/toast.service';
               <span class="selo">{{ feitas() }} de {{ series().length }} séries</span>
             </div>
           }
+
+          <label class="chave">
+            <input type="checkbox" role="switch" [checked]="marcarAoFinalizar()" (change)="alternarMarcarAoFinalizar()" />
+            <span class="trilho" aria-hidden="true"></span>
+            <span class="chave__texto">Marcar tudo como feito ao finalizar treino</span>
+          </label>
 
           <div class="rodape">
             @if (indice() > 0) {
@@ -241,6 +277,70 @@ import { ToastService } from '../core/toast.service';
       flex-direction: column;
       gap: 8px;
     }
+    .todos {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .todos__botao {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 36px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1.5px solid #8a918c;
+      background: transparent;
+      color: #fff;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .chave {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 48px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #d5dad6;
+    }
+    .chave input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .trilho {
+      flex: none;
+      position: relative;
+      width: 46px;
+      height: 28px;
+      border-radius: 999px;
+      background: #3a4046;
+      transition: background 0.15s;
+    }
+    .trilho::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.15s;
+    }
+    .chave input:checked + .trilho {
+      background: var(--accent);
+    }
+    .chave input:checked + .trilho::after {
+      transform: translateX(18px);
+      background: var(--ink);
+    }
+    .chave input:focus-visible + .trilho {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
     .cabecalho,
     .serie {
       display: grid;
@@ -361,6 +461,10 @@ export class Workout {
   protected readonly confirmandoSaida = signal(false);
   /** Último passo aberto: foto opcional antes de concluir. */
   protected readonly concluindo = signal(false);
+  /** Ao finalizar com séries sem marcar: pergunta se pode marcá-las como feitas. */
+  protected readonly perguntandoFaltantes = signal(false);
+  /** Preferência (guardada no aparelho): marcar o que falta sem perguntar ao finalizar. */
+  protected readonly marcarAoFinalizar = signal(lerPreferencia());
   private intervalo?: ReturnType<typeof setInterval>;
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
@@ -373,12 +477,14 @@ export class Workout {
     const max = Math.max(0, (this.ficha()?.itens.length ?? 1) - 1);
     return Math.min(this.estado()?.indice ?? 0, max);
   });
-  /** O exercício da vez: o da ficha, ou o que foi trocado só para este treino. */
-  protected readonly item = computed(() => {
-    const base = this.ficha()?.itens[this.indice()];
-    const troca = this.estado()?.trocas?.[this.indice()];
+  /** O exercício na posição i: o da ficha, ou o que foi trocado só para este treino. */
+  private itemDe(i: number) {
+    const base = this.ficha()?.itens[i];
+    const troca = this.estado()?.trocas?.[i];
     return base && troca ? { ...base, exerciseId: troca } : base;
-  });
+  }
+  /** O exercício da vez. */
+  protected readonly item = computed(() => this.itemDe(this.indice()));
   protected readonly ultimo = computed(() => this.indice() >= (this.ficha()?.itens.length ?? 1) - 1);
 
   protected readonly nome = computed(() => {
@@ -392,11 +498,12 @@ export class Workout {
     return it ? this.plans.ultimoRegistro(it.exerciseId) : undefined;
   });
 
-  protected readonly series = computed(() => {
-    const it = this.item();
+  /** Séries do exercício i como a tela as mostra: o que foi salvo, ou os valores sugeridos (última vez ou ficha). */
+  private seriesDe(i: number) {
+    const it = this.itemDe(i);
     if (!it) return [];
-    const salvas = this.estado()?.series[this.indice()] ?? [];
-    const ant = this.anterior_()?.series ?? [];
+    const salvas = this.estado()?.series[i] ?? [];
+    const ant = this.plans.ultimoRegistro(it.exerciseId)?.series ?? [];
     return Array.from({ length: it.series }, (_, k) => ({
       n: k + 1,
       feita: !!salvas[k]?.feita,
@@ -404,7 +511,14 @@ export class Workout {
       reps: salvas[k]?.reps ?? it.reps,
       descanso: salvas[k]?.descanso,
     }));
-  });
+  }
+
+  protected readonly series = computed(() => this.seriesDe(this.indice()));
+
+  /** Séries de todo o treino que ainda não foram marcadas. */
+  protected readonly faltantes = computed(() =>
+    (this.ficha()?.itens ?? []).reduce((total, _, i) => total + this.seriesDe(i).filter((s) => !s.feita).length, 0),
+  );
 
   protected readonly ultima = computed(() => {
     const r = this.anterior_();
@@ -479,6 +593,15 @@ export class Workout {
     this.nav.voltar('/');
   }
 
+  /** Marca todas as séries do exercício; se já estão todas marcadas, desmarca. */
+  protected marcarTodos(): void {
+    const i = this.indice();
+    const marcar = this.feitas() < this.series().length;
+    const base = this.series().map((s) => this.paraSalvar({ ...s, feita: marcar, descanso: marcar ? s.descanso : undefined }));
+    this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
+    this.pararDescanso();
+  }
+
   protected alternar(k: number): void {
     const it = this.item();
     if (!it) return;
@@ -506,7 +629,49 @@ export class Workout {
       this.irPara(this.indice() + 1);
       return;
     }
-    // Com a conta social ativa, oferece uma foto para a timeline; sem ela, conclui direto.
+    if (this.faltantes() > 0) {
+      if (this.marcarAoFinalizar()) this.marcarFaltantes();
+      else {
+        this.perguntandoFaltantes.set(true);
+        return;
+      }
+    }
+    this.concluir();
+  }
+
+  protected finalizarMarcandoTudo(): void {
+    this.perguntandoFaltantes.set(false);
+    this.marcarFaltantes();
+    this.concluir();
+  }
+
+  protected finalizarSemMarcar(): void {
+    this.perguntandoFaltantes.set(false);
+    this.concluir();
+  }
+
+  protected alternarMarcarAoFinalizar(): void {
+    const novo = !this.marcarAoFinalizar();
+    this.marcarAoFinalizar.set(novo);
+    try {
+      localStorage.setItem(CHAVE_MARCAR_AO_FINALIZAR, novo ? '1' : '0');
+    } catch {
+      /* sem armazenamento: vale só até sair da tela */
+    }
+  }
+
+  /** Marca como feitas as séries de todos os exercícios, com os valores que a tela mostra para elas. */
+  private marcarFaltantes(): void {
+    const itens = this.ficha()?.itens ?? [];
+    const porExercicio: Record<number, SerieEmAndamento[]> = {};
+    itens.forEach((_, i) => {
+      porExercicio[i] = this.seriesDe(i).map((s) => this.paraSalvar({ ...s, feita: true }));
+    });
+    this.plans.andamento(this.id(), (a) => ({ ...a, series: { ...a.series, ...porExercicio } }));
+  }
+
+  /** Com a conta social ativa, oferece uma foto para a timeline; sem ela, conclui direto. */
+  private concluir(): void {
     if (this.social.ativo()) this.concluindo.set(true);
     else this.finalizar(null);
   }
