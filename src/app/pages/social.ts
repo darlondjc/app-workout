@@ -59,9 +59,11 @@ const pessoaEscolhida = signal<string>('eu');
           <app-carregando texto="Conectando…" />
         }
       } @else {
-        <div class="abas-sociais" role="tablist" aria-label="Seção">
-          <button type="button" role="tab" [attr.aria-selected]="aba() === 'timeline'" (click)="aba.set('timeline')">Timeline</button>
-          <button type="button" role="tab" [attr.aria-selected]="aba() === 'estatisticas'" (click)="aba.set('estatisticas')">Estatísticas</button>
+        <div class="abas-fixas">
+          <div class="abas-sociais" role="tablist" aria-label="Seção">
+            <button type="button" role="tab" [attr.aria-selected]="aba() === 'timeline'" (click)="aba.set('timeline')">Timeline</button>
+            <button type="button" role="tab" [attr.aria-selected]="aba() === 'estatisticas'" (click)="aba.set('estatisticas')">Estatísticas</button>
+          </div>
         </div>
 
         @if (social.erro()) {
@@ -142,6 +144,8 @@ const pessoaEscolhida = signal<string>('eu');
     .aviso-n { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--ink); color: var(--accent); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
     /* Timeline mais junta: menos espaço entre os cartões. */
     :host .page { gap: 10px; }
+    /* As abas ficam no topo ao rolar. O fundo cobre o que passa por trás; as margens negativas mantêm o espaçamento de antes. */
+    .abas-fixas { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin: -8px -20px -8px; padding: 8px 20px; background: var(--bg); }
     .abas-sociais { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--soft); }
     .abas-sociais button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 600; color: var(--muted); }
     .abas-sociais button[aria-selected='true'] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 23, 26, 0.12); }
