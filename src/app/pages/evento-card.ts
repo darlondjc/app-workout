@@ -15,21 +15,24 @@ import { SocialService } from '../core/social.service';
   template: `
     <article class="card">
       <header class="topo">
-        <app-avatar [usuario]="{ uid: evento().autor, nome: social.nomeDe(evento().autor, evento().autorNome), email: '', foto: social.fotoDe(evento().autor, evento().autorFoto) }" [tamanho]="40" />
+        <app-avatar [usuario]="{ uid: evento().autor, nome: social.nomeDe(evento().autor, evento().autorNome), email: '', foto: social.fotoDe(evento().autor, evento().autorFoto) }" [tamanho]="32" />
         <div class="quem">
-          <strong>{{ minha() ? 'Você' : social.nomeDe(evento().autor, evento().autorNome) }}</strong>
-          <span class="apoio">concluiu um treino · {{ quando() }}</span>
+          <p class="linha-nome"><strong>{{ minha() ? 'Você' : social.nomeDe(evento().autor, evento().autorNome) }}</strong> <span class="apoio">· {{ quando() }}</span></p>
+          <p class="ficha">{{ evento().fichaNome }}</p>
         </div>
       </header>
 
       <div class="corpo">
-        <p class="ficha">{{ evento().fichaNome }}</p>
-        <p class="apoio">{{ resumo() }}</p>
-        @if (evento().marco) {
-          <p class="selo selo--marco">{{ evento().marco }}</p>
-        }
-        @for (r of evento().recordes; track r.nome) {
-          <p class="selo">Recorde: {{ r.nome }} · {{ r.carga }} kg</p>
+        <p class="apoio resumo">{{ resumo() }}</p>
+        @if (evento().marco || evento().recordes.length) {
+          <div class="selos">
+            @if (evento().marco) {
+              <span class="selo selo--marco">{{ evento().marco }}</span>
+            }
+            @for (r of evento().recordes; track r.nome) {
+              <span class="selo">Recorde: {{ r.nome }} · {{ r.carga }} kg</span>
+            }
+          </div>
         }
       </div>
 
@@ -49,7 +52,7 @@ import { SocialService } from '../core/social.service';
         <div class="comentarios">
           @for (c of comentarios(); track c.id) {
             <div class="comentario">
-              <app-avatar [usuario]="{ uid: c.autor, nome: social.nomeDe(c.autor, c.autorNome), email: '', foto: social.fotoDe(c.autor, c.autorFoto) }" [tamanho]="28" />
+              <app-avatar [usuario]="{ uid: c.autor, nome: social.nomeDe(c.autor, c.autorNome), email: '', foto: social.fotoDe(c.autor, c.autorFoto) }" [tamanho]="24" />
               <p>
                 <strong>{{ c.autor === social.eu()?.uid ? 'Você' : social.nomeDe(c.autor, c.autorNome) }}</strong> {{ c.texto }}
               </p>
@@ -94,29 +97,33 @@ import { SocialService } from '../core/social.service';
     }
   `,
   styles: `
-    .card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .topo { display: flex; align-items: center; gap: 12px; }
+    .card { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .topo { display: flex; align-items: center; gap: 10px; }
     .quem { display: flex; flex-direction: column; min-width: 0; }
-    .quem .apoio { font-size: 13px; }
-    .ficha { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 0; }
+    .quem p { margin: 0; }
+    .linha-nome { font-size: 13px; line-height: 1.3; }
+    .linha-nome .apoio { font-size: 12px; margin-left: 2px; }
+    .ficha { font-family: var(--font-display); font-size: 17px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
     .corpo { display: flex; flex-direction: column; gap: 6px; }
     .corpo p { margin: 0; }
-    .selo { align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: #f1f8cf; font-size: 13px; }
+    .resumo { font-size: 13px; }
+    .selos { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+    .selo { padding: 2px 8px; border-radius: 999px; background: #f1f8cf; font-size: 12px; line-height: 1.5; }
     .selo--marco { background: var(--ink); color: var(--accent); font-weight: 700; }
-    .acoes { display: flex; gap: 8px; }
-    .acao { min-height: 44px; min-width: 56px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); color: var(--ink); font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .acoes { display: flex; gap: 6px; }
+    .acao { min-height: 40px; min-width: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
     .previa { margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid var(--line); background: var(--soft); border-radius: 0 10px 10px 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
     .confirma { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
     .btn--apagar { background: #b3261e; color: #fff; }
-    .acao--texto { margin-left: auto; font-weight: 600; font-size: 14px; }
+    .acao--texto { margin-left: auto; font-weight: 600; font-size: 13px; }
     .acao.ativa { background: var(--ink); color: var(--accent); border-color: var(--ink); }
-    .comentarios { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .comentarios { border-top: 1px solid var(--soft); padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
     .comentario { display: flex; align-items: flex-start; gap: 8px; }
-    .comentario p { margin: 0; flex: 1; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+    .comentario p { margin: 0; flex: 1; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
     .apagar { width: 32px; height: 32px; border: 0; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
     .novo { display: flex; gap: 8px; }
-    .novo input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; background: var(--card); }
-    .novo .btn { min-height: 44px; padding: 0 16px; }
+    .novo input { flex: 1; min-width: 0; min-height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; background: var(--card); }
+    .novo .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
   `,
 })
 export class EventoCard {
