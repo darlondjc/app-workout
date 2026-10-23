@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.11.4",
+    "data": "2026-10-23",
+    "titulo": "Abas do Social mais visíveis",
+    "itens": [
+      "Social: as abas Timeline e Estatísticas agora são dois botões separados, com ícone ao lado do nome.",
+      "A aba escolhida fica escura com letra branca, e a barra ficou mais baixa."
+    ]
+  },
+  {
     "versao": "1.11.3",
     "data": "2026-10-23",
     "titulo": "Barra do topo no Social e ícone do app",
