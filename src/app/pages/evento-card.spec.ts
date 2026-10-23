@@ -335,6 +335,19 @@ describe('EventoCard: ver treino', () => {
       expect(el().querySelector('.erro-foto')?.textContent).toContain('Não consegui mostrar a foto');
     });
 
+    it('foto que sumiu do seu treino: oferece adicionar de novo, mesmo passadas as 24 horas, e some o aviso ao enviar', async () => {
+      criar('eu', { temFoto: true, criadoEm: Date.now() - 3 * 24 * 3600_000 });
+      await pronto();
+      expect(el().querySelector('.erro-foto')).not.toBeNull();
+      expect(el().querySelector('app-foto-botao')).not.toBeNull();
+    });
+
+    it('foto que sumiu do treino de um amigo: sem botão para adicionar', async () => {
+      criar('ana', { temFoto: true });
+      await pronto();
+      expect(el().querySelector('app-foto-botao')).toBeNull();
+    });
+
     it('o dono adiciona uma foto: grava e já mostra', async () => {
       criar('eu');
       fixture.debugElement.query((d) => d.name === 'app-foto-botao').triggerEventHandler('escolhida', FOTO);

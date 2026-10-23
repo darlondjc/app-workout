@@ -67,7 +67,7 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
           <app-icon name="comment" [size]="20" [stroke]="2" /> {{ comentarios().length || '' }}
           <span class="sr-only">Comentários</span>
         </button>
-        @if (podeAdicionarFoto() && !foto() && !fotoCarregando()) {
+        @if ((podeAdicionarFoto() || (minha() && motivoSemFoto())) && !foto() && !fotoCarregando()) {
           <app-foto-botao [somenteIcone]="true" classe="acao" rotulo="Adicionar foto" (escolhida)="colocarFoto($event)" (falhou)="erroFoto.set($event)" />
         }
         <button type="button" class="acao acao--texto" aria-haspopup="dialog" (click)="abrirDetalhe()">Ver treino</button>
@@ -263,7 +263,10 @@ export class EventoCard {
 
   protected async colocarFoto(dados: string): Promise<void> {
     this.erroFoto.set('');
-    if (await this.social.definirFoto(this.evento(), dados)) this.foto.set(dados);
+    if (await this.social.definirFoto(this.evento(), dados)) {
+      this.foto.set(dados);
+      this.motivoSemFoto.set('');
+    }
     else this.erroFoto.set('Não consegui enviar a foto. Tente de novo.');
   }
 
