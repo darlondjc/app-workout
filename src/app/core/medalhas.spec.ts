@@ -1,5 +1,6 @@
 import { Sessao } from './models';
-import { calcularMedalhas, historicoDeRecordes, proximaMedalha, ultimasConquistas } from './medalhas';
+import { dataISO } from './stats';
+import { Conquista, calcularConquistas, formatarProgresso, formatarValor, fracaoAteOProximo, historicoDeRecordes, proximaConquista } from './medalhas';
 
 let n = 0;
 
@@ -14,7 +15,12 @@ function sessao(data: string, exerciseId = 'supino', cargas: number[] = [20]): S
   };
 }
 
-const medalha = (lista: ReturnType<typeof calcularMedalhas>, id: string) => lista.find((m) => m.id === id)!;
+/** `quantos` treinos em dias seguidos a partir de 1º de março de 2026. */
+function treinos(quantos: number): Sessao[] {
+  return Array.from({ length: quantos }, (_, i) => sessao(dataISO(new Date(2026, 2, 1 + i))));
+}
+
+const meta = (lista: Conquista[], id: Conquista['id']) => lista.find((c) => c.id === id)!;
 
 describe('historicoDeRecordes', () => {
   it('a primeira vez de um exercício só estabelece a marca', () => {
@@ -38,85 +44,110 @@ describe('historicoDeRecordes', () => {
   });
 });
 
-describe('calcularMedalhas', () => {
-  it('sem treinos, nada é conquistado e o progresso é zero', () => {
-    const lista = calcularMedalhas([], 3);
-    expect(lista.some((m) => m.conquistada)).toBeFalse();
-    expect(medalha(lista, 'marco-1').atual).toBe(0);
+describe('calcularConquistas', () => {
+  it('tem uma trilha por meta, cada uma com bronze, prata, ouro e diamante', () => {
+    const lista = calcularConquistas([], 3);
+    expect(lista.map((c) => c.id)).toEqual(['treinos', 'constancia', 'volume', 'recordes']);
+    for (const c of lista) expect(c.degraus.map((d) => d.nivel)).toEqual(['bronze', 'prata', 'ouro', 'diamante']);
   });
 
-  it('o primeiro treino conquista a medalha com a data dele', () => {
-    const m = medalha(calcularMedalhas([sessao('2026-10-02'), sessao('2026-10-09')], 3), 'marco-1');
-    expect(m.conquistada).toBeTrue();
-    expect(m.data).toBe('2026-10-02');
+  it('sem treinos, ninguém tem medalha e o próximo nível é o bronze', () => {
+    for (const c of calcularConquistas([], 3)) {
+      expect(c.nivel).toBeNull();
+      expect(c.proximo?.nivel).toBe('bronze');
+      expect(c.atual).toBe(0);
+    }
   });
 
-  it('mostra o progresso das marcas que faltam', () => {
-    const h = Array.from({ length: 7 }, (_, i) => sessao(`2026-10-${String(i + 1).padStart(2, '0')}`));
-    const m = medalha(calcularMedalhas(h, 3), 'marco-10');
-    expect(m.conquistada).toBeFalse();
-    expect(m.data).toBeNull();
-    expect([m.atual, m.alvo]).toEqual([7, 10]);
+  it('treinos: ao alcançar o bronze, a data é a do treino que completou o alvo', () => {
+    const c = meta(calcularConquistas(treinos(5), 3), 'treinos');
+    expect(c.nivel).toBe('bronze');
+    expect(c.dataDoNivel).toBe('2026-03-05');
+    expect(c.proximo).toEqual(jasmine.objectContaining({ nivel: 'prata', alvo: 25, conquistado: false }));
+  });
+
+  it('o nível novo substitui o anterior: prata mostra só prata, mas o bronze segue na trilha como conquistado', () => {
+    const c = meta(calcularConquistas(treinos(25), 3), 'treinos');
+    expect(c.nivel).toBe('prata');
+    expect(c.degraus.map((d) => d.conquistado)).toEqual([true, true, false, false]);
+    expect(c.degraus[0].data).toBe('2026-03-05');
+    expect(c.dataDoNivel).toBe(c.degraus[1].data);
+  });
+
+  it('no nível máximo não há próximo degrau', () => {
+    const c = meta(calcularConquistas(treinos(250), 3), 'treinos');
+    expect(c.nivel).toBe('diamante');
+    expect(c.proximo).toBeNull();
+    expect(fracaoAteOProximo(c)).toBe(1);
   });
 
   it('constância: semanas seguidas na meta, com a data do treino que fechou a meta', () => {
-    // Semanas de segunda 2026-10-05 e 2026-10-12, duas de meta 2.
+    // Semanas de segunda 2026-10-05 e 2026-10-12, as duas com meta 2 cumprida.
     const h = [sessao('2026-10-05'), sessao('2026-10-07'), sessao('2026-10-12'), sessao('2026-10-14')];
-    const lista = calcularMedalhas(h, 2);
-    expect(medalha(lista, 'constancia-1').data).toBe('2026-10-07');
-    expect(medalha(lista, 'constancia-2').conquistada).toBeTrue();
-    expect(medalha(lista, 'constancia-2').data).toBe('2026-10-14');
-    expect(medalha(lista, 'constancia-4').conquistada).toBeFalse();
+    const c = meta(calcularConquistas(h, 2), 'constancia');
+    expect(c.atual).toBe(2);
+    expect(c.nivel).toBe('bronze');
+    expect(c.dataDoNivel).toBe('2026-10-14');
   });
 
   it('constância: uma semana sem bater a meta interrompe a sequência', () => {
     const h = [sessao('2026-10-05'), sessao('2026-10-07'), sessao('2026-10-19'), sessao('2026-10-21')];
-    const lista = calcularMedalhas(h, 2);
-    expect(medalha(lista, 'constancia-1').conquistada).toBeTrue();
-    expect(medalha(lista, 'constancia-2').conquistada).toBeFalse();
+    const c = meta(calcularConquistas(h, 2), 'constancia');
+    expect(c.atual).toBe(1);
+    expect(c.nivel).toBeNull();
   });
 
-  it('volume: soma kg × repetições de todos os treinos e guarda o dia em que a marca foi passada', () => {
+  it('carga levantada: soma kg × repetições e guarda o dia em que o alvo foi passado', () => {
     // 50 kg × 10 reps × 2 séries = 1000 kg por treino.
     const h = [sessao('2026-10-01', 'supino', [50, 50]), sessao('2026-10-03', 'supino', [50, 50])];
-    const lista = calcularMedalhas(h, 3);
-    expect(medalha(lista, 'volume-1000').data).toBe('2026-10-01');
-    expect(medalha(lista, 'volume-10000').conquistada).toBeFalse();
-    expect(medalha(lista, 'volume-10000').atual).toBe(2000);
+    const c = meta(calcularConquistas(h, 3), 'volume');
+    expect(c.atual).toBe(2000);
+    expect(c.nivel).toBe('bronze');
+    expect(c.dataDoNivel).toBe('2026-10-01');
   });
 
   it('recordes: conta quantas vezes a carga foi superada', () => {
     const h = [sessao('2026-10-01', 'supino', [40]), sessao('2026-10-03', 'supino', [45]), sessao('2026-10-05', 'supino', [50])];
-    const lista = calcularMedalhas(h, 3);
-    expect(medalha(lista, 'recorde-1').data).toBe('2026-10-03');
-    expect(medalha(lista, 'recorde-5').atual).toBe(2);
+    const c = meta(calcularConquistas(h, 3), 'recordes');
+    expect(c.atual).toBe(2);
+    expect(c.nivel).toBe('bronze');
+    expect(c.dataDoNivel).toBe('2026-10-03');
   });
 });
 
-describe('ultimasConquistas e proximaMedalha', () => {
-  const h = [sessao('2026-10-01', 'supino', [40]), sessao('2026-10-03', 'supino', [45])];
-
-  it('lista as conquistadas da mais recente para a mais antiga', () => {
-    const ultimas = ultimasConquistas(calcularMedalhas(h, 3), 5);
-    expect(ultimas.every((m) => m.conquistada)).toBeTrue();
-    const datas = ultimas.map((m) => m.data ?? '');
-    expect([...datas].sort().reverse()).toEqual(datas);
-    expect(ultimas[0].data).toBe('2026-10-03');
+describe('proximaConquista', () => {
+  it('é a meta cujo próximo nível está mais perto', () => {
+    // 20 treinos: 80% do caminho até a prata (25). As demais metas estão mais longe.
+    const p = proximaConquista(calcularConquistas(treinos(20), 3));
+    expect(p?.id).toBe('treinos');
+    expect(p?.proximo?.nivel).toBe('prata');
   });
 
-  it('respeita o limite pedido', () => {
-    expect(ultimasConquistas(calcularMedalhas(h, 3), 1).length).toBe(1);
+  it('com tudo no máximo, não há próxima', () => {
+    const maximo = calcularConquistas([], 3).map((c) => ({ ...c, proximo: null }));
+    expect(proximaConquista(maximo)).toBeNull();
+  });
+});
+
+describe('formatarProgresso', () => {
+  it('diz a unidade uma vez só', () => {
+    expect(formatarProgresso('treinos', 21, 25)).toBe('21 de 25 treinos');
+    expect(formatarProgresso('constancia', 7, 12)).toBe('7 de 12 semanas');
+    expect(formatarProgresso('volume', 42400, 50000)).toBe('42,4 t de 50 t');
+  });
+});
+
+describe('formatarValor', () => {
+  it('usa a unidade de cada meta, no singular e no plural', () => {
+    expect(formatarValor('treinos', 1)).toBe('1 treino');
+    expect(formatarValor('treinos', 25)).toBe('25 treinos');
+    expect(formatarValor('constancia', 1)).toBe('1 semana');
+    expect(formatarValor('recordes', 10)).toBe('10 recordes');
   });
 
-  it('a próxima medalha é a não conquistada mais perto do alvo', () => {
-    const p = proximaMedalha(calcularMedalhas(h, 3));
-    expect(p?.conquistada).toBeFalse();
-    // 2 de 10 treinos (20%) e 1 de 5 recordes (20%) empatam com o resto; basta ser uma ainda não conquistada com progresso.
-    expect(p!.atual / p!.alvo).toBeGreaterThan(0);
-  });
-
-  it('sem nada a conquistar, não há próxima', () => {
-    const tudo = calcularMedalhas([], 3).map((m) => ({ ...m, conquistada: true }));
-    expect(proximaMedalha(tudo)).toBeNull();
+  it('carga: kg abaixo de uma tonelada, toneladas a partir dela', () => {
+    expect(formatarValor('volume', 840)).toBe('840 kg');
+    expect(formatarValor('volume', 10000)).toBe('10 t');
+    expect(formatarValor('volume', 2500)).toBe('2,5 t');
   });
 });

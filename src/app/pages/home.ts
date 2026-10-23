@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
 import { CloudService } from '../core/cloud.service';
-import { dataCurta } from '../core/data-texto';
 import { Dialogo } from '../core/dialogo';
 import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { MedalhasGaleria } from '../core/medalhas-galeria';
-import { Medalha, calcularMedalhas, historicoDeRecordes, proximaMedalha, ultimasConquistas } from '../core/medalhas';
+import { NOMES_NIVEL, TipoConquista, calcularConquistas, formatarProgresso, historicoDeRecordes, proximaConquista } from '../core/medalhas';
+import { QuadroMedalhas } from '../core/quadro-medalhas';
 import { lerMeta, metaPadrao } from '../core/meta';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { SocialService } from '../core/social.service';
@@ -20,7 +20,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Icon, Avatar, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria],
+  imports: [RouterLink, Icon, Avatar, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria, QuadroMedalhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -147,24 +147,14 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
 
         <section class="lista" aria-labelledby="titulo-conquistas">
           <div class="lista__topo">
-            <h2 id="titulo-conquistas">Conquistas</h2>
+            <h2 id="titulo-conquistas">Medalhas</h2>
             <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="galeriaAberta.set(true)">Ver todas</button>
           </div>
-          @if (recentes().length > 0) {
-            <ul class="conquistas" aria-label="Últimas medalhas">
-              @for (m of recentes(); track m.id) {
-                <li class="card conquista">
-                  <span [class]="'medalha-icone medalha-icone--' + m.grupo" aria-hidden="true"><app-icon name="medal" [size]="20" [stroke]="2" /></span>
-                  <span class="linha__texto">
-                    <span class="linha__nome">{{ m.titulo }}@if (m.data === hojeISO) { <span class="nova">Nova</span> }</span>
-                    <span class="apoio">{{ m.data ? dia(m.data) : 'Conquistada' }}</span>
-                  </span>
-                </li>
-              }
-            </ul>
-          }
-          @if (proximaConquista(); as p) {
-            <p class="apoio proxima">Próxima medalha: <strong>{{ p.titulo }}</strong> · {{ progresso(p) }}</p>
+          <app-quadro-medalhas [conquistas]="conquistas()" [hoje]="hojeISO" (abrir)="galeriaAberta.set(true)" />
+          @if (proxima(); as p) {
+            @if (p.proximo; as alvo) {
+              <p class="apoio proxima">Próxima: <strong>{{ nomes[alvo.nivel] }}</strong> em {{ p.titulo }} · {{ progresso(p.id, p.atual, alvo.alvo) }}</p>
+            }
           }
         </section>
       }
@@ -198,8 +188,8 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       }
 
       @if (galeriaAberta()) {
-        <app-dialogo titulo="Conquistas" [subtitulo]="resumoConquistas()" (fechar)="galeriaAberta.set(false)">
-          <app-medalhas-galeria [medalhas]="medalhas()" [recordes]="recordesRecentes()" [hoje]="hojeISO" />
+        <app-dialogo titulo="Medalhas" [subtitulo]="resumoConquistas()" (fechar)="galeriaAberta.set(false)">
+          <app-medalhas-galeria [conquistas]="conquistas()" [recordes]="recordesRecentes()" />
         </app-dialogo>
       }
 
@@ -421,53 +411,6 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       font-weight: 700;
       color: var(--accent-ink);
     }
-    .conquistas {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .conquista {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px;
-    }
-    .medalha-icone {
-      flex: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--ink);
-      color: var(--accent);
-    }
-    .medalha-icone--recordes {
-      background: var(--accent);
-      color: var(--ink);
-    }
-    .medalha-icone--constancia {
-      background: #2f6f4f;
-      color: #fff;
-    }
-    .medalha-icone--volume {
-      background: #3b4a8a;
-      color: #fff;
-    }
-    .nova {
-      margin-left: 8px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: var(--ink);
-      font-size: 11px;
-      font-weight: 700;
-      vertical-align: 1px;
-    }
     .proxima {
       margin: 0;
     }
@@ -566,12 +509,12 @@ export class Home {
     return `Faltam ${faltam} ${faltam === 1 ? 'treino' : 'treinos'} para bater a meta.`;
   });
 
-  protected readonly medalhas = computed(() => calcularMedalhas(this.plans.historico(), this.meta()));
-  protected readonly recentes = computed(() => ultimasConquistas(this.medalhas(), 3));
-  protected readonly proximaConquista = computed(() => proximaMedalha(this.medalhas()));
+  protected readonly conquistas = computed(() => calcularConquistas(this.plans.historico(), this.meta()));
+  protected readonly proxima = computed(() => proximaConquista(this.conquistas()));
+  protected readonly nomes = NOMES_NIVEL;
   protected readonly resumoConquistas = computed(() => {
-    const feitas = this.medalhas().filter((m) => m.conquistada).length;
-    return `${feitas} de ${this.medalhas().length} medalhas`;
+    const degraus = this.conquistas().flatMap((c) => c.degraus);
+    return `${degraus.filter((d) => d.conquistado).length} de ${degraus.length} níveis conquistados`;
   });
   protected readonly recordesRecentes = computed(() =>
     historicoDeRecordes(this.plans.historico())
@@ -589,13 +532,8 @@ export class Home {
     return e ? this.exercicios.nome(e) : id;
   }
 
-  protected dia(iso: string): string {
-    return dataCurta(iso, this.agora);
-  }
-
-  protected progresso(m: Medalha): string {
-    if (m.grupo !== 'volume') return `${m.atual} de ${m.alvo}`;
-    return `${this.carga(m.atual)} de ${this.carga(m.alvo)}`;
+  protected progresso(id: TipoConquista, atual: number, alvo: number): string {
+    return formatarProgresso(id, atual, alvo);
   }
 
   protected carga(kg: number): string {

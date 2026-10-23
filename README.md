@@ -4,7 +4,7 @@ PWA em Angular para montar fichas de treino. A biblioteca tem 876 exercícios co
 
 ## O que já faz
 
-- **Início**: treino do dia (rodízio entre as fichas) com os grupos musculares de cada ficha e semana com os treinos concluídos. Depois de treinar, mostra o resumo do treino de hoje e o próximo treino. Tem também a meta da semana e as medalhas conquistadas (marcos, constância, volume e recordes), com a galeria completa em Ver todas.
+- **Início**: treino do dia (rodízio entre as fichas) com os grupos musculares de cada ficha e semana com os treinos concluídos. Depois de treinar, mostra o resumo do treino de hoje e o próximo treino. Tem também a meta da semana e o quadro de medalhas: cada meta (treinos, constância, carga levantada e recordes) tem uma medalha que evolui de bronze a prata, ouro e diamante, com a galeria completa em Ver todas.
 - **Peso**: em Ajustes se registra o peso do dia; em Social › Estatísticas, o gráfico de evolução por semana, mês ou ano. Os registros sincronizam com a conta, junto com as fichas.
 - **Biblioteca**: busca por nome em português ou inglês, filtro por grupo muscular, equipamento e nível.
 - **Exercício**: foto alternando entre as duas posições, músculos, equipamento e instruções.
