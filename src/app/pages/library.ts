@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Exercise } from '../core/models';
-import { ExerciseService, GRUPOS } from '../core/exercise.service';
+import { ExerciseService, FILTRO_CARDIO, GRUPOS } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { Carregando } from '../core/spinner';
 import { PlanService } from '../core/plan.service';
@@ -50,6 +50,7 @@ const ESTADO = {
 
       <div class="chips" role="group" aria-label="Grupo muscular">
         <button type="button" class="chip" [attr.aria-pressed]="grupo() === ''" (click)="definirGrupo('')">Todos</button>
+        <button type="button" class="chip" [attr.aria-pressed]="grupo() === cardio" (click)="definirGrupo(cardio)">Cardio</button>
         @for (g of grupos; track g.key) {
           <button type="button" class="chip" [attr.aria-pressed]="grupo() === g.key" (click)="definirGrupo(g.key)">
             {{ g.label }}
@@ -164,6 +165,7 @@ export class Library {
   private readonly toast = inject(ToastService);
 
   protected readonly grupos = GRUPOS;
+  protected readonly cardio = FILTRO_CARDIO;
   // Busca e filtros ficam guardados fora do componente: ao voltar de um exercício, a lista continua igual.
   protected readonly consulta = ESTADO.consulta;
   protected readonly grupo = ESTADO.grupo;
