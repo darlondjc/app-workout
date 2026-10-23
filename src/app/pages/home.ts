@@ -15,6 +15,9 @@ import { SocialService } from '../core/social.service';
 import { PlanService, dataLocal } from '../core/plan.service';
 import { recordesDaSessao, treinosNaSemana, volumeSessao } from '../core/stats';
 
+/** Quantas medalhas aparecem no quadro da tela inicial. */
+const MEDALHAS_NA_INICIAL = 6;
+
 const LETRAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo'];
 
@@ -165,7 +168,7 @@ const ROLAGEM_DISTANCIA = 46;
             <h2 id="titulo-conquistas">Medalhas</h2>
             <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="galeriaAberta.set(true)">Ver todas</button>
           </div>
-          <app-quadro-medalhas [conquistas]="conquistas()" [hoje]="hojeISO" (abrir)="galeriaAberta.set(true)" />
+          <app-quadro-medalhas [conquistas]="melhores()" [hoje]="hojeISO" (abrir)="galeriaAberta.set(true)" />
           @if (proxima(); as p) {
             @if (p.proximo; as alvo) {
               <p class="apoio proxima">Próxima: <strong>{{ nomes[alvo.nivel] }}</strong> em {{ p.titulo }} · {{ progresso(p.id, p.atual, alvo.alvo) }}</p>
@@ -620,6 +623,8 @@ export class Home {
   });
 
   protected readonly conquistas = computed(() => ordenarPorNivel(calcularConquistas(this.plans.historico(), this.meta(), { hoje: this.agora, regiaoDe: (id) => regiaoDoExercicio(this.exercicios.get(id)) })));
+  /** Na tela inicial só as melhores (as de maior nível, já que a lista vem ordenada); o resto fica em "Ver todas". */
+  protected readonly melhores = computed(() => this.conquistas().slice(0, MEDALHAS_NA_INICIAL));
   protected readonly proxima = computed(() => proximaConquista(this.conquistas()));
   protected readonly nomes = NOMES_NIVEL;
   protected readonly resumoConquistas = computed(() => {
