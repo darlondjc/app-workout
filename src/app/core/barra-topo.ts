@@ -12,7 +12,10 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
   host: { 'aria-hidden': 'true' },
   template: `
     <div class="barra">
-      <span class="nome">{{ titulo() }}</span>
+      <span class="nome" [class.com-icone]="!!icone()">{{ titulo() }}</span>
+      @if (icone(); as src) {
+        <img class="icone" [src]="src" alt="" width="30" height="30" />
+      }
       <span class="acao"><ng-content /></span>
     </div>
   `,
@@ -69,6 +72,21 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
       transform: translate3d(0, calc((1 - var(--p, 0)) * 8px * var(--mov)), 0);
       will-change: opacity, transform;
     }
+    .nome.com-icone {
+      max-width: calc(50% - 36px);
+    }
+    /* Ícone do app no centro da barra, entrando junto com o resto. */
+    .icone {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      opacity: calc((var(--p, 0) - 0.3) / 0.7);
+      transform: translate(-50%, -50%) scale(calc(0.7 + var(--p, 0) * 0.3));
+      will-change: opacity, transform;
+    }
     .acao {
       flex: none;
       display: flex;
@@ -85,6 +103,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 })
 export class BarraTopo {
   readonly titulo = input.required<string>();
+  /** Imagem opcional mostrada no centro da barra (por exemplo, o ícone do app). */
+  readonly icone = input<string | null>(null);
   /** Quanto a tela precisa rolar para a barra começar a aparecer, e a distância até ela ficar inteira. */
   readonly inicio = input(62);
   readonly distancia = input(46);

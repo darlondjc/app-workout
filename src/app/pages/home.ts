@@ -29,7 +29,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
   template: `
     <section class="page">
       @if (nuvem.usuario(); as u) {
-        <app-barra-topo [titulo]="primeiroNome() || 'Início'">
+        <app-barra-topo [titulo]="primeiroNome() || 'Início'" icone="icons/icon-96x96.png">
           <a class="barra-conta" routerLink="/ajustes" tabindex="-1">
             <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="34" />
           </a>
