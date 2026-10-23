@@ -221,6 +221,7 @@ export class SocialService {
     this.eventosPor.set({});
     this.atividades.set([]);
     this.sessoesPor.set({});
+    this.fotos.clear();
     this.erro.set('');
   }
 
@@ -415,6 +416,7 @@ export class SocialService {
         volume: volumeSessao(s),
         recordes: recordesDaSessao(historico, s).slice(0, 3).map((r) => ({ nome: this.nomeExercicio(r.exerciseId), carga: r.carga })),
         marco: marcoDoTreino(ordenados.findIndex((x) => x.id === s.id) + 1),
+        ...(s.temFoto ? { temFoto: true } : {}),
       };
       try {
         await api.publicarEvento(evento);
@@ -440,6 +442,68 @@ export class SocialService {
 
   ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void): Cancelar {
     return this.api?.ouvirComentarios(dono, eventoId, cb, (e) => this.aoErroDe(dono, e)) ?? (() => undefined);
+  }
+
+  // --- Foto do treino ----------------------------------------------------------------------
+
+  /** Fotos já pedidas (ou recém-enviadas) nesta sessão, para um card não buscar a mesma foto duas vezes. */
+  private readonly fotos = new Map<string, Promise<string | null>>();
+
+  /** A foto de um treino (seu ou de um amigo); `null` se não houver ou não puder ser lida agora. */
+  lerFoto(uid: string, sessaoId: string): Promise<string | null> {
+    const api = this.api;
+    if (!api) return Promise.resolve(null);
+    const chave = `${uid}/${sessaoId}`;
+    let pedido = this.fotos.get(chave);
+    if (!pedido) {
+      pedido = api.lerFoto(uid, sessaoId).catch((e: unknown) => {
+        this.fotos.delete(chave);
+        this.aoErroDe(uid, e);
+        return null;
+      });
+      this.fotos.set(chave, pedido);
+    }
+    return pedido;
+  }
+
+  /**
+   * Guarda a foto de um treino seu recém-concluído. O treino já nasce marcado com `temFoto`,
+   * então o card publicado leva o aviso; aqui só vai a foto. Sem internet, fica na fila do Firestore.
+   */
+  async salvarFoto(sessaoId: string, dados: string): Promise<boolean> {
+    const eu = this.eu();
+    if (!eu || !this.api) return false;
+    this.fotos.set(`${eu.uid}/${sessaoId}`, Promise.resolve(dados));
+    try {
+      await this.api.gravarFoto(eu.uid, sessaoId, dados);
+      return true;
+    } catch (e) {
+      this.fotos.delete(`${eu.uid}/${sessaoId}`);
+      this.falhou(e);
+      return false;
+    }
+  }
+
+  /** Coloca, troca ou tira (`null`) a foto de um card seu já publicado. */
+  async definirFoto(evento: Evento, dados: string | null): Promise<boolean> {
+    const eu = this.eu();
+    if (!eu || !this.api || evento.autor !== eu.uid) return false;
+    const chave = `${eu.uid}/${evento.sessaoId}`;
+    try {
+      if (dados) {
+        await this.api.gravarFoto(eu.uid, evento.sessaoId, dados);
+        this.fotos.set(chave, Promise.resolve(dados));
+      } else {
+        await this.api.apagarFoto(eu.uid, evento.sessaoId);
+        this.fotos.delete(chave);
+      }
+      this.plans.marcarFoto(evento.sessaoId, dados !== null);
+      await this.api.marcarFotoEvento(eu.uid, evento.id, dados !== null);
+      return true;
+    } catch (e) {
+      this.falhou(e);
+      return false;
+    }
   }
 
   async alternarCurtida(dono: string, eventoId: string, curtido: boolean): Promise<void> {

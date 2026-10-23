@@ -1,16 +1,18 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { ConcluirTreino } from '../core/concluir-treino';
 import { ExerciseImage } from '../core/exercise-image';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { RegistroExercicio, SerieEmAndamento } from '../core/models';
 import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
+import { SocialService } from '../core/social.service';
 import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-workout',
-  imports: [RouterLink, Icon, ExerciseImage],
+  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ficha(); as f) {
@@ -35,6 +37,10 @@ import { ToastService } from '../core/toast.service';
               <button type="button" class="btn btn--perigo" (click)="cancelarTreino()">Cancelar treino</button>
               <button type="button" class="btn btn--escuro-suave" (click)="confirmandoSaida.set(false)">Continuar treinando</button>
             </div>
+          }
+
+          @if (concluindo()) {
+            <app-concluir-treino (concluir)="finalizar($event)" (cancelar)="concluindo.set(false)" />
           }
 
           <div class="barra" role="progressbar" aria-label="Progresso do treino" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progresso()">
@@ -342,6 +348,7 @@ export class Workout {
   protected readonly plans = inject(PlanService);
   private readonly ex = inject(ExerciseService);
   private readonly toast = inject(ToastService);
+  private readonly social = inject(SocialService);
   private readonly router = inject(Router);
   protected readonly nav = inject(NavegacaoService);
 
@@ -352,6 +359,8 @@ export class Workout {
   protected readonly limiteDescanso = computed(() => this.item()?.descanso || 60);
   private descansoDesde = 0;
   protected readonly confirmandoSaida = signal(false);
+  /** Último passo aberto: foto opcional antes de concluir. */
+  protected readonly concluindo = signal(false);
   private intervalo?: ReturnType<typeof setInterval>;
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
@@ -497,6 +506,14 @@ export class Workout {
       this.irPara(this.indice() + 1);
       return;
     }
+    // Com a conta social ativa, oferece uma foto para a timeline; sem ela, conclui direto.
+    if (this.social.ativo()) this.concluindo.set(true);
+    else this.finalizar(null);
+  }
+
+  /** Grava o treino; a foto (se houver) vai para a nuvem sem travar a saída da tela. */
+  protected finalizar(foto: string | null): void {
+    this.concluindo.set(false);
     const f = this.ficha();
     const salvo = this.estado();
     const efetivos = f ? this.plans.exerciciosEfetivos(f) : [];
@@ -506,7 +523,8 @@ export class Workout {
         .map((s) => ({ carga: s.carga, reps: s.reps, ...(s.descanso != null ? { descanso: s.descanso } : {}) }));
       return series.length ? [{ exerciseId: efetivos[i], ...(it.unidade ? { unidade: it.unidade } : {}), series }] : [];
     });
-    this.plans.registrarSessao(this.id(), registros);
+    const sessaoId = this.plans.registrarSessao(this.id(), registros, foto !== null);
+    if (foto) void this.social.salvarFoto(sessaoId, foto);
     this.toast.mostrar('Treino concluído. Bom trabalho!');
     this.router.navigate(['/']);
   }

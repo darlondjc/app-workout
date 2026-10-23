@@ -35,6 +35,8 @@ export interface Evento {
   recordes: { nome: string; carga: number }[];
   /** Ex.: "50º treino", quando o total de treinos chega a um marco. */
   marco?: string;
+  /** Há uma foto deste treino em `usuarios/{autor}/fotos/{sessaoId}`; ela é lida só quando o card aparece. */
+  temFoto?: boolean;
 }
 
 /** Curtida ou comentário feito por um amigo em um treino seu. Só o dono do treino lê. */
@@ -84,6 +86,12 @@ export interface SocialBackend {
   removerAmizade(id: string): Promise<void>;
   ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void, limite?: number): Cancelar;
   publicarEvento(evento: Evento): Promise<void>;
+  /** Foto do treino, como data URL JPEG já reduzida, guardada à parte do card. */
+  gravarFoto(uid: string, sessaoId: string, dados: string): Promise<void>;
+  apagarFoto(uid: string, sessaoId: string): Promise<void>;
+  lerFoto(uid: string, sessaoId: string): Promise<string | null>;
+  /** Liga ou desliga o aviso de foto num card já publicado. */
+  marcarFotoEvento(uid: string, eventoId: string, tem: boolean): Promise<void>;
   ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void, limite?: number): Cancelar;
   ouvirCurtidas(dono: string, eventoId: string, cb: (uids: string[]) => void, erro: (e: unknown) => void): Cancelar;
   ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void, erro: (e: unknown) => void): Cancelar;

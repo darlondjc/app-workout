@@ -32,7 +32,33 @@ class ApiFalsa implements SocialBackend {
   pedirAmizade = () => Promise.resolve();
   aceitarAmizade = () => Promise.resolve();
   removerAmizade = () => Promise.resolve();
-  publicarEvento = () => Promise.resolve();
+  publicados: Evento[] = [];
+  publicarEvento = (e: Evento) => {
+    this.publicados.push(e);
+    return Promise.resolve();
+  };
+  fotos = new Map<string, string>();
+  leiturasDeFoto = 0;
+  falhaFoto?: { code: string };
+  gravarFoto = (uid: string, sessaoId: string, dados: string) => {
+    if (this.falhaFoto) return Promise.reject(this.falhaFoto);
+    this.fotos.set(`${uid}/${sessaoId}`, dados);
+    return Promise.resolve();
+  };
+  apagarFoto = (uid: string, sessaoId: string) => {
+    this.fotos.delete(`${uid}/${sessaoId}`);
+    return Promise.resolve();
+  };
+  lerFoto = (uid: string, sessaoId: string) => {
+    this.leiturasDeFoto++;
+    if (this.falhaFoto) return Promise.reject(this.falhaFoto);
+    return Promise.resolve(this.fotos.get(`${uid}/${sessaoId}`) ?? null);
+  };
+  marcadosNoEvento: { uid: string; eventoId: string; tem: boolean }[] = [];
+  marcarFotoEvento = (uid: string, eventoId: string, tem: boolean) => {
+    this.marcadosNoEvento.push({ uid, eventoId, tem });
+    return Promise.resolve();
+  };
   curtir = () => Promise.resolve();
   descurtir = () => Promise.resolve();
   comentar = () => Promise.resolve();
@@ -111,6 +137,7 @@ const amizade = (outro: string, status: Amizade['status'] = 'aceita'): Amizade =
 });
 
 describe('SocialService', () => {
+  let marcadas: { id: string; tem: boolean }[];
   let api: ApiFalsa;
   let nuvem: NuvemFalsa;
   let social: SocialService;
@@ -134,6 +161,7 @@ describe('SocialService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    marcadas = [];
     api = new ApiFalsa();
     api.perfis['ana'] = { uid: 'ana', nome: 'Ana', foto: null };
     nuvem = new NuvemFalsa();
@@ -141,7 +169,7 @@ describe('SocialService', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: CloudService, useValue: cloud },
-        { provide: PlanService, useValue: { historico: signal<Sessao[]>([]), get: () => undefined } },
+        { provide: PlanService, useValue: { historico: signal<Sessao[]>([]), get: () => undefined, marcarFoto: (id: string, tem: boolean) => marcadas.push({ id, tem }) } },
         { provide: ExerciseService, useValue: { get: () => undefined, nome: () => '' } },
       ],
     });
@@ -495,6 +523,88 @@ describe('SocialService', () => {
       social.carregarMais();
       expect(social.timelineVisivel().length).toBe(22);
       expect(social.temMais()).toBeFalse();
+    });
+  });
+  describe('foto do treino', () => {
+    const meuEvento = (): Evento => ({ ...evento('eu', 5), sessaoId: 's1' });
+
+    it('salvar guarda a foto na nuvem e deixa a leitura imediata, sem ir buscar de novo', async () => {
+      await entrarComAmigos();
+      expect(await social.salvarFoto('s1', 'data:image/jpeg;base64,AAA')).toBeTrue();
+      expect(api.fotos.get('eu/s1')).toBe('data:image/jpeg;base64,AAA');
+      expect(await social.lerFoto('eu', 's1')).toBe('data:image/jpeg;base64,AAA');
+      expect(api.leiturasDeFoto).toBe(0);
+    });
+
+    it('ler a mesma foto duas vezes busca uma só', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.fotos.set('ana/sx', 'data:image/jpeg;base64,BBB');
+      const [a, b] = await Promise.all([social.lerFoto('ana', 'sx'), social.lerFoto('ana', 'sx')]);
+      expect(a).toBe('data:image/jpeg;base64,BBB');
+      expect(b).toBe(a);
+      expect(api.leiturasDeFoto).toBe(1);
+    });
+
+    it('treino sem foto devolve null, e uma falha de leitura não fica guardada', async () => {
+      await entrarComAmigos(amizade('ana'));
+      expect(await social.lerFoto('ana', 'nada')).toBeNull();
+      api.falhaFoto = { code: 'unavailable' };
+      expect(await social.lerFoto('ana', 'sy')).toBeNull();
+      api.falhaFoto = undefined;
+      api.fotos.set('ana/sy', 'data:image/jpeg;base64,CCC');
+      expect(await social.lerFoto('ana', 'sy')).toBe('data:image/jpeg;base64,CCC');
+    });
+
+    it('falha ao salvar devolve falso, avisa na tela e não deixa a foto no cache', async () => {
+      await entrarComAmigos();
+      api.falhaFoto = { code: 'permission-denied' };
+      expect(await social.salvarFoto('s1', 'data:image/jpeg;base64,AAA')).toBeFalse();
+      expect(social.erro()).toContain('Sem permissão');
+      api.falhaFoto = undefined;
+      expect(await social.lerFoto('eu', 's1')).toBeNull();
+    });
+
+    it('colocar foto num card seu grava, marca o treino e liga o aviso no card publicado', async () => {
+      await entrarComAmigos();
+      expect(await social.definirFoto(meuEvento(), 'data:image/jpeg;base64,DDD')).toBeTrue();
+      expect(api.fotos.get('eu/s1')).toBe('data:image/jpeg;base64,DDD');
+      expect(marcadas).toEqual([{ id: 's1', tem: true }]);
+      expect(api.marcadosNoEvento).toEqual([{ uid: 'eu', eventoId: 'ev5', tem: true }]);
+    });
+
+    it('tirar a foto apaga na nuvem, desmarca o treino e desliga o aviso', async () => {
+      await entrarComAmigos();
+      await social.definirFoto(meuEvento(), 'data:image/jpeg;base64,DDD');
+      expect(await social.definirFoto(meuEvento(), null)).toBeTrue();
+      expect(api.fotos.has('eu/s1')).toBeFalse();
+      expect(marcadas.at(-1)).toEqual({ id: 's1', tem: false });
+      expect(api.marcadosNoEvento.at(-1)).toEqual({ uid: 'eu', eventoId: 'ev5', tem: false });
+      expect(await social.lerFoto('eu', 's1')).toBeNull();
+    });
+
+    it('não mexe na foto do treino de um amigo', async () => {
+      await entrarComAmigos(amizade('ana'));
+      expect(await social.definirFoto({ ...evento('ana', 6), sessaoId: 'sa' }, 'data:image/jpeg;base64,EEE')).toBeFalse();
+      expect(api.fotos.size).toBe(0);
+    });
+
+    it('o card publicado de um treino com foto leva o aviso temFoto', async () => {
+      const plans = TestBed.inject(PlanService) as unknown as { historico: ReturnType<typeof signal<Sessao[]>> };
+      plans.historico.set([{ id: 'sf', data: '2026-10-23', fichaId: 'f', fichaNome: 'A', concluidaEm: Date.now(), registros: [], temFoto: true }]);
+      await entrarComAmigos();
+      await assentar();
+      const publicado = api.publicados.find((e) => e.sessaoId === 'sf');
+      expect(publicado?.temFoto).toBeTrue();
+    });
+
+    it('treino sem foto é publicado sem o aviso', async () => {
+      const plans = TestBed.inject(PlanService) as unknown as { historico: ReturnType<typeof signal<Sessao[]>> };
+      plans.historico.set([{ id: 'sg', data: '2026-10-23', fichaId: 'f', fichaNome: 'A', concluidaEm: Date.now(), registros: [] }]);
+      await entrarComAmigos();
+      await assentar();
+      const publicado = api.publicados.find((e) => e.sessaoId === 'sg');
+      expect(publicado).toBeDefined();
+      expect(publicado?.temFoto).toBeUndefined();
     });
   });
 });

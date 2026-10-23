@@ -61,6 +61,8 @@ export interface Sessao {
   fichaNome?: string;
   concluidaEm?: number;
   registros?: RegistroExercicio[];
+  /** Este treino tem uma foto guardada na nuvem (a foto em si não fica no histórico). */
+  temFoto?: boolean;
 }
 
 export interface SerieEmAndamento {

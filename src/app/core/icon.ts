@@ -18,7 +18,8 @@ export type IconName =
   | 'heart'
   | 'comment'
   | 'people'
-  | 'trash';
+  | 'trash'
+  | 'camera';
 
 @Component({
   selector: 'app-icon',
@@ -64,6 +65,10 @@ export type IconName =
         }
         @case ('plus') {
           <path d="M12 5v14M5 12h14" />
+        }
+        @case ('camera') {
+          <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+          <circle cx="12" cy="13" r="3.5" />
         }
         @case ('close') {
           <path d="M6 6l12 12M18 6L6 18" />
