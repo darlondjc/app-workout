@@ -21,7 +21,8 @@ export type IconName =
   | 'trash'
   | 'camera'
   | 'medal'
-  | 'scale';
+  | 'scale'
+  | 'logout';
 
 @Component({
   selector: 'app-icon',
@@ -109,6 +110,10 @@ export type IconName =
           <rect x="4" y="4" width="16" height="16" rx="3" />
           <path d="M8 10a4 3 0 0 1 8 0z" />
           <path d="M12 10l1.5-2" />
+        }
+        @case ('logout') {
+          <path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4" />
+          <path d="M15 8l4 4-4 4M19 12H9" />
         }
         @case ('refresh') {
           <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />
