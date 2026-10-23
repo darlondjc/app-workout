@@ -54,7 +54,7 @@ import { SocialService } from '../core/social.service';
                 <strong>{{ c.autor === social.eu()?.uid ? 'Você' : social.nomeDe(c.autor, c.autorNome) }}</strong> {{ c.texto }}
               </p>
               @if (c.autor === social.eu()?.uid || minha()) {
-                <button type="button" class="apagar" aria-label="Apagar comentário" (click)="apagar(c)">
+                <button type="button" class="apagar" aria-label="Apagar comentário" aria-haspopup="dialog" (click)="apagando.set(c)">
                   <app-icon name="close" [size]="14" [stroke]="2.4" />
                 </button>
               }
@@ -69,6 +69,17 @@ import { SocialService } from '../core/social.service';
         </div>
       }
     </article>
+
+    @if (apagando(); as c) {
+      <app-dialogo titulo="Apagar comentário?" [subtitulo]="c.autor === social.eu()?.uid ? 'Seu comentário' : 'Comentário de ' + social.nomeDe(c.autor, c.autorNome)" (fechar)="apagando.set(null)">
+        <blockquote class="previa">{{ c.texto }}</blockquote>
+        <p class="apoio">Essa ação não pode ser desfeita.</p>
+        <div class="confirma">
+          <button type="button" class="btn btn--apagar" (click)="confirmarApagar(c)">Apagar</button>
+          <button type="button" class="btn btn--claro" (click)="apagando.set(null)">Cancelar</button>
+        </div>
+      </app-dialogo>
+    }
 
     @if (detalhe()) {
       <app-dialogo [titulo]="evento().fichaNome" [subtitulo]="subtituloDetalhe()" (fechar)="detalhe.set(false)">
@@ -94,6 +105,9 @@ import { SocialService } from '../core/social.service';
     .selo--marco { background: var(--ink); color: var(--accent); font-weight: 700; }
     .acoes { display: flex; gap: 8px; }
     .acao { min-height: 44px; min-width: 56px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); color: var(--ink); font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .previa { margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid var(--line); background: var(--soft); border-radius: 0 10px 10px 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+    .confirma { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .btn--apagar { background: #b3261e; color: #fff; }
     .acao--texto { margin-left: auto; font-weight: 600; font-size: 14px; }
     .acao.ativa { background: var(--ink); color: var(--accent); border-color: var(--ink); }
     .comentarios { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -114,6 +128,8 @@ export class EventoCard {
   protected readonly comentarios = signal<Comentario[]>([]);
   protected readonly aberto = signal(false);
   protected readonly detalhe = signal(false);
+  /** Comentário esperando a confirmação para ser apagado. */
+  protected readonly apagando = signal<Comentario | null>(null);
 
   /** O treino completo: o seu vem do histórico do aparelho; o de um amigo, dos treinos que ele compartilha. */
   protected readonly sessao = computed(() => {
@@ -176,8 +192,9 @@ export class EventoCard {
     void this.social.comentar(e.autor, e.id, texto);
   }
 
-  protected apagar(c: Comentario): void {
+  protected confirmarApagar(c: Comentario): void {
     const e = this.evento();
+    this.apagando.set(null);
     void this.social.apagarComentario(e.autor, e.id, c);
   }
 }

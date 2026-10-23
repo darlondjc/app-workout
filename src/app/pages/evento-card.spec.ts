@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ExerciseService } from '../core/exercise.service';
-import { Evento, Perfil } from '../core/social';
+import { Comentario, Evento, Perfil } from '../core/social';
 import { Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
@@ -31,6 +31,8 @@ const treino: Sessao = {
 
 describe('EventoCard: ver treino', () => {
   let amigo: { lista: ReturnType<typeof signal<Record<string, Sessao[]>>>; chamadas: string[] };
+  let comentariosCb: ((c: Comentario[]) => void) | undefined;
+  let apagar: jasmine.Spy;
   let fixture: ComponentFixture<EventoCard>;
 
   function criar(autor: string): void {
@@ -46,6 +48,8 @@ describe('EventoCard: ver treino', () => {
   beforeEach(() => {
     amigo = { lista: signal<Record<string, Sessao[]>>({}), chamadas: [] };
     const eu = signal<Perfil | null>({ uid: 'eu', nome: 'Eu', foto: null });
+    comentariosCb = undefined;
+    apagar = jasmine.createSpy('apagarComentario').and.resolveTo();
     TestBed.configureTestingModule({
       providers: [
         {
@@ -55,7 +59,11 @@ describe('EventoCard: ver treino', () => {
             nomeDe: (_: string, n: string) => n,
             fotoDe: () => null,
             ouvirCurtidas: () => () => undefined,
-            ouvirComentarios: () => () => undefined,
+            ouvirComentarios: (_dono: string, _ev: string, cb: (c: Comentario[]) => void) => {
+              comentariosCb = cb;
+              return () => undefined;
+            },
+            apagarComentario: (...args: unknown[]) => apagar(...args),
             sessoesDe: (uid: string) => {
               amigo.chamadas.push(uid);
               return amigo.lista()[uid] ?? [];
@@ -130,5 +138,74 @@ describe('EventoCard: ver treino', () => {
     botao().click();
     fixture.detectChanges();
     expect(texto()).toContain('Não encontrei os detalhes');
+  });
+  describe('apagar comentário', () => {
+    const meu: Comentario = { id: 'c1', autor: 'eu', autorNome: 'Eu', autorFoto: null, texto: 'Boa, treino forte!', criadoEm: 1 };
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    function abrirComentarios(): void {
+      comentariosCb?.([meu]);
+      (el().querySelectorAll('.acao')[1] as HTMLButtonElement).click();
+      fixture.detectChanges();
+    }
+
+    const xApagar = () => el().querySelector('.apagar') as HTMLButtonElement;
+    const botoesDialogo = () => [...el().querySelectorAll('[role="dialog"] .confirma button')] as HTMLButtonElement[];
+
+    it('o X só pede confirmação: nada é apagado antes de confirmar', () => {
+      criar('eu');
+      abrirComentarios();
+      xApagar().click();
+      fixture.detectChanges();
+      expect(dialogo()).not.toBeNull();
+      expect(dialogo()?.textContent).toContain('Apagar comentário?');
+      expect(dialogo()?.textContent).toContain('Boa, treino forte!');
+      expect(dialogo()?.textContent).toContain('Seu comentário');
+      expect(apagar).not.toHaveBeenCalled();
+    });
+
+    it('confirmar apaga o comentário e fecha o diálogo', () => {
+      criar('eu');
+      abrirComentarios();
+      xApagar().click();
+      fixture.detectChanges();
+      botoesDialogo()[0].click();
+      fixture.detectChanges();
+      expect(apagar).toHaveBeenCalledOnceWith('eu', 'ev1', meu);
+      expect(dialogo()).toBeNull();
+    });
+
+    it('cancelar, Esc e tocar fora não apagam', () => {
+      criar('eu');
+      abrirComentarios();
+      xApagar().click();
+      fixture.detectChanges();
+      botoesDialogo()[1].click();
+      fixture.detectChanges();
+      expect(dialogo()).toBeNull();
+
+      xApagar().click();
+      fixture.detectChanges();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(dialogo()).toBeNull();
+
+      xApagar().click();
+      fixture.detectChanges();
+      (el().querySelector('.fundo') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(dialogo()).toBeNull();
+      expect(apagar).not.toHaveBeenCalled();
+    });
+
+    it('dono do treino apagando o comentário de um amigo: o diálogo diz de quem é', () => {
+      criar('eu');
+      comentariosCb?.([{ ...meu, id: 'c2', autor: 'ana', autorNome: 'ana', texto: 'Parabéns!' }]);
+      (el().querySelectorAll('.acao')[1] as HTMLButtonElement).click();
+      fixture.detectChanges();
+      xApagar().click();
+      fixture.detectChanges();
+      expect(dialogo()?.textContent).toContain('Comentário de ana');
+    });
   });
 });
