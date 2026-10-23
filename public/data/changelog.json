@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.11.0",
+    "data": "2026-10-23",
+    "titulo": "Cinco medalhas novas e cabeçalho fixo",
+    "itens": [
+      "Treinos em 2026: medalha anual, com diamante em 200 treinos; a contagem recomeça a cada ano.",
+      "Dias seguidos: medalha para a maior sequência de dias treinando sem pular nenhum.",
+      "Superiores, Inferiores e Cardio: medalhas pela quantidade de exercícios feitos em cada região.",
+      "Na tela inicial, o nome e a foto ficam fixos no topo ao rolar."
+    ]
+  },
+  {
     "versao": "1.10.1",
     "data": "2026-10-23",
     "titulo": "Ajustes reorganizado",
