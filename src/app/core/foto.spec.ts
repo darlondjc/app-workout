@@ -1,4 +1,4 @@
-import { LIMITE_FOTO, reduzirFoto } from './foto';
+import { LIMITE_FOTO, ZOOM_MAXIMO, posicionar, recortarFoto, reduzirFoto, trechoVisivel } from './foto';
 
 /** Imagem sintética em PNG; com `ruido`, cada pixel é aleatório (a pior situação para a compressão). */
 async function imagem(largura: number, altura: number, ruido: boolean): Promise<Blob> {
@@ -62,5 +62,80 @@ describe('reduzirFoto', () => {
   it('quadrada: recorta o centro e respeita o lado máximo', async () => {
     const { w, h } = await medir(await reduzirFoto(await imagem(1000, 600, false), 30_000, 192, true));
     expect([w, h]).toEqual([192, 192]);
+  });
+});
+
+describe('enquadramento da foto', () => {
+  // Foto 800x600 num quadro 300x225 (mesma proporção): zoom 1 mostra a foto toda.
+  it('sem zoom mostra a foto inteira e não deixa mover', () => {
+    const p = posicionar(800, 600, 300, 225, { zoom: 1, x: 50, y: 50 });
+    expect(p.x).toBe(0);
+    expect(p.y).toBe(0);
+    const t = trechoVisivel(800, 600, 300, 225, { zoom: 1, x: 0, y: 0 });
+    expect(t).toEqual({ x: 0, y: 0, largura: 800, altura: 600 });
+  });
+
+  it('limita o zoom entre 1 e o máximo', () => {
+    expect(posicionar(800, 600, 300, 225, { zoom: 0.2, x: 0, y: 0 }).zoom).toBe(1);
+    expect(posicionar(800, 600, 300, 225, { zoom: 99, x: 0, y: 0 }).zoom).toBe(ZOOM_MAXIMO);
+  });
+
+  it('foto vertical cobre o quadro e só move na vertical', () => {
+    const p = posicionar(600, 800, 300, 225, { zoom: 1, x: 100, y: 1000 });
+    expect(p.x).toBe(0);
+    expect(p.y).toBeGreaterThan(0);
+    expect(p.largura).toBeCloseTo(300, 5);
+    // No limite, a borda da foto encosta no quadro.
+    expect(p.altura / 2 - p.y).toBeCloseTo(225 / 2, 5);
+  });
+
+  it('com zoom, o trecho visível encolhe e acompanha o deslocamento', () => {
+    const centro = trechoVisivel(800, 600, 300, 225, { zoom: 2, x: 0, y: 0 });
+    expect(centro.largura).toBe(400);
+    expect(centro.x).toBe(200);
+    // Arrastar a foto para a direita mostra a parte esquerda dela.
+    const direita = trechoVisivel(800, 600, 300, 225, { zoom: 2, x: 9999, y: 0 });
+    expect(direita.x).toBe(0);
+  });
+});
+
+describe('recortarFoto', () => {
+  async function fotoTeste(w: number, h: number): Promise<string> {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d')!;
+    ctx.fillStyle = '#f00';
+    ctx.fillRect(0, 0, w / 2, h);
+    ctx.fillStyle = '#00f';
+    ctx.fillRect(w / 2, 0, w / 2, h);
+    return c.toDataURL('image/jpeg', 0.9);
+  }
+  async function tamanho(src: string): Promise<HTMLImageElement> {
+    const img = new Image();
+    img.src = src;
+    await img.decode();
+    return img;
+  }
+
+  it('gera uma imagem 4:3 dentro do limite, mesmo de uma foto vertical', async () => {
+    const out = await recortarFoto(await fotoTeste(300, 400), 300, 225, { zoom: 1, x: 0, y: 0 });
+    const img = await tamanho(out);
+    expect(img.naturalWidth / img.naturalHeight).toBeCloseTo(4 / 3, 1);
+    expect(out.length).toBeLessThan(LIMITE_FOTO * 1.4);
+  });
+
+  it('o zoom recorta o lado escolhido', async () => {
+    const src = await fotoTeste(400, 300);
+    // Zoom 2 deslocado para a direita mostra a metade esquerda (vermelha).
+    const out = await tamanho(await recortarFoto(src, 300, 225, { zoom: 2, x: 9999, y: 0 }));
+    const c = document.createElement('canvas');
+    c.width = out.naturalWidth;
+    c.height = out.naturalHeight;
+    const ctx = c.getContext('2d')!;
+    ctx.drawImage(out, 0, 0);
+    const [r, , b] = ctx.getImageData(c.width - 5, c.height / 2, 1, 1).data;
+    expect(r).toBeGreaterThan(150);
+    expect(b).toBeLessThan(100);
   });
 });
