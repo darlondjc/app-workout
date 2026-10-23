@@ -24,7 +24,8 @@ export type IconName =
   | 'scale'
   | 'logout'
   | 'copy'
-  | 'share';
+  | 'share'
+  | 'user-add';
 
 @Component({
   selector: 'app-icon',
@@ -124,6 +125,11 @@ export type IconName =
         @case ('share') {
           <path d="M12 15V4M8 8l4-4 4 4" />
           <path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12" />
+        }
+        @case ('user-add') {
+          <circle cx="10" cy="8" r="3.2" />
+          <path d="M3.5 19.5c0-3.4 2.9-6 6.5-6 1.6 0 3 .5 4.1 1.4" />
+          <path d="M18 12.5v6M15 15.5h6" />
         }
         @case ('refresh') {
           <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />

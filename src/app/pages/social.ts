@@ -43,7 +43,7 @@ const pessoaEscolhida = signal<string>('eu');
           <h1 class="titulo">Social</h1>
         </div>
         <a class="amigos" routerLink="/amigos" aria-label="Amigos">
-          <app-icon name="people" [size]="22" [stroke]="2" />
+          <app-icon name="user-add" [size]="22" [stroke]="2" />
           @if (social.convitesRecebidos().length; as n) {
             <span class="aviso-n">{{ n }}</span>
           }
