@@ -77,7 +77,7 @@ function lerPreferencia(): boolean {
             </a>
             <div>
               <h1>{{ nome() }}</h1>
-              <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções</a>
+              <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
             </div>
           </div>
 
@@ -266,11 +266,22 @@ function lerPreferencia(): boolean {
       line-height: 1.15;
     }
     .ver {
-      display: inline-block;
-      margin-top: 6px;
-      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      min-height: 34px;
+      padding: 0 8px 0 14px;
+      border-radius: 999px;
+      background: rgba(200, 236, 58, 0.14);
       color: var(--accent);
-      text-decoration: underline;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .ver:active {
+      background: rgba(200, 236, 58, 0.26);
     }
     .tabela {
       display: flex;
