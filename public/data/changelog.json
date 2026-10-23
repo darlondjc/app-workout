@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.9.5",
+    "data": "2026-10-23",
+    "titulo": "Treino sem internet e convites no aviso da aba Social",
+    "itens": [
+      "Com internet, o app guarda as imagens dos exercícios das suas fichas, para o treino ter fotos e animações mesmo sem conexão.",
+      "Sem conexão, uma faixa no topo avisa que os treinos ficam salvos e sincronizam ao voltar; quando a internet volta, um aviso confirma.",
+      "O número no ícone da aba Social agora também conta os convites de amizade que você recebeu."
+    ]
+  },
+  {
     "versao": "1.9.4",
     "data": "2026-10-22",
     "titulo": "Aviso de novidades na aba Social",

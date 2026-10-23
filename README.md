@@ -10,7 +10,7 @@ PWA em Angular para montar fichas de treino. A biblioteca tem 876 exercícios co
 - **Fichas**: criar, renomear, reordenar, remover exercícios e definir séries, repetições, carga e descanso; cada ficha mostra os grupos musculares trabalhados, e um botão de play flutuante inicia o treino.
 - **Treino**: marcar séries feitas (reps e carga editadas valem para as séries seguintes), cronômetro de descanso progressivo (vermelho no descanso da ficha), pausar ou cancelar pelo X, tempo entre séries e registro do treino concluído.
 
-As fichas e o histórico ficam no `localStorage` do aparelho e funcionam sem conta. Com o login do Google (opcional), são sincronizados pelo Firestore, e dá para adicionar amigos; veja [Conta, backup e sincronização](#conta-backup-e-sincronização-firebase) e [Amigos e timeline](#amigos-e-timeline).
+As fichas e o histórico ficam no `localStorage` do aparelho e funcionam sem conta. Para treinar sem internet, o app pré-carrega as imagens dos exercícios das suas fichas (`core/precarga.service.ts`) e mostra uma faixa de "sem conexão"; o que for feito offline sincroniza quando a conexão volta. Com o login do Google (opcional), são sincronizados pelo Firestore, e dá para adicionar amigos; veja [Conta, backup e sincronização](#conta-backup-e-sincronização-firebase) e [Amigos e timeline](#amigos-e-timeline).
 
 ## Como rodar
 
