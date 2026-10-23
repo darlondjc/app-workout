@@ -331,6 +331,8 @@ describe('EventoCard: ver treino', () => {
       criar('ana', { temFoto: true });
       await pronto();
       expect(el().querySelector('.foto')).toBeNull();
+      // E diz na tela por que não há foto, para dar para diagnosticar pelo celular.
+      expect(el().querySelector('.erro-foto')?.textContent).toContain('Não consegui mostrar a foto');
     });
 
     it('o dono adiciona uma foto: grava e já mostra', async () => {
