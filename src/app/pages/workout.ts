@@ -92,7 +92,7 @@ function lerPreferencia(): boolean {
               <span>Série</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Carga (kg)</span><span>Feito</span>
             </div>
             @for (s of series(); track s.n) {
-              <div class="serie" [class.feita]="s.feita">
+              <div class="serie" [class.feita]="s.feita" [class.pisca-a]="piscadas()[s.n] % 2 === 1" [class.pisca-b]="piscadas()[s.n] > 0 && piscadas()[s.n] % 2 === 0">
                 <span class="n">{{ s.n }}</span>
                 <input class="valor" type="number" inputmode="numeric" min="0" [value]="s.reps"
                   [attr.aria-label]="(it.unidade === 'min' ? 'Minutos' : 'Repetições') + ' da série ' + s.n" (change)="editar(s.n - 1, 'reps', $event)" />
@@ -369,6 +369,27 @@ function lerPreferencia(): boolean {
     .serie.feita {
       background: #232a1b;
     }
+    /* Linhas preenchidas automaticamente piscam uma vez. Duas classes com a mesma animação deixam repetir o efeito. */
+    .serie.pisca-a {
+      animation: pisca-a 0.9s ease-out;
+    }
+    .serie.pisca-b {
+      animation: pisca-b 0.9s ease-out;
+    }
+    @keyframes pisca-a {
+      0%, 30% { background: #4a5c10; box-shadow: 0 0 0 2px #c8ec3a; }
+      100% { background: #1d2125; box-shadow: 0 0 0 0 transparent; }
+    }
+    @keyframes pisca-b {
+      0%, 30% { background: #4a5c10; box-shadow: 0 0 0 2px #c8ec3a; }
+      100% { background: #1d2125; box-shadow: 0 0 0 0 transparent; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .serie.pisca-a,
+      .serie.pisca-b {
+        animation: none;
+      }
+    }
     .valor {
       width: 100%;
       min-width: 0;
@@ -459,6 +480,8 @@ export class Workout {
   protected readonly limiteDescanso = computed(() => this.item()?.descanso || 60);
   private descansoDesde = 0;
   protected readonly confirmandoSaida = signal(false);
+  /** Quantas vezes cada série (pelo número) foi preenchida sozinha; o valor mudando refaz a animação. */
+  protected readonly piscadas = signal<Record<number, number>>({});
   /** Último passo aberto: foto opcional antes de concluir. */
   protected readonly concluindo = signal(false);
   /** Ao finalizar com séries sem marcar: pergunta se pode marcá-las como feitas. */
@@ -567,6 +590,15 @@ export class Workout {
     const valor = Number.isFinite(v) && v >= 0 ? v : 0;
     const i = this.indice();
     const base = this.series().map((s, j) => (j >= k && (j === k || !s.feita) ? { ...s, [campo]: valor } : s));
+    // Só as linhas de baixo que mudaram sozinhas piscam, para a pessoa notar o que foi copiado.
+    const copiadas = this.series().filter((s, j) => j > k && !s.feita && s[campo] !== valor).map((s) => s.n);
+    if (copiadas.length > 0) {
+      this.piscadas.update((p) => {
+        const novo = { ...p };
+        for (const n of copiadas) novo[n] = (novo[n] ?? 0) + 1;
+        return novo;
+      });
+    }
     this.plans.andamento(this.id(), (a) => ({
       ...a,
       indice: i,
@@ -615,6 +647,7 @@ export class Workout {
   }
 
   private irPara(indice: number): void {
+    this.piscadas.set({});
     this.plans.andamento(this.id(), (a) => ({ ...a, indice }));
   }
 

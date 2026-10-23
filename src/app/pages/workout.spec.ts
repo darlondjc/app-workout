@@ -133,4 +133,50 @@ describe('Workout — marcar séries em bloco', () => {
     fixture.detectChanges();
     expect(chave().checked).toBeTrue();
   });
+
+  describe('linhas copiadas piscam', () => {
+    const linhas = () => [...el().querySelectorAll('.serie')] as HTMLElement[];
+    const piscando = () => linhas().map((l) => l.classList.contains('pisca-a') || l.classList.contains('pisca-b'));
+    const digitar = (linha: number, campo: 0 | 1, valor: string) => {
+      const input = linhas()[linha].querySelectorAll('input')[campo] as HTMLInputElement;
+      input.value = valor;
+      input.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    };
+
+    it('mudar a carga de uma série faz piscar só as de baixo que mudaram sozinhas', () => {
+      digitar(0, 1, '40');
+      expect(piscando()).toEqual([false, true, true]);
+    });
+
+    it('séries já feitas não são alteradas e não piscam', () => {
+      clicar(marcas()[1]);
+      digitar(0, 1, '40');
+      expect(piscando()).toEqual([false, false, true]);
+    });
+
+    it('se nada mudou nas de baixo, nada pisca', () => {
+      digitar(0, 0, '10');
+      expect(piscando()).toEqual([false, false, false]);
+    });
+
+    it('editar a última série não faz nada piscar', () => {
+      digitar(2, 1, '50');
+      expect(piscando()).toEqual([false, false, false]);
+    });
+
+    it('uma nova edição repete o efeito (troca a classe da animação)', () => {
+      digitar(0, 1, '40');
+      expect(linhas()[1].classList).toContain('pisca-a');
+      digitar(0, 1, '45');
+      expect(linhas()[1].classList).toContain('pisca-b');
+      expect(linhas()[1].classList).not.toContain('pisca-a');
+    });
+
+    it('ao trocar de exercício o efeito é limpo', () => {
+      digitar(0, 1, '40');
+      clicar(botao('Próximo exercício'));
+      expect(piscando().some(Boolean)).toBeFalse();
+    });
+  });
 });
