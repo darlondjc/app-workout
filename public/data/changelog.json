@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.11.3",
+    "data": "2026-10-23",
+    "titulo": "Barra do topo no Social e ícone do app",
+    "itens": [
+      "Social: o título e o ícone de adicionar amigo ficam fixos no topo ao rolar, com a mesma animação da tela inicial.",
+      "Social: as abas Timeline e Estatísticas ficam fixas embaixo, logo acima da barra de navegação.",
+      "Início: ao rolar, o ícone do app aparece no centro da barra do topo."
+    ]
+  },
+  {
     "versao": "1.11.2",
     "data": "2026-10-23",
     "titulo": "Início e Social mais enxutos",
