@@ -18,9 +18,10 @@ const LARGURA_MINIMA_PESSOA = 60;
 
 /**
  * Largura de cada pessoa na faixa para que, com gente além da tela, sempre apareça um pedaço da próxima
- * (cabem N inteiras e meia). Devolve `null` se todas cabem do jeito natural. Vale para qualquer largura de tela.
+ * (cabem N inteiras e meia). Só vale com 4 ou mais amigos (mais eu); devolve `null` se todas cabem ou se são poucas, mantendo o layout natural. Vale para qualquer largura de tela.
  */
 export function larguraDaPessoa(larguraDaFaixa: number, quantas: number): number | null {
+  if (quantas < 5) return null; // eu + menos de 4 amigos: layout normal, alinhado à esquerda
   const inteiras = Math.max(2, Math.floor(larguraDaFaixa / (LARGURA_MINIMA_PESSOA + FOLGA_PESSOAS) - 0.5));
   if (quantas <= inteiras) return null;
   return larguraDaFaixa / (inteiras + 0.5) - FOLGA_PESSOAS;

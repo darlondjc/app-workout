@@ -130,6 +130,13 @@ describe('larguraDaPessoa', () => {
   it('não mexe na largura quando todos cabem', () => {
     expect(larguraDaPessoa(360, 3)).toBeNull();
   });
+  it('com eu + até 3 amigos, mantém o layout natural em qualquer largura', () => {
+    expect(larguraDaPessoa(200, 4)).toBeNull();
+    expect(larguraDaPessoa(300, 4)).toBeNull();
+  });
+  it('com 4 amigos (5 pessoas) em tela estreita, deixa meia pessoa à mostra', () => {
+    expect(larguraDaPessoa(332, 5)).not.toBeNull();
+  });
   it('com gente além da tela, deixa meia pessoa à mostra', () => {
     const w = larguraDaPessoa(332, 8)!;
     const passo = w + 12;
