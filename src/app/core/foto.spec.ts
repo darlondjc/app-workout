@@ -58,4 +58,9 @@ describe('reduzirFoto', () => {
   it('arquivo que não é imagem dá erro', async () => {
     await expectAsync(reduzirFoto(new Blob(['texto'], { type: 'text/plain' }))).toBeRejected();
   });
+
+  it('quadrada: recorta o centro e respeita o lado máximo', async () => {
+    const { w, h } = await medir(await reduzirFoto(await imagem(1000, 600, false), 30_000, 192, true));
+    expect([w, h]).toEqual([192, 192]);
+  });
 });

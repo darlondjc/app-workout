@@ -44,6 +44,8 @@ describe('Social — faixa de pessoas', () => {
             temMais: signal(false),
             carregarMais: () => undefined,
             amigos,
+            amigosPorAtividade: amigos,
+            meuUsuario: signal({ uid: 'eu', nome: 'Eu', email: '', foto: null }),
             convitesRecebidos: signal([]),
             marcarTimelineVista: () => undefined,
             atualizarPerfil: () => Promise.resolve(),

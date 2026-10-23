@@ -8,6 +8,16 @@ export interface Perfil {
   /** Código para ser adicionado por amigos. */
   codigo?: string;
   metaSemanal?: number;
+  /** A foto foi escolhida no app (e não veio da conta Google); o login não a troca mais. */
+  fotoPropria?: boolean;
+}
+
+/**
+ * Foto gravada junto de treinos, comentários e avisos. Foto escolhida no app é um texto grande demais para repetir
+ * em cada item: fica só no perfil e quem lê busca a atual com `fotoDe`.
+ */
+export function fotoParaItens(p: Perfil): string | null {
+  return p.fotoPropria ? null : p.foto;
 }
 
 export interface Amizade {

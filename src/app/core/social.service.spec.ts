@@ -4,7 +4,7 @@ import { CloudService } from './cloud.service';
 import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
 import { PlanService } from './plan.service';
-import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend } from './social';
+import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend, fotoParaItens } from './social';
 import { LIMITE_SESSOES_AMIGO, PAGINA_TIMELINE, SocialService } from './social.service';
 import { NuvemBackend } from './sync';
 
@@ -26,7 +26,11 @@ class ApiFalsa implements SocialBackend {
   perfis: Record<string, Perfil> = {};
 
   lerPerfil = (uid: string) => Promise.resolve(this.perfis[uid] ?? null);
-  gravarPerfil = () => Promise.resolve();
+  gravados: Perfil[] = [];
+  gravarPerfil = (p: Perfil) => {
+    this.gravados.push(p);
+    return Promise.resolve();
+  };
   reservarCodigo = () => Promise.resolve(true);
   uidDoCodigo = () => Promise.resolve(null);
   pedirAmizade = () => Promise.resolve();
@@ -164,6 +168,8 @@ describe('SocialService', () => {
     marcadas = [];
     api = new ApiFalsa();
     api.perfis['ana'] = { uid: 'ana', nome: 'Ana', foto: null };
+    api.perfis['bia'] = { uid: 'bia', nome: 'Bia', foto: null };
+    api.perfis['caio'] = { uid: 'caio', nome: 'Caio', foto: null };
     nuvem = new NuvemFalsa();
     cloud = { social: signal<{ uid: string; api: SocialBackend; nuvem: NuvemBackend } | null>(null), usuario: signal({ uid: 'eu', nome: 'Eu', email: 'eu@x.com', foto: null }) };
     TestBed.configureTestingModule({
@@ -195,6 +201,78 @@ describe('SocialService', () => {
     expect([...api.eventos.keys()]).toEqual(['eu']);
     expect(social.amigos().length).toBe(0);
     expect(social.convitesEnviados().length).toBe(1);
+  });
+
+  describe('ordem dos amigos', () => {
+    it('quem teve atividade mais recente vem primeiro; sem atividade, em ordem alfabética no fim', async () => {
+      await entrarComAmigos(amizade('ana'), amizade('bia'), amizade('caio'));
+      expect(social.amigosPorAtividade().map((p) => p.perfil.nome)).toEqual(['Ana', 'Bia', 'Caio']);
+      api.eventos.get('bia')!.cb([evento('bia', 1000)]);
+      api.eventos.get('caio')!.cb([evento('caio', 5000), evento('caio', 200)]);
+      await assentar();
+      expect(social.amigosPorAtividade().map((p) => p.perfil.nome)).toEqual(['Caio', 'Bia', 'Ana']);
+    });
+
+    it('curtida ou comentário de um amigo em um treino meu também conta', async () => {
+      await entrarComAmigos(amizade('ana'), amizade('bia'));
+      api.eventos.get('bia')!.cb([evento('bia', 1000)]);
+      api.atividadesCb?.([{ id: 'a', autor: 'ana', autorNome: 'Ana', autorFoto: null, tipo: 'curtida', eventoId: 'x', criadoEm: 9000 }]);
+      await assentar();
+      expect(social.amigosPorAtividade().map((p) => p.perfil.nome)).toEqual(['Ana', 'Bia']);
+    });
+  });
+
+  describe('foto do perfil', () => {
+    it('trocar a foto grava no perfil e passa a valer em lugar da foto do Google', async () => {
+      cloud.usuario.set({ uid: 'eu', nome: 'Eu', email: 'eu@x.com', foto: 'https://google/foto.jpg' });
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      expect(social.meuUsuario()?.foto).toBe('https://google/foto.jpg');
+      await social.trocarFoto('data:image/jpeg;base64,AAA');
+      expect(api.gravados.at(-1)).toEqual(jasmine.objectContaining({ foto: 'data:image/jpeg;base64,AAA', fotoPropria: true }));
+      expect(social.meuUsuario()?.foto).toBe('data:image/jpeg;base64,AAA');
+    });
+
+    it('ao entrar de novo, a foto escolhida no app não é trocada pela do Google', async () => {
+      api.perfis['eu'] = { uid: 'eu', nome: 'Eu', foto: 'data:image/jpeg;base64,MINHA', fotoPropria: true };
+      cloud.usuario.set({ uid: 'eu', nome: 'Eu', email: 'eu@x.com', foto: 'https://google/foto.jpg' });
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      expect(social.eu()?.foto).toBe('data:image/jpeg;base64,MINHA');
+    });
+
+    it('sem foto escolhida, a foto do Google entra no perfil', async () => {
+      cloud.usuario.set({ uid: 'eu', nome: 'Eu', email: 'eu@x.com', foto: 'https://google/foto.jpg' });
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      expect(social.eu()?.foto).toBe('https://google/foto.jpg');
+      expect(social.eu()?.fotoPropria).toBeFalse();
+    });
+
+    it('usar a foto da conta desfaz a escolha', async () => {
+      cloud.usuario.set({ uid: 'eu', nome: 'Eu', email: 'eu@x.com', foto: 'https://google/foto.jpg' });
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      await social.trocarFoto('data:image/jpeg;base64,AAA');
+      await social.usarFotoDaConta();
+      expect(social.eu()?.foto).toBe('https://google/foto.jpg');
+      expect(social.eu()?.fotoPropria).toBeFalse();
+    });
+
+    it('treinos publicados não carregam a foto escolhida no app, só o perfil', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      await social.trocarFoto('data:image/jpeg;base64,AAA');
+      expect(fotoParaItens(social.eu()!)).toBeNull();
+    });
+
+    it('se não salvar, a foto não muda na tela', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.gravarPerfil = () => Promise.reject(new Error('sem rede'));
+      await expectAsync(social.trocarFoto('data:image/jpeg;base64,AAA')).toBeRejected();
+      expect(social.eu()?.fotoPropria).toBeFalsy();
+    });
   });
 
   describe('estatísticas de amigos', () => {

@@ -4,6 +4,7 @@ import { Avatar } from '../core/avatar';
 import { CloudService } from '../core/cloud.service';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
+import { SocialService } from '../core/social.service';
 import { PlanService, dataLocal } from '../core/plan.service';
 
 const LETRAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
@@ -22,7 +23,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
         </div>
         @if (nuvem.usuario(); as u) {
           <a class="conta" routerLink="/ajustes" aria-label="Minha conta">
-            <app-avatar [usuario]="u" [tamanho]="44" />
+            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="44" />
           </a>
         }
       </header>
@@ -261,6 +262,7 @@ export class Home {
   private readonly agora = new Date();
 
   protected readonly nuvem = inject(CloudService);
+  protected readonly social = inject(SocialService);
   protected readonly primeiroNome = computed(() => this.nuvem.usuario()?.nome.trim().split(/\s+/)[0] ?? '');
 
   protected readonly saudacao =

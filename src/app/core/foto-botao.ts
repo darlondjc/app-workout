@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-import { reduzirFoto } from './foto';
+import { LADO_FOTO_PERFIL, LIMITE_FOTO_PERFIL, reduzirFoto } from './foto';
 import { Icon } from './icon';
 
 /** Botão que abre a câmera ou a galeria, reduz a foto escolhida e entrega o JPEG pequeno em data URL. */
@@ -34,6 +34,8 @@ export class FotoBotao {
   readonly classe = input('btn btn--claro');
   /** Mostra só o ícone (o texto vira o nome acessível); o erro sai por `falhou`. */
   readonly somenteIcone = input(false);
+  /** Foto de perfil: recorte quadrado pequeno, em vez de uma foto de treino. */
+  readonly perfil = input(false);
   readonly escolhida = output<string>();
   readonly falhou = output<string>();
 
@@ -47,7 +49,9 @@ export class FotoBotao {
     this.erro.set('');
     this.preparando.set(true);
     try {
-      this.escolhida.emit(await reduzirFoto(arquivo));
+      this.escolhida.emit(
+        this.perfil() ? await reduzirFoto(arquivo, LIMITE_FOTO_PERFIL, LADO_FOTO_PERFIL, true) : await reduzirFoto(arquivo),
+      );
     } catch {
       this.erro.set('Não consegui usar essa foto. Tente outra.');
       this.falhou.emit(this.erro());

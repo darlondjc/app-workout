@@ -97,6 +97,8 @@ describe('Social — rolagem infinita da timeline', () => {
               if (temMais()) pagina.update((p) => p + 1);
             },
             amigos: signal([]),
+            amigosPorAtividade: signal([]),
+            meuUsuario: signal({ uid: 'eu', nome: 'Eu', email: '', foto: null }),
             convitesRecebidos: signal([]),
             marcarTimelineVista: () => undefined,
             nomeDe: (_u: string, n: string) => n,

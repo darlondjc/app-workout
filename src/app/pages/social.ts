@@ -104,12 +104,12 @@ const pessoaEscolhida = signal<string>('eu');
             <div class="pessoas" role="radiogroup" aria-label="Ver estatísticas de" #lista (scroll)="medirFaixa()" [style.--item.px]="larguraItem()"
                  [class.mais-direita]="maisDireita()" [class.mais-esquerda]="maisEsquerda()">
               <button type="button" role="radio" [attr.aria-checked]="pessoa() === 'eu'" (click)="pessoaEscolhida.set('eu')">
-                @if (cloud.usuario(); as u) {
+                @if (social.meuUsuario(); as u) {
                   <app-avatar [usuario]="u" [tamanho]="40" />
                 }
                 <span>Eu</span>
               </button>
-              @for (p of social.amigos(); track p.perfil.uid) {
+              @for (p of social.amigosPorAtividade(); track p.perfil.uid) {
                 <button type="button" role="radio" [attr.aria-checked]="pessoa() === p.perfil.uid" (click)="escolher(p.perfil.uid)">
                   <app-avatar [usuario]="{ uid: p.perfil.uid, nome: p.perfil.nome, email: '', foto: p.perfil.foto }" [tamanho]="40" />
                   <span>{{ primeiroNome(p.perfil.nome) }}</span>
@@ -196,7 +196,7 @@ export class Social {
     // Remede a faixa quando ela aparece ou a lista de amigos muda.
     effect(() => {
       this.lista();
-      this.social.amigos();
+      this.social.amigosPorAtividade();
       requestAnimationFrame(() => this.medirFaixa());
     });
     // A faixa muda de largura com a tela (girar o celular, janela): refaz a conta.
@@ -230,9 +230,9 @@ export class Social {
   /** Se o amigo escolhido deixou de ser amigo, volta para "Eu". */
   protected readonly pessoa = computed(() => {
     const p = pessoaEscolhida();
-    return p === 'eu' || this.social.amigos().some((a) => a.perfil.uid === p) ? p : 'eu';
+    return p === 'eu' || this.social.amigosPorAtividade().some((a) => a.perfil.uid === p) ? p : 'eu';
   });
-  protected readonly amigoAtual = computed(() => this.social.amigos().find((a) => a.perfil.uid === this.pessoa())?.perfil);
+  protected readonly amigoAtual = computed(() => this.social.amigosPorAtividade().find((a) => a.perfil.uid === this.pessoa())?.perfil);
 
   /** Treinos do amigo escolhido (a leitura começa ao escolher). */
   protected readonly sessoesAmigo = computed(() => (this.pessoa() === 'eu' ? [] : this.social.sessoesDe(this.pessoa())));

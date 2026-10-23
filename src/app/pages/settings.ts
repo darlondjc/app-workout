@@ -2,13 +2,15 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ChangelogService } from '../core/changelog.service';
 import { CloudService } from '../core/cloud.service';
 import { Avatar } from '../core/avatar';
+import { FotoBotao } from '../core/foto-botao';
 import { Icon } from '../core/icon';
+import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar],
+  imports: [Icon, Carregando, Avatar, FotoBotao],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -24,7 +26,7 @@ import { UpdateService } from '../core/update.service';
           <app-carregando texto="Verificando conta…" />
         } @else if (nuvem.usuario(); as u) {
           <div class="conta">
-            <app-avatar [usuario]="u" [tamanho]="44" />
+            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="56" />
             <div class="rot">
               <strong>{{ u.nome || u.email }}</strong>
               @if (u.nome) {
@@ -32,6 +34,20 @@ import { UpdateService } from '../core/update.service';
               }
             </div>
           </div>
+          @if (social.eu()) {
+            <div class="acoes-linha">
+              <app-foto-botao [perfil]="true" rotulo="Alterar foto" (escolhida)="trocarFoto($event)" (falhou)="erroFoto.set($event)" />
+              @if (social.eu()?.fotoPropria) {
+                <button type="button" class="btn btn--claro" [disabled]="salvandoFoto()" (click)="usarFotoDaConta()">Foto da conta</button>
+              }
+            </div>
+            @if (salvandoFoto()) {
+              <p class="apoio" role="status">Salvando a foto…</p>
+            }
+            @if (erroFoto()) {
+              <p class="apoio erro" role="alert">{{ erroFoto() }}</p>
+            }
+          }
           <p class="status" role="status">
             @if (!nuvem.online()) {
               Sem conexão. Tudo fica salvo no aparelho e é enviado quando voltar.
@@ -256,7 +272,8 @@ import { UpdateService } from '../core/update.service';
       display: flex;
       gap: 10px;
     }
-    .acoes-linha .btn {
+    .acoes-linha .btn,
+    .acoes-linha app-foto-botao {
       flex: 1;
     }
     button:disabled {
@@ -268,10 +285,33 @@ export class Settings {
   protected readonly up = inject(UpdateService);
   protected readonly log = inject(ChangelogService);
   protected readonly nuvem = inject(CloudService);
+  protected readonly social = inject(SocialService);
   protected readonly confirmando = signal(false);
+  protected readonly erroFoto = signal('');
+  protected readonly salvandoFoto = signal(false);
 
   constructor() {
     void this.nuvem.iniciar();
+  }
+
+  protected async trocarFoto(dados: string): Promise<void> {
+    await this.salvarFoto(() => this.social.trocarFoto(dados));
+  }
+
+  protected async usarFotoDaConta(): Promise<void> {
+    await this.salvarFoto(() => this.social.usarFotoDaConta());
+  }
+
+  private async salvarFoto(acao: () => Promise<void>): Promise<void> {
+    this.erroFoto.set('');
+    this.salvandoFoto.set(true);
+    try {
+      await acao();
+    } catch {
+      this.erroFoto.set('Não consegui salvar a foto. Confira a conexão e tente de novo.');
+    } finally {
+      this.salvandoFoto.set(false);
+    }
   }
 
   protected async sair(): Promise<void> {

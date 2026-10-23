@@ -9,6 +9,7 @@ import {
   Comentario,
   Evento,
   Perfil,
+  fotoParaItens,
   SocialBackend,
   chaveAmizade,
   gerarCodigo,
@@ -75,6 +76,25 @@ export class SocialService {
       .map((a) => this.pessoa(a))
       .sort((a, b) => a.perfil.nome.localeCompare(b.perfil.nome, 'pt-BR')),
   );
+  /**
+   * Amigos pela atividade mais recente (treino feito ou curtida/comentário em um treino meu): quem fez algo há
+   * pouco vem primeiro. Quem ainda não fez nada fica no fim, em ordem alfabética.
+   */
+  readonly amigosPorAtividade = computed(() => {
+    const ultima = new Map<string, number>();
+    const marcar = (uid: string, t: number) => ultima.set(uid, Math.max(ultima.get(uid) ?? 0, t));
+    for (const [uid, lista] of Object.entries(this.eventosPor())) for (const e of lista) marcar(uid, e.criadoEm);
+    for (const a of this.atividades()) marcar(a.autor, a.criadoEm);
+    return [...this.amigos()].sort((a, b) => (ultima.get(b.perfil.uid) ?? 0) - (ultima.get(a.perfil.uid) ?? 0));
+  });
+
+  /** Minha conta com a foto que vale (a escolhida no app, se houver). */
+  readonly meuUsuario = computed(() => {
+    const u = this.cloud.usuario();
+    const eu = this.eu();
+    return u && eu?.fotoPropria ? { ...u, foto: eu.foto } : u;
+  });
+
   readonly convitesRecebidos = computed(() => this.amizades().filter((a) => a.status === 'pendente' && a.de !== this.uid).map((a) => this.pessoa(a)));
   readonly convitesEnviados = computed(() => this.amizades().filter((a) => a.status === 'pendente' && a.de === this.uid).map((a) => this.pessoa(a)));
   readonly ativo = computed(() => this.eu() !== null);
@@ -176,7 +196,9 @@ export class SocialService {
       const perfil: Perfil = {
         uid,
         nome: u?.nome || u?.email || existente?.nome || 'Você',
-        foto: u?.foto ?? existente?.foto ?? null,
+        // Foto escolhida no app vale mais que a da conta Google, que só entra enquanto não houver uma.
+        foto: existente?.fotoPropria ? existente.foto : (u?.foto ?? existente?.foto ?? null),
+        fotoPropria: existente?.fotoPropria ?? false,
         codigo,
         metaSemanal: existente?.metaSemanal,
       };
@@ -246,6 +268,24 @@ export class SocialService {
     } catch (e) {
       this.falhou(e);
     }
+  }
+
+  /** Troca a foto do perfil por uma escolhida no app (JPEG pequeno em data URL). */
+  async trocarFoto(dados: string): Promise<void> {
+    await this.gravarFoto({ foto: dados, fotoPropria: true });
+  }
+
+  /** Volta a usar a foto da conta Google (ou a inicial do nome, se a conta não tem foto). */
+  async usarFotoDaConta(): Promise<void> {
+    await this.gravarFoto({ foto: this.cloud.usuario()?.foto ?? null, fotoPropria: false });
+  }
+
+  private async gravarFoto(campos: Pick<Perfil, 'foto' | 'fotoPropria'>): Promise<void> {
+    const eu = this.eu();
+    if (!eu || !this.api) throw new Error('Entre na sua conta para trocar a foto.');
+    const novo = { ...eu, ...campos };
+    await this.api.gravarPerfil(novo);
+    this.eu.set(novo);
   }
 
   // --- Amizades ----------------------------------------------------------------------------
@@ -406,7 +446,7 @@ export class SocialService {
         id: idEvento(s.concluidaEm, s.id),
         autor: eu.uid,
         autorNome: eu.nome,
-        autorFoto: eu.foto,
+        autorFoto: fotoParaItens(eu),
         tipo: 'treino',
         criadoEm: s.concluidaEm,
         sessaoId: s.id,

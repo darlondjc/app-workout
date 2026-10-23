@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase/firestore';
-import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend, TAMANHO_COMENTARIO, nomeComMaiuscula } from './social';
+import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend, TAMANHO_COMENTARIO, fotoParaItens, nomeComMaiuscula } from './social';
 import { Cancelar } from './sync';
 
 type Fs = typeof import('firebase/firestore');
@@ -137,7 +137,7 @@ export class FirebaseSocial implements SocialBackend {
   /** Avisa o dono do treino (a menos que seja a própria pessoa). Com id fixo, repetir o aviso o sobrescreve. */
   private avisar(dono: string, id: string, eu: Perfil, eventoId: string, tipo: Atividade['tipo'], texto?: string): Promise<void> {
     if (dono === eu.uid) return Promise.resolve();
-    const dados = limpo({ autor: eu.uid, autorNome: eu.nome, autorFoto: eu.foto, tipo, eventoId, texto, criadoEm: Date.now() });
+    const dados = limpo({ autor: eu.uid, autorNome: eu.nome, autorFoto: fotoParaItens(eu), tipo, eventoId, texto, criadoEm: Date.now() });
     return this.fs.setDoc(this.usuario(dono, 'atividades', id), dados);
   }
 
@@ -161,7 +161,7 @@ export class FirebaseSocial implements SocialBackend {
     const id = `${String(agora).padStart(13, '0')}_${eu.uid}`;
     await this.fs.setDoc(
       this.fs.doc(this.db, 'usuarios', dono, 'eventos', eventoId, 'comentarios', id),
-      limpo({ autor: eu.uid, autorNome: eu.nome, autorFoto: eu.foto, texto: t, criadoEm: agora }),
+      limpo({ autor: eu.uid, autorNome: eu.nome, autorFoto: fotoParaItens(eu), texto: t, criadoEm: agora }),
     );
     await this.avisar(dono, `${id}_comentario_${eventoId}`.slice(0, 200), eu, eventoId, 'comentario', t);
   }
