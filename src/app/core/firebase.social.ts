@@ -75,10 +75,10 @@ export class FirebaseSocial implements SocialBackend {
     return this.fs.deleteDoc(this.fs.doc(this.db, 'amizades', id));
   }
 
-  ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void): Cancelar {
+  ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void, limite = 15): Cancelar {
     const { query, collection, orderBy, documentId, limit, onSnapshot } = this.fs;
     return onSnapshot(
-      query(collection(this.db, 'usuarios', uid, 'eventos'), orderBy(documentId(), 'desc'), limit(15)),
+      query(collection(this.db, 'usuarios', uid, 'eventos'), orderBy(documentId(), 'desc'), limit(limite)),
       (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Evento), id: d.id }))),
       erro,
     );
@@ -89,11 +89,11 @@ export class FirebaseSocial implements SocialBackend {
     return this.fs.setDoc(this.eventoRef(e.autor, id), limpo(dados));
   }
 
-  ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void): Cancelar {
+  ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void, limite = 30): Cancelar {
     const { query, collection, orderBy, limit, onSnapshot } = this.fs;
     // Por `criadoEm` (e não pelo id): o aviso de curtida tem id fixo, sem o horário na frente.
     return onSnapshot(
-      query(collection(this.db, 'usuarios', uid, 'atividades'), orderBy('criadoEm', 'desc'), limit(30)),
+      query(collection(this.db, 'usuarios', uid, 'atividades'), orderBy('criadoEm', 'desc'), limit(limite)),
       (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Atividade), id: d.id }))),
       erro,
     );

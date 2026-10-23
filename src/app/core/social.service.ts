@@ -29,6 +29,12 @@ const JANELA_PUBLICACAO_MS = 3 * 24 * 3600 * 1000;
 /** Quantos treinos de cada amigo são lidos para as estatísticas (os mais recentes). */
 export const LIMITE_SESSOES_AMIGO = 400;
 
+/** Quantos itens da timeline aparecem de cada vez; ao chegar ao fim da tela entram mais. */
+export const PAGINA_TIMELINE = 10;
+/** Quanto cada amigo (treinos) e a caixa de reações (curtidas e comentários) são lidos, e quanto cresce a leitura a cada página. */
+const BUSCA_EVENTOS = 15;
+const BUSCA_ATIVIDADES = 30;
+
 export interface Pessoa {
   perfil: Perfil;
   amizade: Amizade;
@@ -53,6 +59,7 @@ export class SocialService {
   private uid = '';
   private parar: Cancelar[] = [];
   private ouvintesEventos = new Map<string, Cancelar>();
+  private ouvinteAtividades?: Cancelar;
   private ouvintesSessoes = new Map<string, Cancelar>();
   private buscando = new Set<string>();
   private publicados = new Set<string>(lerPublicados());
@@ -72,7 +79,43 @@ export class SocialService {
   readonly convitesEnviados = computed(() => this.amizades().filter((a) => a.status === 'pendente' && a.de === this.uid).map((a) => this.pessoa(a)));
   readonly ativo = computed(() => this.eu() !== null);
 
+  /** Tudo o que já foi lido da nuvem, do mais novo para o mais antigo. */
   readonly timeline = computed(() => montarTimeline(Object.values(this.eventosPor()).flat(), this.atividades()));
+
+  private readonly paginas = signal(1);
+  private readonly limiteEventos = signal(BUSCA_EVENTOS);
+  private readonly limiteAtividades = signal(BUSCA_ATIVIDADES);
+
+  /** O que a tela mostra agora: as primeiras páginas da timeline. */
+  readonly timelineVisivel = computed(() => this.timeline().slice(0, this.paginas() * PAGINA_TIMELINE));
+
+  /** Leitura que veio cheia (no limite) pode ter mais para trás; vazia ou parcial é o fim. */
+  private readonly nuvemTemMais = computed(
+    () =>
+      Object.values(this.eventosPor()).some((l) => l.length >= this.limiteEventos()) ||
+      this.atividades().length >= this.limiteAtividades(),
+  );
+
+  /** Ainda há o que mostrar: itens já lidos fora da tela ou mais na nuvem. */
+  readonly temMais = computed(() => this.timelineVisivel().length < this.timeline().length || this.nuvemTemMais());
+
+  /** Chegou ao fim da tela: mostra mais uma página e, se já mostrou tudo o que foi lido, lê mais da nuvem. */
+  carregarMais(): void {
+    if (!this.temMais()) return;
+    this.paginas.update((p) => p + 1);
+    if (this.paginas() * PAGINA_TIMELINE > this.timeline().length && this.nuvemTemMais()) this.ampliarLeitura();
+  }
+
+  private ampliarLeitura(): void {
+    this.limiteEventos.update((l) => l + BUSCA_EVENTOS);
+    this.limiteAtividades.update((l) => l + BUSCA_ATIVIDADES);
+    // Reabre as leituras com o limite maior; o que já chegou continua na tela até o novo resultado.
+    for (const uid of [...this.ouvintesEventos.keys()]) {
+      this.ouvintesEventos.get(uid)?.();
+      this.ouvirEventosDe(uid);
+    }
+    this.ouvirAtividadesProprias();
+  }
 
   /** `criadoEm` da novidade mais recente que a pessoa já viu na timeline (neste aparelho). */
   private readonly vistoAte = signal(0);
@@ -142,14 +185,25 @@ export class SocialService {
       this.eu.set(perfil);
       this.parar.push(
         api.ouvirAmizades(uid, (l) => this.aoAmizades(l), (e) => this.falhou(e)),
-        api.ouvirAtividades(uid, (l) => this.atividades.set(l), (e) => this.falhou(e)),
       );
+      this.ouvirAtividadesProprias();
     } catch (e) {
       this.falhou(e);
     }
   }
 
+  private ouvirAtividadesProprias(): void {
+    this.ouvinteAtividades?.();
+    if (!this.api || !this.uid) return;
+    this.ouvinteAtividades = this.api.ouvirAtividades(this.uid, (l) => this.atividades.set(l), (e) => this.falhou(e), this.limiteAtividades());
+  }
+
   private encerrar(): void {
+    this.ouvinteAtividades?.();
+    this.ouvinteAtividades = undefined;
+    this.paginas.set(1);
+    this.limiteEventos.set(BUSCA_EVENTOS);
+    this.limiteAtividades.set(BUSCA_ATIVIDADES);
     this.parar.forEach((c) => c());
     this.ouvintesEventos.forEach((c) => c());
     this.ouvintesSessoes.forEach((c) => c());
@@ -295,16 +349,22 @@ export class SocialService {
     if (!api || !this.uid) return;
     for (const uid of ids) {
       if (!uid || this.ouvintesEventos.has(uid)) continue;
-      this.ouvintesEventos.set(
-        uid,
-        api.ouvirEventos(uid, (l) => this.eventosPor.update((x) => ({ ...x, [uid]: l })), (e) => this.aoErroDe(uid, e)),
-      );
+      this.ouvirEventosDe(uid);
     }
     // Quem deixou de ser amigo sai da timeline e das estatísticas: para de ouvir os dois.
     const sobras = new Set([...this.ouvintesEventos.keys(), ...this.ouvintesSessoes.keys()]);
     for (const uid of sobras) {
       if (!ids.has(uid)) this.soltar(uid);
     }
+  }
+
+  private ouvirEventosDe(uid: string): void {
+    const api = this.api;
+    if (!api) return;
+    this.ouvintesEventos.set(
+      uid,
+      api.ouvirEventos(uid, (l) => this.eventosPor.update((x) => ({ ...x, [uid]: l })), (e) => this.aoErroDe(uid, e), this.limiteEventos()),
+    );
   }
 
   /** Para de acompanhar uma pessoa (treinos publicados e histórico) e esquece o que veio dela. */
