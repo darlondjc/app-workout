@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
+import { BarraTopo } from '../core/barra-topo';
 import { CloudService } from '../core/cloud.service';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
@@ -32,11 +33,19 @@ const pessoaEscolhida = signal<string>('eu');
 
 @Component({
   selector: 'app-social',
-  imports: [RouterLink, Avatar, Icon, EventoCard, Progress, Carregando],
+  imports: [RouterLink, Avatar, BarraTopo, Icon, EventoCard, Progress, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:resize)': 'medirFaixa()' },
   template: `
     <section class="page">
+      <app-barra-topo titulo="Social">
+        <a class="amigos amigos--barra" routerLink="/amigos" tabindex="-1" aria-label="Adicionar amigos">
+          <app-icon name="user-add" [size]="20" [stroke]="2" />
+          @if (social.convitesRecebidos().length; as n) {
+            <span class="aviso-n">{{ n }}</span>
+          }
+        </a>
+      </app-barra-topo>
       <header class="cabeca">
         <div>
           <p class="apoio">Você e seus amigos</p>
@@ -145,7 +154,8 @@ const pessoaEscolhida = signal<string>('eu');
     /* Timeline mais junta: menos espaço entre os cartões. */
     :host .page { gap: 10px; }
     /* As abas ficam no topo ao rolar. O fundo cobre o que passa por trás; as margens negativas mantêm o espaçamento de antes. */
-    .abas-fixas { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin: -8px -20px -8px; padding: 8px 20px; background: var(--bg); }
+    .amigos--barra { width: 40px; height: 40px; }
+    .abas-fixas { position: sticky; top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 5; margin: -8px -20px -8px; padding: 8px 20px; background: var(--bg); }
     .abas-sociais { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--soft); }
     .abas-sociais button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 600; color: var(--muted); }
     .abas-sociais button[aria-selected='true'] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 23, 26, 0.12); }

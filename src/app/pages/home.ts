@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
+import { BarraTopo } from '../core/barra-topo';
 import { CloudService } from '../core/cloud.service';
 import { Dialogo } from '../core/dialogo';
 import { ExercicioDialogo } from '../core/exercicio-dialogo';
@@ -21,26 +22,18 @@ const MEDALHAS_NA_INICIAL = 6;
 const LETRAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo'];
 
-/** Quanto a tela precisa rolar para a barra do topo começar a aparecer e até ficar inteira. */
-const ROLAGEM_INICIO = 62;
-const ROLAGEM_DISTANCIA = 46;
-
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Icon, Avatar, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria, QuadroMedalhas],
+  imports: [RouterLink, Icon, Avatar, BarraTopo, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria, QuadroMedalhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       @if (nuvem.usuario(); as u) {
-        <!-- Barra que aparece aos poucos conforme a tela rola (o grau vem de --p, definido pelo scroll). Não ocupa espaço na página. -->
-        <div class="barra-fixa" aria-hidden="true">
-          <div class="barra">
-            <span class="barra__nome">{{ primeiroNome() || 'Início' }}</span>
-            <a class="barra__conta" routerLink="/ajustes" tabindex="-1">
-              <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="34" />
-            </a>
-          </div>
-        </div>
+        <app-barra-topo [titulo]="primeiroNome() || 'Início'">
+          <a class="barra-conta" routerLink="/ajustes" tabindex="-1">
+            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="34" />
+          </a>
+        </app-barra-topo>
       }
       <header class="cabeca">
         <div>
@@ -229,74 +222,10 @@ const ROLAGEM_DISTANCIA = 46;
       justify-content: space-between;
       gap: 12px;
     }
-    /*
-     * Barra do topo: um ponto fixo de altura zero (sticky), com a barra solta dentro. Aparece com
-     * opacidade e um leve deslize ligados ao quanto a tela rolou (--p, de 0 a 1), só com transform e opacity.
-     */
-    .barra-fixa {
-      position: sticky;
-      top: env(safe-area-inset-top, 0px);
-      z-index: 5;
-      height: 0;
-      margin-bottom: -16px;
-      --mov: 1;
-    }
-    .barra {
-      position: absolute;
-      top: 0;
-      left: -20px;
-      right: -20px;
-      height: 56px;
-      padding: 0 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      isolation: isolate;
-      pointer-events: none;
-    }
-    /* O fundo fosco aparece primeiro (e rápido), para cobrir o que passa por baixo antes do nome entrar. */
-    .barra::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      background: color-mix(in srgb, var(--bg) 94%, transparent);
-      -webkit-backdrop-filter: saturate(1.4) blur(14px);
-      backdrop-filter: saturate(1.4) blur(14px);
-      box-shadow: 0 1px 0 color-mix(in srgb, var(--line) 70%, transparent);
-      opacity: calc(var(--p, 0) * 3);
-      will-change: opacity;
-    }
-    :host([data-rolado]) .barra {
-      pointer-events: auto;
-    }
-    .barra__nome {
-      min-width: 0;
-      font-family: var(--font-display);
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.2px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      opacity: calc((var(--p, 0) - 0.3) / 0.7);
-      transform: translate3d(0, calc((1 - var(--p, 0)) * 8px * var(--mov)), 0);
-      will-change: opacity, transform;
-    }
-    .barra__conta {
-      flex: none;
+    .barra-conta {
       display: flex;
       border-radius: 50%;
       box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--soft);
-      opacity: calc((var(--p, 0) - 0.3) / 0.7);
-      transform: scale(calc(0.8 + var(--p, 0) * 0.2));
-      will-change: opacity, transform;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .barra-fixa {
-        --mov: 0;
-      }
     }
     .conta {
       flex: none;
@@ -514,32 +443,6 @@ const ROLAGEM_DISTANCIA = 46;
   `,
 })
 export class Home {
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-
-  constructor() {
-    const destruir = inject(DestroyRef);
-    afterNextRender(() => {
-      const el = this.host.nativeElement;
-      let quadro = 0;
-      const atualizar = () => {
-        quadro = 0;
-        const t = Math.min(1, Math.max(0, (window.scrollY - ROLAGEM_INICIO) / ROLAGEM_DISTANCIA));
-        const p = t * t * (3 - 2 * t); // começa e termina devagar
-        el.style.setProperty('--p', p.toFixed(3));
-        el.toggleAttribute('data-rolado', p > 0.6);
-      };
-      const aoRolar = () => {
-        if (!quadro) quadro = requestAnimationFrame(atualizar);
-      };
-      window.addEventListener('scroll', aoRolar, { passive: true });
-      atualizar();
-      destruir.onDestroy(() => {
-        window.removeEventListener('scroll', aoRolar);
-        cancelAnimationFrame(quadro);
-      });
-    });
-  }
-
   protected readonly plans = inject(PlanService);
   protected readonly exercicios = inject(ExerciseService);
 
