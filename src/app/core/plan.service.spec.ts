@@ -168,3 +168,34 @@ describe('PlanService: foto do treino', () => {
     expect('temFoto' in plans.historico().find((x) => x.id === a)!).toBeFalse();
   });
 });
+
+describe('PlanService: criar fichas novas com as que já existem', () => {
+  let plans: PlanService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+  });
+
+  it('as fichas novas entram depois das atuais, sem alterar nenhuma delas', () => {
+    const [antiga] = plans.criarComItens([{ nome: 'Minha ficha', itens: [item('supino', 60)] }]);
+    const antes = JSON.stringify(plans.get(antiga.id));
+    const novas = plans.criarComItens([
+      { nome: 'Peito', itens: [item('crucifixo', 10)] },
+      { nome: 'Costas', itens: [item('remada', 40)] },
+    ]);
+    expect(plans.fichas().map((f) => f.nome)).toEqual(['Minha ficha', 'Peito', 'Costas']);
+    expect(JSON.stringify(plans.get(antiga.id))).toBe(antes);
+    expect(plans.letra(antiga.id)).toBe('A');
+    expect(novas.map((f) => plans.letra(f.id))).toEqual(['B', 'C']);
+  });
+
+  it('nomes iguais não se misturam: cada ficha continua sendo a sua', () => {
+    const [a] = plans.criarComItens([{ nome: 'Peito', itens: [item('supino', 60)] }]);
+    const [b] = plans.criarComItens([{ nome: 'Peito', itens: [item('crucifixo', 10)] }]);
+    expect(a.id).not.toBe(b.id);
+    expect(plans.get(a.id)!.itens[0].exerciseId).toBe('supino');
+    expect(plans.fichas().length).toBe(2);
+  });
+});
