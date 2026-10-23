@@ -43,6 +43,10 @@ import { Conquista, NOMES_NIVEL, formatarProgresso, fracaoAteOProximo } from './
       padding: 0;
       list-style: none;
     }
+    /* Número ímpar de medalhas: a última ocupa a linha toda, sem deixar buraco. */
+    li:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
     .medalha-card {
       width: 100%;
       height: 100%;

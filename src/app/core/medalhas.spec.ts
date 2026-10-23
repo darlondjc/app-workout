@@ -1,6 +1,6 @@
-import { Sessao } from './models';
+import { Exercise, Sessao } from './models';
 import { dataISO } from './stats';
-import { Conquista, calcularConquistas, formatarProgresso, formatarValor, fracaoAteOProximo, historicoDeRecordes, proximaConquista } from './medalhas';
+import { Conquista, calcularConquistas, formatarProgresso, formatarValor, fracaoAteOProximo, historicoDeRecordes, proximaConquista, regiaoDoExercicio, RegiaoDoExercicio } from './medalhas';
 
 let n = 0;
 
@@ -47,7 +47,7 @@ describe('historicoDeRecordes', () => {
 describe('calcularConquistas', () => {
   it('tem uma trilha por meta, cada uma com bronze, prata, ouro e diamante', () => {
     const lista = calcularConquistas([], 3);
-    expect(lista.map((c) => c.id)).toEqual(['treinos', 'constancia', 'volume', 'recordes']);
+    expect(lista.map((c) => c.id)).toEqual(['treinos', 'ano', 'constancia', 'sequencia', 'volume', 'recordes', 'superiores', 'inferiores', 'cardio']);
     for (const c of lista) expect(c.degraus.map((d) => d.nivel)).toEqual(['bronze', 'prata', 'ouro', 'diamante']);
   });
 
@@ -112,6 +112,65 @@ describe('calcularConquistas', () => {
     expect(c.atual).toBe(2);
     expect(c.nivel).toBe('bronze');
     expect(c.dataDoNivel).toBe('2026-10-03');
+  });
+});
+
+const HOJE = new Date(2026, 9, 23);
+const regiaoDe = (id: string): RegiaoDoExercicio | null => (id === 'agachamento' ? 'inferior' : id === 'supino' ? 'superior' : id === 'esteira' ? 'cardio' : null);
+
+describe('medalhas novas', () => {
+  it('treinos no ano: só conta o ano de hoje, com diamante em 200', () => {
+    const h = [sessao('2025-12-30'), sessao('2025-12-31'), sessao('2026-01-02'), sessao('2026-01-03')];
+    const c = meta(calcularConquistas(h, 3, { hoje: HOJE }), 'ano');
+    expect(c.titulo).toBe('Treinos em 2026');
+    expect(c.atual).toBe(2);
+    expect(c.degraus.at(-1)?.alvo).toBe(200);
+  });
+
+  it('treinos no ano: zera quando o ano muda', () => {
+    const h = Array.from({ length: 25 }, (_, i) => sessao(dataISO(new Date(2026, 0, 1 + i))));
+    expect(meta(calcularConquistas(h, 3, { hoje: HOJE }), 'ano').nivel).toBe('bronze');
+    const novo = meta(calcularConquistas(h, 3, { hoje: new Date(2027, 0, 5) }), 'ano');
+    expect(novo.titulo).toBe('Treinos em 2027');
+    expect(novo.atual).toBe(0);
+    expect(novo.nivel).toBeNull();
+  });
+
+  it('dias seguidos: a maior sequência, com a data em que o alvo foi alcançado', () => {
+    const h = [sessao('2026-10-01'), sessao('2026-10-02'), sessao('2026-10-04'), sessao('2026-10-05'), sessao('2026-10-06')];
+    const c = meta(calcularConquistas(h, 3, { hoje: HOJE }), 'sequencia');
+    expect(c.atual).toBe(3);
+    expect(c.nivel).toBe('bronze');
+    expect(c.dataDoNivel).toBe('2026-10-06');
+  });
+
+  it('dias seguidos: dois treinos no mesmo dia contam como um dia', () => {
+    const c = meta(calcularConquistas([sessao('2026-10-01'), sessao('2026-10-01'), sessao('2026-10-02')], 3, { hoje: HOJE }), 'sequencia');
+    expect(c.atual).toBe(2);
+  });
+
+  it('inferiores, superiores e cardio contam exercícios feitos, cada um na sua região', () => {
+    const cardio: Sessao = { id: 'c', data: '2026-10-03', fichaId: 'f1', registros: [{ exerciseId: 'esteira', series: [{ carga: 0, reps: 20 }] }] };
+    const minutos: Sessao = { id: 'm', data: '2026-10-04', fichaId: 'f1', registros: [{ exerciseId: 'desconhecido', unidade: 'min', series: [{ carga: 0, reps: 15 }] }] };
+    const h = [sessao('2026-10-01', 'supino'), sessao('2026-10-02', 'agachamento'), sessao('2026-10-02', 'outro'), cardio, minutos];
+    const lista = calcularConquistas(h, 3, { hoje: HOJE, regiaoDe });
+    expect(meta(lista, 'superiores').atual).toBe(1);
+    expect(meta(lista, 'inferiores').atual).toBe(1);
+    expect(meta(lista, 'cardio').atual).toBe(2);
+  });
+
+  it('sem saber a região dos exercícios, só o cardio em minutos conta', () => {
+    const lista = calcularConquistas([sessao('2026-10-01', 'supino')], 3, { hoje: HOJE });
+    expect(meta(lista, 'superiores').atual).toBe(0);
+  });
+
+  it('regiaoDoExercicio usa o músculo principal e a categoria', () => {
+    const ex = (category: string, musculo: string) => ({ category, primaryMuscles: [musculo] }) as Exercise;
+    expect(regiaoDoExercicio(ex('strength', 'quadriceps'))).toBe('inferior');
+    expect(regiaoDoExercicio(ex('strength', 'chest'))).toBe('superior');
+    expect(regiaoDoExercicio(ex('cardio', 'quadriceps'))).toBe('cardio');
+    expect(regiaoDoExercicio(ex('strength', 'abdominals'))).toBeNull();
+    expect(regiaoDoExercicio(undefined)).toBeNull();
   });
 });
 

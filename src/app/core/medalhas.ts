@@ -1,4 +1,4 @@
-import { Sessao } from './models';
+import { Exercise, Sessao } from './models';
 import { dataISO, deIso, dias, inicioSemana, volumeSessao } from './stats';
 
 /** Do mais simples ao mais raro. Cada nível substitui o anterior: a pessoa tem sempre uma só medalha por meta. */
@@ -14,7 +14,31 @@ export const NOMES_NIVEL: Record<Nivel, string> = {
 };
 
 /** As metas que têm medalha. */
-export type TipoConquista = 'treinos' | 'constancia' | 'volume' | 'recordes';
+export type TipoConquista = 'treinos' | 'ano' | 'constancia' | 'sequencia' | 'volume' | 'recordes' | 'superiores' | 'inferiores' | 'cardio';
+
+/** Onde um exercício conta nas medalhas por região do corpo. Abdômen fica de fora (nem superior, nem inferior). */
+export type RegiaoDoExercicio = 'superior' | 'inferior' | 'cardio';
+
+const MUSCULOS_INFERIORES = ['quadriceps', 'hamstrings', 'glutes', 'calves', 'abductors', 'adductors'];
+const MUSCULOS_SUPERIORES = ['chest', 'lats', 'middle back', 'lower back', 'traps', 'shoulders', 'biceps', 'triceps', 'forearms', 'neck'];
+
+/** Região do exercício pelo músculo principal (ou cardio pela categoria); `null` quando não conta em nenhuma. */
+export function regiaoDoExercicio(e: Exercise | undefined): RegiaoDoExercicio | null {
+  if (!e) return null;
+  if (e.category === 'cardio') return 'cardio';
+  const musculo = e.primaryMuscles[0];
+  if (MUSCULOS_INFERIORES.includes(musculo)) return 'inferior';
+  if (MUSCULOS_SUPERIORES.includes(musculo)) return 'superior';
+  return null;
+}
+
+/** Informações de fora do histórico que algumas medalhas pedem. */
+export interface ContextoMedalhas {
+  /** Dia de hoje: define o ano da medalha anual. Padrão: agora. */
+  hoje?: Date;
+  /** Região de um exercício pelo id; sem isto as medalhas por região ficam zeradas. */
+  regiaoDe?: (exerciseId: string) => RegiaoDoExercicio | null;
+}
 
 /** Um degrau da trilha: o valor a alcançar para ganhar aquele nível. */
 export interface Degrau {
@@ -57,11 +81,16 @@ interface Definicao {
   alvos: [number, number, number, number];
 }
 
-const DEFINICOES: Definicao[] = [
+const definicoes = (ano: number): Definicao[] => [
   { id: 'treinos', titulo: 'Treinos', descricao: 'Treinos concluídos', alvos: [5, 25, 100, 250] },
+  { id: 'ano', titulo: `Treinos em ${ano}`, descricao: `Treinos concluídos em ${ano}. A contagem recomeça a cada ano.`, alvos: [20, 60, 120, 200] },
   { id: 'constancia', titulo: 'Constância', descricao: 'Semanas seguidas cumprindo a meta', alvos: [2, 4, 12, 24] },
+  { id: 'sequencia', titulo: 'Dias seguidos', descricao: 'Maior sequência de dias treinando sem parar', alvos: [3, 7, 14, 30] },
   { id: 'volume', titulo: 'Carga levantada', descricao: 'Carga total somada (kg × repetições)', alvos: [1000, 10000, 50000, 200000] },
   { id: 'recordes', titulo: 'Recordes', descricao: 'Vezes em que você superou a sua melhor carga', alvos: [1, 10, 30, 100] },
+  { id: 'superiores', titulo: 'Superiores', descricao: 'Exercícios de peito, costas, ombros e braços', alvos: [30, 150, 500, 1500] },
+  { id: 'inferiores', titulo: 'Inferiores', descricao: 'Exercícios de pernas e glúteos', alvos: [20, 100, 300, 750] },
+  { id: 'cardio', titulo: 'Cardio', descricao: 'Exercícios de cardio feitos', alvos: [5, 25, 75, 150] },
 ];
 
 function ordem(a: Sessao, b: Sessao): number {
@@ -115,11 +144,50 @@ function constancia(ordenadas: Sessao[], meta: number): { melhor: number; datas:
   return { melhor, datas };
 }
 
+/** Maior sequência de dias seguidos com treino e o dia em que cada tamanho de sequência foi alcançado. */
+function sequenciaDeDias(ordenadas: Sessao[]): { melhor: number; datas: Map<number, string> } {
+  const unicos = [...new Set(ordenadas.map((s) => s.data))].sort();
+  const datas = new Map<number, string>();
+  let melhor = 0;
+  let seguidos = 0;
+  let anterior: Date | null = null;
+  for (const d of unicos) {
+    const dia = deIso(d);
+    seguidos = anterior && dias(anterior, dia) === 1 ? seguidos + 1 : 1;
+    anterior = dia;
+    melhor = Math.max(melhor, seguidos);
+    if (!datas.has(seguidos)) datas.set(seguidos, d);
+  }
+  return { melhor, datas };
+}
+
 /** Quanto a pessoa tem em cada meta e o dia em que passou cada alvo. */
-function medir(def: Definicao, ordenadas: Sessao[], recordes: RecordeEvento[], meta: number): { atual: number; dataDe: (alvo: number) => string | null } {
+function medir(def: Definicao, ordenadas: Sessao[], recordes: RecordeEvento[], meta: number, ctx: { ano: number; regiaoDe: (id: string) => RegiaoDoExercicio | null }): { atual: number; dataDe: (alvo: number) => string | null } {
   switch (def.id) {
     case 'treinos':
       return { atual: ordenadas.length, dataDe: (alvo) => ordenadas[alvo - 1]?.data ?? null };
+    case 'ano': {
+      const doAno = ordenadas.filter((s) => s.data.startsWith(`${ctx.ano}-`));
+      return { atual: doAno.length, dataDe: (alvo) => doAno[alvo - 1]?.data ?? null };
+    }
+    case 'sequencia': {
+      const { melhor, datas } = sequenciaDeDias(ordenadas);
+      return { atual: melhor, dataDe: (alvo) => datas.get(alvo) ?? null };
+    }
+    case 'superiores':
+    case 'inferiores':
+    case 'cardio': {
+      const regiao: RegiaoDoExercicio = def.id === 'superiores' ? 'superior' : def.id === 'inferiores' ? 'inferior' : 'cardio';
+      const datas: string[] = [];
+      for (const s of ordenadas) {
+        for (const r of s.registros ?? []) {
+          if (r.series.length === 0) continue;
+          const doExercicio = r.unidade === 'min' ? 'cardio' : ctx.regiaoDe(r.exerciseId);
+          if (doExercicio === regiao) datas.push(s.data);
+        }
+      }
+      return { atual: datas.length, dataDe: (alvo) => datas[alvo - 1] ?? null };
+    }
     case 'constancia': {
       const { melhor, datas } = constancia(ordenadas, meta);
       return { atual: melhor, dataDe: (alvo) => datas.get(alvo) ?? null };
@@ -142,11 +210,12 @@ function medir(def: Definicao, ordenadas: Sessao[], recordes: RecordeEvento[], m
  * As medalhas de cada meta. São calculadas a partir do histórico (nada é guardado à parte), então valem
  * em qualquer aparelho e acompanham os treinos sincronizados.
  */
-export function calcularConquistas(h: Sessao[], meta: number): Conquista[] {
+export function calcularConquistas(h: Sessao[], meta: number, contexto: ContextoMedalhas = {}): Conquista[] {
   const ordenadas = [...h].sort(ordem);
   const recordes = historicoDeRecordes(h);
-  return DEFINICOES.map((def) => {
-    const { atual, dataDe } = medir(def, ordenadas, recordes, meta);
+  const ctx = { ano: (contexto.hoje ?? new Date()).getFullYear(), regiaoDe: contexto.regiaoDe ?? (() => null) };
+  return definicoes(ctx.ano).map((def) => {
+    const { atual, dataDe } = medir(def, ordenadas, recordes, meta, ctx);
     const degraus: Degrau[] = def.alvos.map((alvo, i) => {
       const conquistado = atual >= alvo;
       return { nivel: NIVEIS[i], alvo, conquistado, data: conquistado ? dataDe(alvo) : null };
@@ -187,7 +256,15 @@ export function formatarProgresso(id: TipoConquista, atual: number, alvo: number
 export function formatarValor(id: TipoConquista, v: number): string {
   switch (id) {
     case 'treinos':
+    case 'ano':
       return `${v} ${v === 1 ? 'treino' : 'treinos'}`;
+    case 'sequencia':
+      return `${v} ${v === 1 ? 'dia' : 'dias'}`;
+    case 'superiores':
+    case 'inferiores':
+      return `${v} ${v === 1 ? 'exercício' : 'exercícios'}`;
+    case 'cardio':
+      return `${v} ${v === 1 ? 'cardio' : 'cardios'}`;
     case 'constancia':
       return `${v} ${v === 1 ? 'semana' : 'semanas'}`;
     case 'recordes':

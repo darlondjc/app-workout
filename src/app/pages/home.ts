@@ -7,7 +7,7 @@ import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { MedalhasGaleria } from '../core/medalhas-galeria';
-import { NOMES_NIVEL, TipoConquista, calcularConquistas, formatarProgresso, historicoDeRecordes, proximaConquista } from '../core/medalhas';
+import { NOMES_NIVEL, TipoConquista, calcularConquistas, formatarProgresso, historicoDeRecordes, proximaConquista, regiaoDoExercicio } from '../core/medalhas';
 import { QuadroMedalhas } from '../core/quadro-medalhas';
 import { lerMeta, metaPadrao } from '../core/meta';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
@@ -509,7 +509,7 @@ export class Home {
     return `Faltam ${faltam} ${faltam === 1 ? 'treino' : 'treinos'} para bater a meta.`;
   });
 
-  protected readonly conquistas = computed(() => calcularConquistas(this.plans.historico(), this.meta()));
+  protected readonly conquistas = computed(() => calcularConquistas(this.plans.historico(), this.meta(), { hoje: this.agora, regiaoDe: (id) => regiaoDoExercicio(this.exercicios.get(id)) }));
   protected readonly proxima = computed(() => proximaConquista(this.conquistas()));
   protected readonly nomes = NOMES_NIVEL;
   protected readonly resumoConquistas = computed(() => {
