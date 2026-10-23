@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.9.11",
+    "data": "2026-10-23",
+    "titulo": "Equivalentes em ordem alfabética e aviso quando a foto não carrega",
+    "itens": [
+      "Na tela de um exercício, as opções de exercícios equivalentes agora vêm em ordem crescente pelo nome.",
+      "Na timeline, se a foto de um treino não carregar, o card diz o motivo (sem permissão, erro ou foto não encontrada) em vez de ficar sem foto."
+    ]
+  },
+  {
     "versao": "1.9.10",
     "data": "2026-10-23",
     "titulo": "Foto com zoom, cronômetro independente e tela sempre em retrato",
