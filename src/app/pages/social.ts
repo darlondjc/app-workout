@@ -13,6 +13,20 @@ import { Progress } from './progress';
 type Aba = 'timeline' | 'estatisticas';
 
 // Guardados fora do componente: ao voltar de outra tela, a aba e a pessoa escolhidas continuam.
+const FOLGA_PESSOAS = 12;
+const LARGURA_MINIMA_PESSOA = 60;
+
+/**
+ * Largura de cada pessoa na faixa para que, com gente além da tela, sempre apareça um pedaço da próxima
+ * (cabem N inteiras e meia). Só vale com 4 ou mais amigos (mais eu); devolve `null` se todas cabem ou se são poucas, mantendo o layout natural. Vale para qualquer largura de tela.
+ */
+export function larguraDaPessoa(larguraDaFaixa: number, quantas: number): number | null {
+  if (quantas < 5) return null; // eu + menos de 4 amigos: layout normal, alinhado à esquerda
+  const inteiras = Math.max(2, Math.floor(larguraDaFaixa / (LARGURA_MINIMA_PESSOA + FOLGA_PESSOAS) - 0.5));
+  if (quantas <= inteiras) return null;
+  return larguraDaFaixa / (inteiras + 0.5) - FOLGA_PESSOAS;
+}
+
 const aba = signal<Aba>('timeline');
 const pessoaEscolhida = signal<string>('eu');
 
@@ -87,7 +101,7 @@ const pessoaEscolhida = signal<string>('eu');
           }
         } @else {
           <div class="faixa">
-            <div class="pessoas" role="radiogroup" aria-label="Ver estatísticas de" #lista (scroll)="medirFaixa()"
+            <div class="pessoas" role="radiogroup" aria-label="Ver estatísticas de" #lista (scroll)="medirFaixa()" [style.--item.px]="larguraItem()"
                  [class.mais-direita]="maisDireita()" [class.mais-esquerda]="maisEsquerda()">
               <button type="button" role="radio" [attr.aria-checked]="pessoa() === 'eu'" (click)="pessoaEscolhida.set('eu')">
                 @if (cloud.usuario(); as u) {
@@ -135,10 +149,11 @@ const pessoaEscolhida = signal<string>('eu');
     .pessoas { flex: 1; min-width: 0; display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: none; }
     .pessoas::-webkit-scrollbar { display: none; }
     /* Esmaece a borda onde ainda há pessoas escondidas, para indicar que a lista rola. */
-    .pessoas.mais-direita { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
-    .pessoas.mais-esquerda { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
-    .pessoas.mais-direita.mais-esquerda { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
-    .pessoas button { flex: none; min-width: 60px; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; font: inherit; font-size: 12px; color: var(--muted); padding: 4px; border-radius: 14px; }
+    .pessoas.mais-direita { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+    .pessoas.mais-esquerda { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+    .pessoas.mais-direita.mais-esquerda { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+    .pessoas button { flex: none; min-width: 60px; width: var(--item, auto); display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; font: inherit; font-size: 12px; color: var(--muted); padding: 4px; border-radius: 14px; }
+    .pessoas button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pessoas button[aria-checked='true'] { color: var(--ink); font-weight: 700; }
     .pessoas button[aria-checked='true'] app-avatar { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); }
     /* Fora da rolagem: o botão de adicionar amigo fica sempre à vista. */
@@ -165,6 +180,8 @@ export class Social {
   private readonly fim = viewChild<ElementRef<HTMLElement>>('fim');
   protected readonly maisDireita = signal(false);
   protected readonly maisEsquerda = signal(false);
+  /** Largura de cada pessoa, ajustada para sempre deixar à mostra um pedaço da próxima; `null` = largura natural. */
+  protected readonly larguraItem = signal<number | null>(null);
 
   /** Atualiza os indicadores de "tem mais gente para os lados" da faixa de pessoas. */
   protected medirFaixa(): void {
@@ -172,6 +189,7 @@ export class Social {
     if (!el) return;
     this.maisEsquerda.set(el.scrollLeft > 4);
     this.maisDireita.set(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    this.larguraItem.set(larguraDaPessoa(el.clientWidth - 4, el.children.length)); // 4 = o respiro interno da faixa
   }
 
   constructor() {
@@ -180,6 +198,14 @@ export class Social {
       this.lista();
       this.social.amigos();
       requestAnimationFrame(() => this.medirFaixa());
+    });
+    // A faixa muda de largura com a tela (girar o celular, janela): refaz a conta.
+    effect((onCleanup) => {
+      const el = this.lista()?.nativeElement;
+      if (!el || typeof ResizeObserver === 'undefined') return;
+      const obs = new ResizeObserver(() => this.medirFaixa());
+      obs.observe(el);
+      onCleanup(() => obs.disconnect());
     });
     // Rolagem infinita: quando o fim da lista chega perto da tela, entra mais uma página.
     // Observa de novo a cada página (se o fim continuar à vista, pede a seguinte).
