@@ -296,3 +296,26 @@ p {
   font-size: 16px;
   font-weight: 700;
 }
+
+/*
+ * Só retrato no celular. O manifesto já pede isso ao Android, mas o iOS o ignora: ao deitar o celular
+ * (tela baixa, toque), um aviso cobre o app até a pessoa voltar para a posição em pé.
+ */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  body::before {
+    content: 'Gire o celular para a posição em pé';
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #14171a;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+  }
+}
