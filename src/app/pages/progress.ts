@@ -7,20 +7,12 @@ import { Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { LIMITE_SESSOES_AMIGO, SocialService } from '../core/social.service';
+import { CHAVE_META, lerMeta, metaPadrao } from '../core/meta';
+import { PesoGrafico } from '../core/peso-grafico';
 import { calcularResumo, dataISO, gerarInsights, volumeSessao } from '../core/stats';
 
-const CHAVE_META = 'app-workout:meta-semanal:v1';
 const CHAVE_DISPENSADAS = 'app-workout:mensagens-dispensadas:v1';
 const LETRAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
-
-function lerMeta(): number | null {
-  try {
-    const v = Number(localStorage.getItem(CHAVE_META));
-    return v >= 1 && v <= 7 ? v : null;
-  } catch {
-    return null;
-  }
-}
 
 function lerDispensadas(): string[] {
   try {
@@ -33,7 +25,7 @@ function lerDispensadas(): string[] {
 
 @Component({
   selector: 'app-progress',
-  imports: [ExercicioDialogo, Icon, SessaoDetalhe, Dialogo],
+  imports: [ExercicioDialogo, Icon, SessaoDetalhe, Dialogo, PesoGrafico],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pagina">
@@ -165,6 +157,10 @@ function lerDispensadas(): string[] {
         <p class="apoio">Barras cheias indicam semanas em que você bateu a meta.</p>
       </article>
 
+      @if (editavel()) {
+        <app-peso-grafico />
+      }
+
       @if (recordes().length) {
         <article class="card" aria-labelledby="t-rec">
           <h2 id="t-rec" class="rot">Recordes do último treino</h2>
@@ -273,9 +269,7 @@ export class Progress {
 
   /** Sem meta escolhida, usa o número de fichas (entre 2 e 6). */
   private readonly meta = computed(() =>
-    this.editavel()
-      ? (this.metaEscolhida() ?? Math.max(2, Math.min(6, this.plans.fichas().length || 3)))
-      : (this.metaBase() ?? 3),
+    this.editavel() ? (this.metaEscolhida() ?? metaPadrao(this.plans.fichas().length)) : (this.metaBase() ?? 3),
   );
   protected readonly resumo = computed(() => calcularResumo(this.historico(), this.hoje, this.meta()));
   /** Do amigo só se leem os treinos mais recentes: com o limite atingido, o total deixa de ser o total. */

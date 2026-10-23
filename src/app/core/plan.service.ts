@@ -1,5 +1,6 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
-import { EmAndamento, Ficha, ItemFicha, RegistroExercicio, Sessao } from './models';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
+import { PesoService } from './peso.service';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
 const CHAVE_ATIVA = 'app-workout:ficha-ativa:v1';
@@ -11,6 +12,8 @@ export interface EstadoNuvem {
   fichas: Ficha[];
   ativaId: string | null;
   emAndamento: EmAndamento | null;
+  /** Registros de peso corporal. Ausente em documentos gravados por versões antigas do app. */
+  pesos?: RegistroPeso[];
 }
 
 function ler<T>(chave: string, padrao: T): T {
@@ -38,6 +41,7 @@ export function dataLocal(d: Date = new Date()): string {
 
 @Injectable({ providedIn: 'root' })
 export class PlanService {
+  private readonly pesos = inject(PesoService);
   readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []));
   readonly ativaId = signal<string | null>(ler<string | null>(CHAVE_ATIVA, null));
   readonly historico = signal<Sessao[]>(
@@ -57,6 +61,7 @@ export class PlanService {
     fichas: this.fichas(),
     ativaId: this.ativaId(),
     emAndamento: this.emAndamento(),
+    pesos: this.pesos.registros(),
   }));
 
   /** Ficha sugerida para hoje: a seguinte à última concluída (rodízio A, B, C...). */
@@ -337,6 +342,7 @@ export class PlanService {
       this.ativaId.set(remoto.ativaId);
       this.emAndamento.set(remoto.emAndamento);
     }
+    this.pesos.aplicar(remoto.pesos, mesclar);
   }
 
   /** Junta sessões recebidas da nuvem ao histórico (união por id, em ordem de data). */
@@ -357,6 +363,7 @@ export class PlanService {
     this.ativaId.set(null);
     this.historico.set([]);
     this.emAndamento.set(null);
+    this.pesos.limpar();
   }
 
   private atualizar(id: string, fn: (f: Ficha) => Ficha): void {

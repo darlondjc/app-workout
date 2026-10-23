@@ -71,6 +71,15 @@ export interface Sessao {
   temFoto?: boolean;
 }
 
+/** Peso corporal de um dia. Um registro por dia: registrar de novo no mesmo dia substitui o anterior. */
+export interface RegistroPeso {
+  /** Data local no formato yyyy-mm-dd */
+  data: string;
+  kg: number;
+  /** Quando foi registrado (ms); desempata o mesmo dia vindo de dois aparelhos. */
+  em?: number;
+}
+
 export interface SerieEmAndamento {
   feita: boolean;
   carga: number;

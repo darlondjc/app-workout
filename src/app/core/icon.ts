@@ -19,7 +19,9 @@ export type IconName =
   | 'comment'
   | 'people'
   | 'trash'
-  | 'camera';
+  | 'camera'
+  | 'medal'
+  | 'scale';
 
 @Component({
   selector: 'app-icon',
@@ -98,6 +100,15 @@ export type IconName =
         }
         @case ('trash') {
           <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5" />
+        }
+        @case ('medal') {
+          <circle cx="12" cy="9" r="5" />
+          <path d="M8.7 13.2L7 21l5-3 5 3-1.7-7.8" />
+        }
+        @case ('scale') {
+          <rect x="4" y="4" width="16" height="16" rx="3" />
+          <path d="M8 10a4 3 0 0 1 8 0z" />
+          <path d="M12 10l1.5-2" />
         }
         @case ('refresh') {
           <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />

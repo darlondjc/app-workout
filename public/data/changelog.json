@@ -1,5 +1,17 @@
 [
   {
+    "versao": "1.10.0",
+    "data": "2026-10-23",
+    "titulo": "Início dinâmico, medalhas e evolução do peso",
+    "itens": [
+      "Depois de treinar, o card de iniciar treino dá lugar ao resumo do treino de hoje (exercícios, séries, carga total e recordes), com o próximo treino logo abaixo.",
+      "Nova meta da semana na tela inicial, com a mesma meta escolhida em Estatísticas.",
+      "Medalhas de conquistas: marcos de treinos, semanas seguidas na meta, carga total levantada e recordes pessoais. A tela inicial mostra as últimas e a próxima a conquistar; Ver todas abre a galeria com o progresso de cada uma e os recordes recentes.",
+      "Em Ajustes, registre o peso do dia (ou de um dia anterior), veja o histórico e apague registros. O peso sincroniza com a conta.",
+      "Em Social, na aba Estatísticas, novo gráfico de evolução do peso com botões Semana, Mês e Ano (no ano, a média de cada mês) e a variação no período."
+    ]
+  },
+  {
     "versao": "1.9.12",
     "data": "2026-10-23",
     "titulo": "Recuperar foto que não foi enviada",

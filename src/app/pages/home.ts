@@ -1,25 +1,33 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
 import { CloudService } from '../core/cloud.service';
+import { dataCurta } from '../core/data-texto';
+import { Dialogo } from '../core/dialogo';
+import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
+import { MedalhasGaleria } from '../core/medalhas-galeria';
+import { Medalha, calcularMedalhas, historicoDeRecordes, proximaMedalha, ultimasConquistas } from '../core/medalhas';
+import { lerMeta, metaPadrao } from '../core/meta';
+import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { SocialService } from '../core/social.service';
 import { PlanService, dataLocal } from '../core/plan.service';
+import { recordesDaSessao, treinosNaSemana, volumeSessao } from '../core/stats';
 
 const LETRAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo'];
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Icon, Avatar],
+  imports: [RouterLink, Icon, Avatar, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <header class="cabeca">
         <div>
           <p class="apoio">{{ dataTexto }}</p>
-          <h1 class="titulo">{{ saudacao }}{{ primeiroNome() ? ', ' + primeiroNome() : '' }}, bora treinar?</h1>
+          <h1 class="titulo">{{ titulo() }}</h1>
         </div>
         @if (nuvem.usuario(); as u) {
           <a class="conta" routerLink="/ajustes" aria-label="Minha conta">
@@ -42,7 +50,42 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
         }
       </ol>
 
-      @if (plans.proxima(); as ficha) {
+      @if (concluidoHoje() && resumoHoje(); as r) {
+        <article class="destaque" aria-labelledby="t-feito">
+          <div class="destaque__topo">
+            <div>
+              <p class="destaque__rotulo" id="t-feito">Treino de hoje concluído</p>
+              <h2 class="destaque__nome">{{ r.nome }}</h2>
+            </div>
+            <span class="selo selo--feito"><app-icon name="check" [size]="14" [stroke]="3" /> Feito</span>
+          </div>
+          <ul class="numeros" aria-label="Resumo do treino">
+            <li><strong>{{ r.exercicios }}</strong><span>{{ r.exercicios === 1 ? 'exercício' : 'exercícios' }}</span></li>
+            <li><strong>{{ r.series }}</strong><span>{{ r.series === 1 ? 'série' : 'séries' }}</span></li>
+            @if (r.volume > 0) {
+              <li><strong>{{ carga(r.volume) }}</strong><span>de carga</span></li>
+            }
+          </ul>
+          @if (r.textoRecordes) {
+            <p class="recorde"><app-icon name="medal" [size]="18" [stroke]="2.2" /> {{ r.textoRecordes }}</p>
+          }
+          @if (r.sessao.registros?.length) {
+            <button type="button" class="btn btn--claro" aria-haspopup="dialog" (click)="sessaoAberta.set(true)">Ver detalhes do treino</button>
+          }
+        </article>
+
+        @if (plans.proxima(); as prox) {
+          <a class="card linha" [routerLink]="['/ficha', prox.id]">
+            <span class="letra">{{ plans.letra(prox.id) }}</span>
+            <span class="linha__texto">
+              <span class="apoio">Próximo treino</span>
+              <span class="linha__nome">{{ prox.nome }}</span>
+              <span class="apoio">{{ plans.rotulo(prox.id) }} · {{ prox.itens.length }} {{ prox.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
+            </span>
+            <app-icon name="chevron" [size]="18" />
+          </a>
+        }
+      } @else if (plans.proxima(); as ficha) {
         <article class="destaque">
           <div class="destaque__topo">
             <div>
@@ -89,6 +132,43 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
         </a>
       }
 
+      @if (plans.fichas().length > 0 || plans.historico().length > 0) {
+        <article class="card bloco" aria-labelledby="t-meta-home">
+          <div class="bloco__topo">
+            <h2 id="t-meta-home" class="rot">Meta da semana</h2>
+            <span class="apoio">{{ meta() }}× por semana</span>
+          </div>
+          <p class="grande">{{ treinosSemana() }} <small>de {{ meta() }} treinos</small></p>
+          <div class="trilha" role="progressbar" aria-label="Treinos da semana" aria-valuemin="0" [attr.aria-valuemax]="meta()" [attr.aria-valuenow]="treinosSemana()">
+            <div class="trilha__cheia" [style.width.%]="percentualMeta()"></div>
+          </div>
+          <p class="apoio">{{ textoMeta() }}</p>
+        </article>
+
+        <section class="lista" aria-labelledby="titulo-conquistas">
+          <div class="lista__topo">
+            <h2 id="titulo-conquistas">Conquistas</h2>
+            <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="galeriaAberta.set(true)">Ver todas</button>
+          </div>
+          @if (recentes().length > 0) {
+            <ul class="conquistas" aria-label="Últimas medalhas">
+              @for (m of recentes(); track m.id) {
+                <li class="card conquista">
+                  <span [class]="'medalha-icone medalha-icone--' + m.grupo" aria-hidden="true"><app-icon name="medal" [size]="20" [stroke]="2" /></span>
+                  <span class="linha__texto">
+                    <span class="linha__nome">{{ m.titulo }}@if (m.data === hojeISO) { <span class="nova">Nova</span> }</span>
+                    <span class="apoio">{{ m.data ? dia(m.data) : 'Conquistada' }}</span>
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+          @if (proximaConquista(); as p) {
+            <p class="apoio proxima">Próxima medalha: <strong>{{ p.titulo }}</strong> · {{ progresso(p) }}</p>
+          }
+        </section>
+      }
+
       @if (plans.fichas().length > 0) {
         <section class="lista" aria-labelledby="titulo-fichas">
           <div class="lista__topo">
@@ -115,6 +195,22 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
             </a>
           }
         </section>
+      }
+
+      @if (galeriaAberta()) {
+        <app-dialogo titulo="Conquistas" [subtitulo]="resumoConquistas()" (fechar)="galeriaAberta.set(false)">
+          <app-medalhas-galeria [medalhas]="medalhas()" [recordes]="recordesRecentes()" [hoje]="hojeISO" />
+        </app-dialogo>
+      }
+
+      @if (sessaoAberta() && resumoHoje(); as r) {
+        <app-dialogo [titulo]="r.nome" subtitulo="Treino de hoje" (fechar)="sessaoAberta.set(false); exercicioAberto.set(null)">
+          <app-sessao-detalhe [sessao]="r.sessao" (verExercicio)="exercicioAberto.set($event)" />
+        </app-dialogo>
+      }
+
+      @if (exercicioAberto(); as id) {
+        <app-exercicio-dialogo [id]="id" (fechar)="exercicioAberto.set(null)" />
       }
     </section>
   `,
@@ -200,6 +296,47 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       border-radius: 999px;
       padding: 6px 10px;
     }
+    .selo--feito {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .numeros {
+      display: flex;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .numeros li {
+      flex: 1;
+      min-width: 0;
+      background: var(--dark2);
+      border-radius: 12px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-align: center;
+    }
+    .numeros strong {
+      font-family: var(--font-display);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+    .numeros span {
+      font-size: 12px;
+      color: #b9c0ba;
+    }
+    .recorde {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 14px;
+      line-height: 1.35;
+      color: var(--accent);
+    }
     .miniaturas {
       display: flex;
       gap: 8px;
@@ -221,6 +358,47 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       align-items: center;
       justify-content: center;
     }
+    .bloco {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bloco__topo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .rot {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .grande {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .grande small {
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .trilha {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+    .trilha__cheia {
+      height: 100%;
+      background: var(--ink);
+      border-radius: 4px;
+      transition: width 0.25s;
+    }
     .lista {
       display: flex;
       flex-direction: column;
@@ -235,9 +413,63 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       font-size: 18px;
     }
     .ver-todas {
+      min-height: 32px;
+      padding: 0;
+      border: 0;
+      background: none;
       font-size: 14px;
       font-weight: 700;
       color: var(--accent-ink);
+    }
+    .conquistas {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .conquista {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+    }
+    .medalha-icone {
+      flex: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--ink);
+      color: var(--accent);
+    }
+    .medalha-icone--recordes {
+      background: var(--accent);
+      color: var(--ink);
+    }
+    .medalha-icone--constancia {
+      background: #2f6f4f;
+      color: #fff;
+    }
+    .medalha-icone--volume {
+      background: #3b4a8a;
+      color: #fff;
+    }
+    .nova {
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 700;
+      vertical-align: 1px;
+    }
+    .proxima {
+      margin: 0;
     }
     .letra {
       width: 40px;
@@ -260,6 +492,7 @@ export class Home {
   }
 
   private readonly agora = new Date();
+  protected readonly hojeISO = dataLocal(this.agora);
 
   protected readonly nuvem = inject(CloudService);
   protected readonly social = inject(SocialService);
@@ -292,4 +525,80 @@ export class Home {
       };
     });
   });
+
+  /** Último treino concluído hoje. */
+  private readonly sessaoHoje = computed(() => this.plans.historico().filter((s) => s.data === this.hojeISO).at(-1) ?? null);
+
+  /** Já treinou hoje e não há outro treino em curso: a tela mostra o resumo no lugar do botão de iniciar. */
+  protected readonly concluidoHoje = computed(() => this.sessaoHoje() !== null && !this.plans.emAndamento());
+
+  protected readonly titulo = computed(() => {
+    const nome = this.primeiroNome() ? `, ${this.primeiroNome()}` : '';
+    return this.concluidoHoje() ? `${this.saudacao}${nome}, treino de hoje feito!` : `${this.saudacao}${nome}, bora treinar?`;
+  });
+
+  protected readonly resumoHoje = computed(() => {
+    const sessao = this.sessaoHoje();
+    if (!sessao) return null;
+    const registros = sessao.registros ?? [];
+    const nomes = recordesDaSessao(this.plans.historico(), sessao).map((r) => this.nomeExercicio(r.exerciseId));
+    const mostrados = nomes.slice(0, 2).join(', ');
+    const resto = nomes.length - 2;
+    const lista = resto > 0 ? `${mostrados} e mais ${resto}` : mostrados;
+    return {
+      sessao,
+      nome: sessao.fichaNome ?? this.plans.get(sessao.fichaId)?.nome ?? 'Treino',
+      exercicios: registros.length,
+      series: registros.reduce((t, r) => t + r.series.length, 0),
+      volume: volumeSessao(sessao),
+      textoRecordes: nomes.length === 0 ? '' : `${nomes.length === 1 ? 'Novo recorde' : nomes.length + ' novos recordes'}: ${lista}`,
+    };
+  });
+
+  /** Mesma meta da tela de estatísticas (a escolhida lá, ou o número de fichas). */
+  private readonly metaSalva = lerMeta();
+  protected readonly meta = computed(() => this.metaSalva ?? metaPadrao(this.plans.fichas().length));
+  protected readonly treinosSemana = computed(() => treinosNaSemana(this.plans.historico(), this.agora));
+  protected readonly percentualMeta = computed(() => Math.min(100, Math.round((this.treinosSemana() / this.meta()) * 100)));
+  protected readonly textoMeta = computed(() => {
+    const faltam = this.meta() - this.treinosSemana();
+    if (faltam <= 0) return 'Meta da semana batida. Excelente consistência!';
+    return `Faltam ${faltam} ${faltam === 1 ? 'treino' : 'treinos'} para bater a meta.`;
+  });
+
+  protected readonly medalhas = computed(() => calcularMedalhas(this.plans.historico(), this.meta()));
+  protected readonly recentes = computed(() => ultimasConquistas(this.medalhas(), 3));
+  protected readonly proximaConquista = computed(() => proximaMedalha(this.medalhas()));
+  protected readonly resumoConquistas = computed(() => {
+    const feitas = this.medalhas().filter((m) => m.conquistada).length;
+    return `${feitas} de ${this.medalhas().length} medalhas`;
+  });
+  protected readonly recordesRecentes = computed(() =>
+    historicoDeRecordes(this.plans.historico())
+      .slice(-5)
+      .reverse()
+      .map((r) => ({ nome: this.nomeExercicio(r.exerciseId), carga: r.carga, data: r.data })),
+  );
+
+  protected readonly galeriaAberta = signal(false);
+  protected readonly sessaoAberta = signal(false);
+  protected readonly exercicioAberto = signal<string | null>(null);
+
+  private nomeExercicio(id: string): string {
+    const e = this.exercicios.get(id);
+    return e ? this.exercicios.nome(e) : id;
+  }
+
+  protected dia(iso: string): string {
+    return dataCurta(iso, this.agora);
+  }
+
+  protected progresso(m: Medalha): string {
+    if (m.grupo !== 'volume') return `${m.atual} de ${m.alvo}`;
+    return `${this.carga(m.atual)} de ${this.carga(m.alvo)}`;
+  }
+
+  protected carga(kg: number): string {
+    return kg >= 1000 ? `${(kg / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} t` : `${Math.round(kg)} kg`;
+  }
 }

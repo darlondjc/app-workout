@@ -4,13 +4,14 @@ import { CloudService } from '../core/cloud.service';
 import { Avatar } from '../core/avatar';
 import { FotoBotao } from '../core/foto-botao';
 import { Icon } from '../core/icon';
+import { PesoRegistro } from '../core/peso-registro';
 import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar, FotoBotao],
+  imports: [Icon, Carregando, Avatar, FotoBotao, PesoRegistro],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -86,6 +87,8 @@ import { UpdateService } from '../core/update.service';
           </button>
         }
       </article>
+
+      <app-peso-registro />
 
       <article class="card bloco" aria-labelledby="t-versao">
         <h2 id="t-versao" class="sub">Versão do app</h2>
