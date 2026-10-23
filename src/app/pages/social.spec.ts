@@ -40,6 +40,9 @@ describe('Social — faixa de pessoas', () => {
             ativo: signal(true),
             erro: signal(null),
             timeline: signal([]),
+            timelineVisivel: signal([]),
+            temMais: signal(false),
+            carregarMais: () => undefined,
             amigos,
             convitesRecebidos: signal([]),
             marcarTimelineVista: () => undefined,
@@ -54,7 +57,11 @@ describe('Social — faixa de pessoas', () => {
     });
   });
 
-  afterEach(() => el()?.remove());
+  afterEach(() => {
+    // Devolve a aba Timeline, que fica guardada fora do componente e vazaria para outros testes.
+    (el()?.querySelector('[role="tab"]') as HTMLButtonElement | null)?.click();
+    el()?.remove();
+  });
 
   async function abrirEstatisticas(): Promise<void> {
     const abas = [...el().querySelectorAll('[role="tab"]')] as HTMLButtonElement[];

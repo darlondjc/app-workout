@@ -39,6 +39,9 @@ describe('Social — rolagem infinita da timeline', () => {
     caixa.appendChild(el());
     document.body.appendChild(caixa);
     fixture.detectChanges();
+    // A aba escolhida é guardada fora do componente (sobra de outros testes): garante a Timeline.
+    (el().querySelector('[role="tab"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
   }
 
   beforeEach(() => {
