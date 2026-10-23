@@ -10,6 +10,11 @@ function esconderAbertura(): void {
   setTimeout(() => el.remove(), 500);
 }
 
+// O iOS ignora `user-scalable=no`: a pinça é barrada pelos eventos de gesto do Safari.
+for (const evento of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(evento, (e) => e.preventDefault());
+}
+
 bootstrapApplication(App, appConfig)
   .then(() => requestAnimationFrame(() => setTimeout(esconderAbertura, 250)))
   .catch((err) => {

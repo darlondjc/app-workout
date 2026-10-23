@@ -133,4 +133,55 @@ describe('Workout — marcar séries em bloco', () => {
     fixture.detectChanges();
     expect(chave().checked).toBeTrue();
   });
+
+  describe('cronômetro de descanso', () => {
+    const tempo = () => el().querySelector('.tempo')?.textContent?.trim();
+    const passar = (ms: number) => {
+      jasmine.clock().tick(ms);
+      fixture.detectChanges();
+    };
+
+    beforeEach(() => jasmine.clock().install().mockDate(new Date(2026, 9, 23, 10, 0, 0)));
+    afterEach(() => jasmine.clock().uninstall());
+
+    it('marcar a última série do exercício também inicia o cronômetro', () => {
+      marcas().forEach((m) => clicar(m));
+      passar(3000);
+      expect(tempo()).toBe('00:03');
+    });
+
+    it('trocar de exercício não interrompe nem reinicia o cronômetro', () => {
+      marcas().forEach((m) => clicar(m));
+      passar(5000);
+      clicar(botao('Próximo exercício'));
+      expect(tempo()).toBe('00:05');
+      passar(2000);
+      expect(tempo()).toBe('00:07');
+      clicar(botao('Anterior'));
+      passar(1000);
+      expect(tempo()).toBe('00:08');
+    });
+
+    it('marcar uma série no exercício seguinte reinicia a contagem', () => {
+      marcas().forEach((m) => clicar(m));
+      passar(5000);
+      clicar(botao('Próximo exercício'));
+      clicar(marcas()[0]);
+      expect(tempo()).toBe('00:00');
+    });
+
+    it('"Marcar todos" também inicia o cronômetro', () => {
+      clicar(botao('Marcar todos'));
+      passar(2000);
+      expect(tempo()).toBe('00:02');
+    });
+
+    it('desmarcar uma série não mexe no cronômetro', () => {
+      clicar(marcas()[0]);
+      passar(4000);
+      clicar(marcas()[0]);
+      passar(1000);
+      expect(tempo()).toBe('00:05');
+    });
+  });
 });

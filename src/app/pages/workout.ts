@@ -120,7 +120,7 @@ function lerPreferencia(): boolean {
             <div class="descanso" role="timer" aria-live="off">
               <div>
                 <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
-                <p class="tempo" [class.estourou]="descansoAtivo() >= limiteDescanso()">{{ tempo() }}</p>
+                <p class="tempo" [class.estourou]="descansando() && descansoAtivo() >= limiteAtivo()">{{ tempo() }}</p>
               </div>
               <span class="selo">{{ feitas() }} de {{ series().length }} séries</span>
             </div>
@@ -456,6 +456,8 @@ export class Workout {
   protected readonly descansoAtivo = signal(0);
   protected readonly descansando = signal(false);
   /** O descanso definido na ficha é a referência: passado esse tempo o cronômetro fica vermelho, mas continua contando. */
+  /** Limite do descanso que está contando agora. */
+  protected readonly limiteAtivo = signal(60);
   protected readonly limiteDescanso = computed(() => this.item()?.descanso || 60);
   private descansoDesde = 0;
   protected readonly confirmandoSaida = signal(false);
@@ -599,7 +601,12 @@ export class Workout {
     const marcar = this.feitas() < this.series().length;
     const base = this.series().map((s) => this.paraSalvar({ ...s, feita: marcar, descanso: marcar ? s.descanso : undefined }));
     this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
-    this.pararDescanso();
+    if (marcar) this.iniciarDescansoSeFizerSentido();
+  }
+
+  /** O descanso só conta com várias séries: com uma só (como o cardio) não há descanso entre séries. */
+  private iniciarDescansoSeFizerSentido(): void {
+    if (this.series().length > 1) this.iniciarDescanso();
   }
 
   protected alternar(k: number): void {
@@ -609,9 +616,9 @@ export class Workout {
     // O descanso desta série é o tempo corrido desde a anterior; sem timer rodando (primeira série), não há o que guardar.
     const descanso = ficouFeita && this.descansando() ? Math.round((Date.now() - this.descansoDesde) / 1000) : undefined;
     this.gravarSerie(k, { feita: ficouFeita, descanso });
-    const todas = this.series().every((s) => s.feita);
-    if (ficouFeita && !todas) this.iniciarDescanso();
-    else this.pararDescanso();
+    // Marcar uma série (inclusive a última do exercício) reinicia o cronômetro. Ele não depende do exercício:
+    // segue contando ao trocar de tela. Desmarcar não mexe nele.
+    if (ficouFeita) this.iniciarDescansoSeFizerSentido();
   }
 
   private irPara(indice: number): void {
@@ -619,12 +626,10 @@ export class Workout {
   }
 
   protected anterior(): void {
-    this.pararDescanso();
     this.irPara(Math.max(0, this.indice() - 1));
   }
 
   protected proximo(): void {
-    this.pararDescanso();
     if (!this.ultimo()) {
       this.irPara(this.indice() + 1);
       return;
@@ -679,6 +684,7 @@ export class Workout {
   /** Grava o treino; a foto (se houver) vai para a nuvem sem travar a saída da tela. */
   protected finalizar(foto: string | null): void {
     this.concluindo.set(false);
+    this.pararDescanso();
     const f = this.ficha();
     const salvo = this.estado();
     const efetivos = f ? this.plans.exerciciosEfetivos(f) : [];
@@ -698,12 +704,14 @@ export class Workout {
   private iniciarDescanso(): void {
     this.pararDescanso();
     this.descansoDesde = Date.now();
+    // O limite é o do exercício em que a série foi marcada, mesmo que a pessoa já esteja em outro.
+    this.limiteAtivo.set(this.limiteDescanso());
     this.descansando.set(true);
     this.intervalo = setInterval(() => {
       const antes = this.descansoAtivo();
       const agora = Math.floor((Date.now() - this.descansoDesde) / 1000);
       this.descansoAtivo.set(agora);
-      const limite = this.limiteDescanso();
+      const limite = this.limiteAtivo();
       if (antes < limite && agora >= limite) navigator.vibrate?.(200);
     }, 500);
   }
