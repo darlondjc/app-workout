@@ -235,6 +235,12 @@ export function calcularConquistas(h: Sessao[], meta: number, contexto: Contexto
   });
 }
 
+/** Maior nível primeiro; quem ainda não tem medalha vai para o fim. Empates mantêm a ordem de antes. */
+export function ordenarPorNivel(conquistas: Conquista[]): Conquista[] {
+  const peso = (c: Conquista) => (c.nivel ? NIVEIS.indexOf(c.nivel) : -1);
+  return [...conquistas].sort((a, b) => peso(b) - peso(a));
+}
+
 /** Fração (0 a 1) do caminho já feito até o próximo nível; 1 quando já está no máximo. */
 export function fracaoAteOProximo(c: Conquista): number {
   return c.proximo ? Math.min(1, c.atual / c.proximo.alvo) : 1;

@@ -1,6 +1,6 @@
 import { Exercise, Sessao } from './models';
 import { dataISO } from './stats';
-import { Conquista, calcularConquistas, formatarProgresso, formatarValor, fracaoAteOProximo, historicoDeRecordes, proximaConquista, regiaoDoExercicio, RegiaoDoExercicio } from './medalhas';
+import { Conquista, calcularConquistas, formatarProgresso, formatarValor, fracaoAteOProximo, historicoDeRecordes, ordenarPorNivel, proximaConquista, regiaoDoExercicio, RegiaoDoExercicio } from './medalhas';
 
 let n = 0;
 
@@ -171,6 +171,15 @@ describe('medalhas novas', () => {
     expect(regiaoDoExercicio(ex('cardio', 'quadriceps'))).toBe('cardio');
     expect(regiaoDoExercicio(ex('strength', 'abdominals'))).toBeNull();
     expect(regiaoDoExercicio(undefined)).toBeNull();
+  });
+});
+
+describe('ordenarPorNivel', () => {
+  it('maior nível primeiro, sem medalha no fim, e empate mantém a ordem', () => {
+    const base = calcularConquistas([], 3);
+    const com = (id: Conquista['id'], nivel: Conquista['nivel']) => ({ ...base.find((c) => c.id === id)!, nivel });
+    const lista = [com('treinos', 'bronze'), com('ano', null), com('constancia', 'diamante'), com('sequencia', 'bronze'), com('volume', 'ouro')];
+    expect(ordenarPorNivel(lista).map((c) => c.id)).toEqual(['constancia', 'volume', 'treinos', 'sequencia', 'ano']);
   });
 });
 

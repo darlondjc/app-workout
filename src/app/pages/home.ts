@@ -7,7 +7,7 @@ import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { MedalhasGaleria } from '../core/medalhas-galeria';
-import { NOMES_NIVEL, TipoConquista, calcularConquistas, formatarProgresso, historicoDeRecordes, proximaConquista, regiaoDoExercicio } from '../core/medalhas';
+import { NOMES_NIVEL, TipoConquista, calcularConquistas, formatarProgresso, historicoDeRecordes, ordenarPorNivel, proximaConquista, regiaoDoExercicio } from '../core/medalhas';
 import { QuadroMedalhas } from '../core/quadro-medalhas';
 import { lerMeta, metaPadrao } from '../core/meta';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
@@ -25,17 +25,19 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
   host: { '(window:scroll)': 'aoRolar()' },
   template: `
     <section class="page">
-      <header class="cabeca" [class.compacta]="rolou()" [style.--lado.px]="rolou() ? 36 : 44">
-        <div class="saudacao">
-          <p class="apoio">{{ dataTexto }}</p>
-          <h1 class="titulo">{{ titulo() }}</h1>
+      <header class="cabeca" [class.compacta]="rolou()">
+        <div class="texto">
+          <div class="saudacao">
+            <div class="saudacao__miolo">
+              <p class="apoio">{{ dataTexto }}</p>
+              <h1 class="titulo">{{ titulo() }}</h1>
+            </div>
+          </div>
+          <p class="nome-fixo" aria-hidden="true">{{ primeiroNome() || 'Início' }}</p>
         </div>
-        @if (rolou()) {
-          <p class="nome-fixo">{{ primeiroNome() || 'Início' }}</p>
-        }
         @if (nuvem.usuario(); as u) {
           <a class="conta" routerLink="/ajustes" aria-label="Minha conta">
-            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="rolou() ? 36 : 44" />
+            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="44" />
           </a>
         }
       </header>
@@ -226,12 +228,36 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       align-items: center;
       box-shadow: 0 1px 0 var(--soft);
     }
-    .cabeca.compacta .saudacao {
-      display: none;
-    }
-    .nome-fixo {
+    .texto {
       flex: 1;
       min-width: 0;
+      position: relative;
+      transition: min-height 0.28s ease;
+    }
+    .compacta .texto {
+      min-height: 44px;
+    }
+    /* A saudação some encolhendo (a linha de 1fr vai a 0fr) enquanto o nome aparece no lugar dela. */
+    .saudacao {
+      display: grid;
+      grid-template-rows: 1fr;
+      opacity: 1;
+      transition: grid-template-rows 0.28s ease, opacity 0.18s ease;
+    }
+    .saudacao__miolo {
+      min-height: 0;
+      overflow: hidden;
+    }
+    .compacta .saudacao {
+      grid-template-rows: 0fr;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .nome-fixo {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
       margin: 0;
       font-family: var(--font-display);
       font-size: 20px;
@@ -239,12 +265,28 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      opacity: 0;
+      transform: translateY(-30%);
+      transition: opacity 0.2s ease, transform 0.28s ease;
+      pointer-events: none;
+    }
+    .compacta .nome-fixo {
+      opacity: 1;
+      transform: translateY(-50%);
+      transition-delay: 0.08s;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .texto,
+      .saudacao,
+      .nome-fixo {
+        transition: none;
+      }
     }
     .conta {
       flex: none;
       display: flex;
-      width: var(--lado, 44px);
-      height: var(--lado, 44px);
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--soft);
     }
@@ -538,7 +580,7 @@ export class Home {
     return `Faltam ${faltam} ${faltam === 1 ? 'treino' : 'treinos'} para bater a meta.`;
   });
 
-  protected readonly conquistas = computed(() => calcularConquistas(this.plans.historico(), this.meta(), { hoje: this.agora, regiaoDe: (id) => regiaoDoExercicio(this.exercicios.get(id)) }));
+  protected readonly conquistas = computed(() => ordenarPorNivel(calcularConquistas(this.plans.historico(), this.meta(), { hoje: this.agora, regiaoDe: (id) => regiaoDoExercicio(this.exercicios.get(id)) })));
   protected readonly proxima = computed(() => proximaConquista(this.conquistas()));
   protected readonly nomes = NOMES_NIVEL;
   protected readonly resumoConquistas = computed(() => {
