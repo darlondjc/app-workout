@@ -25,6 +25,9 @@ export const GRUPOS: GrupoMuscular[] = [
   { key: 'pescoco', label: 'Pescoço', muscles: ['neck'] },
 ];
 
+/** Chave do filtro de cardio: não é um músculo, então fica fora de `GRUPOS` e filtra pela categoria do exercício. */
+export const FILTRO_CARDIO = 'cardio';
+
 const normalizar = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
@@ -157,6 +160,7 @@ export class ExerciseService {
     return this.indice()
       .filter(({ e, texto }) => {
         if (q && !texto.includes(q)) return false;
+        if (grupo === FILTRO_CARDIO && e.category !== 'cardio') return false;
         if (musculos && !e.primaryMuscles.some((m) => musculos.includes(m))) return false;
         if (equipamento && (e.equipment ?? 'none') !== equipamento) return false;
         if (nivel && e.level !== nivel) return false;
