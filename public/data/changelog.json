@@ -1,5 +1,19 @@
 [
   {
+    "versao": "1.9.6",
+    "data": "2026-10-23",
+    "titulo": "Timeline em páginas, telas mais compactas e detalhe do treino",
+    "itens": [
+      "A timeline carrega aos poucos enquanto você rola (10 itens de cada vez) e busca mais treinos quando chega ao fim, sem limite fixo.",
+      "Timeline e Estatísticas ficaram mais compactas: cartões, calendário, números e gráfico ocupam menos espaço.",
+      "Em um treino da timeline ou do calendário, \"Ver treino\" abre um diálogo com cada exercício e as séries feitas (repetições, carga e intervalo), inclusive de amigos e de dias anteriores.",
+      "As mensagens verdes de incentivo das Estatísticas podem ser dispensadas com o X; mensagem nova aparece de novo.",
+      "Apagar um comentário na timeline, excluir uma ficha e remover um exercício da ficha agora pedem confirmação.",
+      "Uma ficha nova só é salva quando recebe o primeiro exercício; enquanto estiver vazia há o botão Cancelar no lugar de Excluir.",
+      "Na aba Estatísticas do Social, o botão de adicionar amigo fica sempre à vista e a lista de pessoas esmaece nas bordas quando dá para rolar."
+    ]
+  },
+  {
     "versao": "1.9.5",
     "data": "2026-10-23",
     "titulo": "Treino sem internet e convites no aviso da aba Social",
