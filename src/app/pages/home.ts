@@ -78,7 +78,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
           <a class="btn btn--destaque" routerLink="/biblioteca">
             <app-icon name="plus" [size]="18" [stroke]="2.5" /> Escolher exercícios
           </a>
-          <a class="btn btn--claro" routerLink="/fichas/sugestao">Sugerir fichas para mim</a>
+          <a class="btn btn--claro" routerLink="/fichas/sugestao">Sugerir ficha</a>
         </article>
       }
 

@@ -135,6 +135,29 @@ export class PlanService {
     return novas;
   }
 
+  /**
+   * Acrescenta um treino à ficha atual (a ativa): ele entra como o próximo treino dela, depois dos que já tem.
+   * Se a ficha atual tinha um treino só, ela passa a ser uma ficha com dois. Sem nenhuma ficha, o treino vira a primeira.
+   */
+  adicionarTreino(nome: string, itens: ItemFicha[]): { treino: Ficha; ficha: string } {
+    const atual = this.fichas().find((f) => f.id === this.ativaId()) ?? this.fichas()[0];
+    if (!atual) {
+      const [primeiro] = this.criarComItens([{ nome, itens }]);
+      return { treino: primeiro, ficha: nome };
+    }
+    const conjunto = atual.conjunto ?? { id: crypto.randomUUID(), nome: atual.nome };
+    const treino: Ficha = { id: crypto.randomUUID(), nome, itens, conjunto };
+    this.fichas.update((l) => {
+      const marcada = l.map((f) => (f.id === atual.id ? { ...f, conjunto } : f));
+      let ultimo = -1;
+      marcada.forEach((f, i) => {
+        if (f.conjunto?.id === conjunto.id) ultimo = i;
+      });
+      return [...marcada.slice(0, ultimo + 1), treino, ...marcada.slice(ultimo + 1)];
+    });
+    return { treino, ficha: conjunto.nome };
+  }
+
   /** Exclui a ficha inteira, com todos os seus treinos. */
   removerConjunto(conjuntoId: string): void {
     for (const f of this.fichas().filter((x) => x.conjunto?.id === conjuntoId)) this.remover(f.id);

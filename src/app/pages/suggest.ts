@@ -23,7 +23,7 @@ import { ToastService } from '../core/toast.service';
     <section class="page">
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
-        <h1 class="titulo">Sugestão de fichas</h1>
+        <h1 class="titulo">Sugerir ficha</h1>
         <p class="apoio">Responda quatro perguntas e eu monto uma ficha com os treinos da semana.</p>
       </header>
 
