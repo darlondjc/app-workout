@@ -42,6 +42,25 @@
   }
 }
 
+.offline {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  padding: 2px 12px;
+  background: #f2c14e;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  z-index: 40;
+  pointer-events: none; /* não atrapalha os toques nos botões do topo */
+}
+
 .aba-icone {
   position: relative;
   display: inline-flex;

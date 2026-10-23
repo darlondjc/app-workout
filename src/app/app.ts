@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject } from '@angular/core';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   NavigationCancel,
@@ -17,6 +17,7 @@ import { Icon } from './core/icon';
 import { NavegacaoService } from './core/navegacao.service';
 import { SocialService } from './core/social.service';
 import { LoadingService } from './core/loading.service';
+import { PrecargaService } from './core/precarga.service';
 import { ToastService } from './core/toast.service';
 import { UpdateService } from './core/update.service';
 
@@ -34,6 +35,7 @@ export class App {
   protected readonly nuvem = inject(CloudService);
   protected readonly social = inject(SocialService); // acompanha a timeline desde o início, para avisar na aba Social
   private readonly navegacao = inject(NavegacaoService); // começa a contar as telas desde a primeira
+  private readonly precarga = inject(PrecargaService); // guarda as imagens das fichas para treinar sem internet
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -48,6 +50,15 @@ export class App {
     document.addEventListener('contextmenu', (e) => {
       const alvo = e.target as Element | null;
       if (alvo?.closest?.('a, img, button, svg') && !alvo.closest('input, textarea, [contenteditable]')) e.preventDefault();
+    });
+    // Quando a internet volta, avisa que o que ficou guardado no aparelho está sendo enviado.
+    let estavaOffline = !this.nuvem.online();
+    effect(() => {
+      const online = this.nuvem.online();
+      untracked(() => {
+        if (online && estavaOffline) this.toast.mostrar('Conexão de volta. Sincronizando seus dados…');
+        estavaOffline = !online;
+      });
     });
     // Se a sessão terminar (ou sair da conta), volta para a tela de login.
     effect(() => {
@@ -67,6 +78,9 @@ export class App {
       }
     });
   }
+
+  /** Faixa "sem conexão": o treino continua funcionando e o que for feito sincroniza ao voltar. */
+  protected readonly mostrarOffline = computed(() => !this.nuvem.online() && !this.url().startsWith('/entrar'));
 
   /** Não interrompe o treino em andamento com o aviso de atualização. */
   protected readonly mostrarAviso = computed(() => !this.url().startsWith('/treino') && !this.url().startsWith('/entrar'));
