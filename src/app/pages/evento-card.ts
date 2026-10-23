@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { Avatar } from '../core/avatar';
+import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
@@ -9,7 +10,7 @@ import { SocialService } from '../core/social.service';
 /** Treino de alguém na timeline, com curtidas e comentários. */
 @Component({
   selector: 'app-evento-card',
-  imports: [Avatar, Icon, SessaoDetalhe],
+  imports: [Avatar, Icon, SessaoDetalhe, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
@@ -32,18 +33,6 @@ import { SocialService } from '../core/social.service';
         }
       </div>
 
-      @if (detalhe()) {
-        <div class="detalhe" aria-live="polite">
-          @if (sessao(); as s) {
-            <app-sessao-detalhe [sessao]="s" />
-          } @else if (carregandoSessao()) {
-            <p class="apoio">Carregando o treino…</p>
-          } @else {
-            <p class="apoio">Não encontrei os detalhes deste treino.</p>
-          }
-        </div>
-      }
-
       <div class="acoes">
         <button type="button" class="acao" [class.ativa]="curtido()" [attr.aria-pressed]="curtido()" (click)="curtir()">
           <app-icon name="heart" [size]="20" [stroke]="2" /> {{ curtidas().length || '' }}
@@ -53,9 +42,7 @@ import { SocialService } from '../core/social.service';
           <app-icon name="comment" [size]="20" [stroke]="2" /> {{ comentarios().length || '' }}
           <span class="sr-only">Comentários</span>
         </button>
-        <button type="button" class="acao acao--texto" [attr.aria-expanded]="detalhe()" (click)="alternarDetalhe()">
-          {{ detalhe() ? 'Ocultar treino' : 'Ver treino' }}
-        </button>
+        <button type="button" class="acao acao--texto" aria-haspopup="dialog" (click)="abrirDetalhe()">Ver treino</button>
       </div>
 
       @if (aberto()) {
@@ -82,6 +69,18 @@ import { SocialService } from '../core/social.service';
         </div>
       }
     </article>
+
+    @if (detalhe()) {
+      <app-dialogo [titulo]="evento().fichaNome" [subtitulo]="subtituloDetalhe()" (fechar)="detalhe.set(false)">
+        @if (sessao(); as s) {
+          <app-sessao-detalhe [sessao]="s" />
+        } @else if (carregandoSessao()) {
+          <p class="apoio">Carregando o treino…</p>
+        } @else {
+          <p class="apoio">Não encontrei os detalhes deste treino.</p>
+        }
+      </app-dialogo>
+    }
   `,
   styles: `
     .card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -96,8 +95,6 @@ import { SocialService } from '../core/social.service';
     .acoes { display: flex; gap: 8px; }
     .acao { min-height: 44px; min-width: 56px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); color: var(--ink); font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
     .acao--texto { margin-left: auto; font-weight: 600; font-size: 14px; }
-    .detalhe { border-top: 1px solid var(--soft); padding-top: 12px; }
-    .detalhe p { margin: 0; }
     .acao.ativa { background: var(--ink); color: var(--accent); border-color: var(--ink); }
     .comentarios { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
     .comentario { display: flex; align-items: flex-start; gap: 8px; }
@@ -151,10 +148,18 @@ export class EventoCard {
     destruir.onDestroy(() => parar.forEach((p) => p()));
   }
 
-  protected alternarDetalhe(): void {
-    const abrir = !this.detalhe();
-    if (abrir && !this.minha()) this.social.sessoesDe(this.evento().autor); // começa a ler os treinos do amigo
-    this.detalhe.set(abrir);
+  /** "Você · quinta-feira, 22 de outubro". */
+  protected readonly subtituloDetalhe = computed(() => {
+    const e = this.evento();
+    const [a, m, d] = e.data.split('-').map(Number);
+    const dia = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const quem = this.minha() ? 'Você' : this.social.nomeDe(e.autor, e.autorNome);
+    return `${quem} · ${dia.charAt(0).toUpperCase()}${dia.slice(1)}`;
+  });
+
+  protected abrirDetalhe(): void {
+    if (!this.minha()) this.social.sessoesDe(this.evento().autor); // começa a ler os treinos do amigo
+    this.detalhe.set(true);
   }
 
   protected curtir(): void {

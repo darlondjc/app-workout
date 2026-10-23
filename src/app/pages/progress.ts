@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { Dialogo } from '../core/dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { Sessao } from '../core/models';
@@ -21,7 +22,7 @@ function lerMeta(): number | null {
 
 @Component({
   selector: 'app-progress',
-  imports: [Icon, SessaoDetalhe],
+  imports: [Icon, SessaoDetalhe, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pagina">
@@ -99,12 +100,7 @@ function lerMeta(): number | null {
                 <strong>{{ s.fichaNome || 'Treino' }}</strong>
                 <span class="apoio">{{ s.resumo }}</span>
                 @if (s.sessao.registros?.length) {
-                  <button type="button" class="ver-treino" [attr.aria-expanded]="sessaoAberta() === s.chave" (click)="alternarSessao(s.chave)">
-                    {{ sessaoAberta() === s.chave ? 'Ocultar treino' : 'Ver treino' }}
-                  </button>
-                  @if (sessaoAberta() === s.chave) {
-                    <app-sessao-detalhe [sessao]="s.sessao" />
-                  }
+                  <button type="button" class="ver-treino" aria-haspopup="dialog" (click)="sessaoAberta.set(s.chave)">Ver treino</button>
                 }
               </div>
             } @empty {
@@ -113,6 +109,12 @@ function lerMeta(): number | null {
           </div>
         }
       </article>
+
+      @if (sessaoDoDialogo(); as d) {
+        <app-dialogo [titulo]="d.fichaNome || 'Treino'" [subtitulo]="d.dia" (fechar)="sessaoAberta.set(null)">
+          <app-sessao-detalhe [sessao]="d.sessao" />
+        </app-dialogo>
+      }
 
       <div class="numeros">
         <div class="card num"><strong>{{ resumo().semanasSeguidas }}</strong><span class="apoio">{{ resumo().semanasSeguidas === 1 ? 'semana seguida' : 'semanas seguidas' }} na meta</span></div>
@@ -185,7 +187,6 @@ function lerMeta(): number | null {
     .dia-detalhe { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
     .sessao { display: flex; flex-direction: column; gap: 2px; }
     .ver-treino { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent-ink); }
-    .sessao app-sessao-detalhe { margin-top: 4px; }
     .numeros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .num--largo { grid-column: 1 / -1; }
     .num { gap: 4px; }
@@ -221,7 +222,7 @@ export class Progress {
   /** Primeiro dia do mês exibido no calendário. */
   protected readonly mes = signal(new Date(this.hoje.getFullYear(), this.hoje.getMonth(), 1));
   protected readonly selecionado = signal<string | null>(dataISO(this.hoje));
-  /** Treino do dia aberto para ver os exercícios e séries (a chave inclui o dia, então trocar de dia fecha). */
+  /** Treino do dia aberto no diálogo, para ver os exercícios e séries. */
   protected readonly sessaoAberta = signal<string | null>(null);
 
   /** Sem meta escolhida, usa o número de fichas (entre 2 e 6). */
@@ -305,9 +306,13 @@ export class Progress {
     }),
   );
 
-  protected alternarSessao(chave: string): void {
-    this.sessaoAberta.update((a) => (a === chave ? null : chave));
-  }
+  /** O treino aberto no diálogo, com o dia por extenso. */
+  protected readonly sessaoDoDialogo = computed(() => {
+    const aberta = this.sessaoAberta();
+    const iso = this.selecionado();
+    const s = aberta && iso ? this.sessoesDoDia().find((x) => x.chave === aberta) : undefined;
+    return s && iso ? { sessao: s.sessao, fichaNome: s.fichaNome, dia: this.tituloDia(iso) } : null;
+  });
 
   protected mudarMeta(delta: number): void {
     const nova = Math.max(1, Math.min(7, this.resumo().metaSemanal + delta));

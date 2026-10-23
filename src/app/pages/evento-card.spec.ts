@@ -40,7 +40,8 @@ describe('EventoCard: ver treino', () => {
   }
 
   const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
-  const botao = () => [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find((b) => /treino/i.test(b.textContent ?? '') && b.classList.contains('acao--texto'))!;
+  const botao = () => [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find((b) => b.classList.contains('acao--texto'))!;
+  const dialogo = () => (fixture.nativeElement as HTMLElement).querySelector('[role="dialog"]');
 
   beforeEach(() => {
     amigo = { lista: signal<Record<string, Sessao[]>>({}), chamadas: [] };
@@ -70,19 +71,44 @@ describe('EventoCard: ver treino', () => {
 
   it('o detalhe começa fechado', () => {
     criar('eu');
+    expect(dialogo()).toBeNull();
     expect(texto()).not.toContain('Supino reto');
     expect(botao().textContent).toContain('Ver treino');
   });
 
-  it('seu treino abre pelo histórico do aparelho, com reps, carga e intervalo', () => {
+  it('seu treino abre num diálogo, pelo histórico do aparelho, com reps, carga e intervalo', () => {
     criar('eu');
     botao().click();
     fixture.detectChanges();
-    expect(texto()).toContain('Supino reto');
-    expect(texto()).toContain('22.5 kg');
-    expect(texto()).toContain('1:15');
+    expect(dialogo()).not.toBeNull();
+    expect(dialogo()?.textContent).toContain('Peito');
+    expect(dialogo()?.textContent).toContain('Você ·');
+    expect(dialogo()?.textContent).toContain('Supino reto');
+    expect(dialogo()?.textContent).toContain('22.5 kg');
+    expect(dialogo()?.textContent).toContain('1:15');
     expect(amigo.chamadas).toEqual([]);
-    expect(botao().textContent).toContain('Ocultar treino');
+  });
+
+  it('fecha com Esc, com o X e tocando fora', () => {
+    criar('eu');
+    const el = fixture.nativeElement as HTMLElement;
+    botao().click();
+    fixture.detectChanges();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(dialogo()).toBeNull();
+
+    botao().click();
+    fixture.detectChanges();
+    (el.querySelector('.x') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(dialogo()).toBeNull();
+
+    botao().click();
+    fixture.detectChanges();
+    (el.querySelector('.fundo') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(dialogo()).toBeNull();
   });
 
   it('treino de amigo: começa a ler os treinos dele, mostra "carregando" e depois o detalhe', () => {
@@ -90,6 +116,7 @@ describe('EventoCard: ver treino', () => {
     botao().click();
     fixture.detectChanges();
     expect(amigo.chamadas).toContain('ana');
+    expect(dialogo()?.textContent).toContain('ana ·'); // o serviço de mentira devolve o nome como veio
     expect(texto()).toContain('Carregando o treino');
 
     amigo.lista.set({ ana: [treino] });
