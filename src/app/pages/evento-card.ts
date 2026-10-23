@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { Avatar } from '../core/avatar';
 import { Icon } from '../core/icon';
+import { PlanService } from '../core/plan.service';
+import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { Comentario, Evento, TAMANHO_COMENTARIO, tempoRelativo } from '../core/social';
 import { SocialService } from '../core/social.service';
 
 /** Treino de alguém na timeline, com curtidas e comentários. */
 @Component({
   selector: 'app-evento-card',
-  imports: [Avatar, Icon],
+  imports: [Avatar, Icon, SessaoDetalhe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
@@ -30,6 +32,18 @@ import { SocialService } from '../core/social.service';
         }
       </div>
 
+      @if (detalhe()) {
+        <div class="detalhe" aria-live="polite">
+          @if (sessao(); as s) {
+            <app-sessao-detalhe [sessao]="s" />
+          } @else if (carregandoSessao()) {
+            <p class="apoio">Carregando o treino…</p>
+          } @else {
+            <p class="apoio">Não encontrei os detalhes deste treino.</p>
+          }
+        </div>
+      }
+
       <div class="acoes">
         <button type="button" class="acao" [class.ativa]="curtido()" [attr.aria-pressed]="curtido()" (click)="curtir()">
           <app-icon name="heart" [size]="20" [stroke]="2" /> {{ curtidas().length || '' }}
@@ -38,6 +52,9 @@ import { SocialService } from '../core/social.service';
         <button type="button" class="acao" [attr.aria-expanded]="aberto()" (click)="aberto.set(!aberto())">
           <app-icon name="comment" [size]="20" [stroke]="2" /> {{ comentarios().length || '' }}
           <span class="sr-only">Comentários</span>
+        </button>
+        <button type="button" class="acao acao--texto" [attr.aria-expanded]="detalhe()" (click)="alternarDetalhe()">
+          {{ detalhe() ? 'Ocultar treino' : 'Ver treino' }}
         </button>
       </div>
 
@@ -78,6 +95,9 @@ import { SocialService } from '../core/social.service';
     .selo--marco { background: var(--ink); color: var(--accent); font-weight: 700; }
     .acoes { display: flex; gap: 8px; }
     .acao { min-height: 44px; min-width: 56px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); color: var(--ink); font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .acao--texto { margin-left: auto; font-weight: 600; font-size: 14px; }
+    .detalhe { border-top: 1px solid var(--soft); padding-top: 12px; }
+    .detalhe p { margin: 0; }
     .acao.ativa { background: var(--ink); color: var(--accent); border-color: var(--ink); }
     .comentarios { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
     .comentario { display: flex; align-items: flex-start; gap: 8px; }
@@ -91,10 +111,21 @@ import { SocialService } from '../core/social.service';
 export class EventoCard {
   readonly evento = input.required<Evento>();
   protected readonly social = inject(SocialService);
+  private readonly plans = inject(PlanService);
   protected readonly limite = TAMANHO_COMENTARIO;
   protected readonly curtidas = signal<string[]>([]);
   protected readonly comentarios = signal<Comentario[]>([]);
   protected readonly aberto = signal(false);
+  protected readonly detalhe = signal(false);
+
+  /** O treino completo: o seu vem do histórico do aparelho; o de um amigo, dos treinos que ele compartilha. */
+  protected readonly sessao = computed(() => {
+    if (!this.detalhe()) return undefined;
+    const e = this.evento();
+    const lista = this.minha() ? this.plans.historico() : this.social.sessoesDe(e.autor);
+    return lista.find((s) => s.id === e.sessaoId);
+  });
+  protected readonly carregandoSessao = computed(() => this.detalhe() && !this.minha() && !this.social.sessoesCarregadas(this.evento().autor));
 
   protected readonly minha = computed(() => this.evento().autor === this.social.eu()?.uid);
   protected readonly curtido = computed(() => this.curtidas().includes(this.social.eu()?.uid ?? ''));
@@ -118,6 +149,12 @@ export class EventoCard {
       ];
     });
     destruir.onDestroy(() => parar.forEach((p) => p()));
+  }
+
+  protected alternarDetalhe(): void {
+    const abrir = !this.detalhe();
+    if (abrir && !this.minha()) this.social.sessoesDe(this.evento().autor); // começa a ler os treinos do amigo
+    this.detalhe.set(abrir);
   }
 
   protected curtir(): void {

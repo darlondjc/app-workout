@@ -3,6 +3,7 @@ import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
+import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { LIMITE_SESSOES_AMIGO, SocialService } from '../core/social.service';
 import { calcularResumo, dataISO, gerarInsights, volumeSessao } from '../core/stats';
 
@@ -20,7 +21,7 @@ function lerMeta(): number | null {
 
 @Component({
   selector: 'app-progress',
-  imports: [Icon],
+  imports: [Icon, SessaoDetalhe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pagina">
@@ -93,10 +94,18 @@ function lerMeta(): number | null {
         @if (selecionado(); as iso) {
           <div class="dia-detalhe" aria-live="polite">
             <h3 class="rot">{{ tituloDia(iso) }}</h3>
-            @for (s of sessoesDoDia(); track s.id) {
+            @for (s of sessoesDoDia(); track s.chave) {
               <div class="sessao">
                 <strong>{{ s.fichaNome || 'Treino' }}</strong>
                 <span class="apoio">{{ s.resumo }}</span>
+                @if (s.sessao.registros?.length) {
+                  <button type="button" class="ver-treino" [attr.aria-expanded]="sessaoAberta() === s.chave" (click)="alternarSessao(s.chave)">
+                    {{ sessaoAberta() === s.chave ? 'Ocultar treino' : 'Ver treino' }}
+                  </button>
+                  @if (sessaoAberta() === s.chave) {
+                    <app-sessao-detalhe [sessao]="s.sessao" />
+                  }
+                }
               </div>
             } @empty {
               <p class="apoio">Sem treino neste dia.</p>
@@ -175,6 +184,8 @@ function lerMeta(): number | null {
     .ponto { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); flex: none; }
     .dia-detalhe { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
     .sessao { display: flex; flex-direction: column; gap: 2px; }
+    .ver-treino { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent-ink); }
+    .sessao app-sessao-detalhe { margin-top: 4px; }
     .numeros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .num--largo { grid-column: 1 / -1; }
     .num { gap: 4px; }
@@ -210,6 +221,8 @@ export class Progress {
   /** Primeiro dia do mês exibido no calendário. */
   protected readonly mes = signal(new Date(this.hoje.getFullYear(), this.hoje.getMonth(), 1));
   protected readonly selecionado = signal<string | null>(dataISO(this.hoje));
+  /** Treino do dia aberto para ver os exercícios e séries (a chave inclui o dia, então trocar de dia fecha). */
+  protected readonly sessaoAberta = signal<string | null>(null);
 
   /** Sem meta escolhida, usa o número de fichas (entre 2 e 6). */
   private readonly meta = computed(() =>
@@ -261,11 +274,11 @@ export class Progress {
     const iso = this.selecionado();
     return this.historico()
       .filter((s) => s.data === iso)
-      .map((s) => {
+      .map((s, i) => {
         const exercicios = s.registros?.length ?? 0;
         const vol = volumeSessao(s);
         const partes = [exercicios ? `${exercicios} ${exercicios === 1 ? 'exercício' : 'exercícios'}` : '', vol ? `${this.volume(vol)} de carga` : ''].filter(Boolean);
-        return { id: s.id, fichaNome: s.fichaNome ?? this.plans.get(s.fichaId)?.nome, resumo: partes.join(' · ') || 'Treino concluído' };
+        return { chave: `${iso}:${s.id ?? i}`, sessao: s, fichaNome: s.fichaNome ?? this.plans.get(s.fichaId)?.nome, resumo: partes.join(' · ') || 'Treino concluído' };
       });
   });
 
@@ -291,6 +304,10 @@ export class Progress {
       return { ...r, nome: e ? this.ex.nome(e) : r.exerciseId };
     }),
   );
+
+  protected alternarSessao(chave: string): void {
+    this.sessaoAberta.update((a) => (a === chave ? null : chave));
+  }
 
   protected mudarMeta(delta: number): void {
     const nova = Math.max(1, Math.min(7, this.resumo().metaSemanal + delta));
