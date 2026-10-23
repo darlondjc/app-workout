@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListene
 import { Icon } from './icon';
 
 let contador = 0;
+/** Diálogos abertos, do mais antigo para o mais novo: o Esc fecha só o de cima. */
+const abertos: object[] = [];
 
 /**
  * Janela de diálogo: título, botão de fechar e o conteúdo projetado, com rolagem própria.
@@ -29,9 +31,9 @@ let contador = 0;
     </div>
   `,
   styles: `
-    .fundo { position: fixed; inset: 0; z-index: 50; border: 0; padding: 0; cursor: default; background: rgba(0, 0, 0, 0.6); }
+    .fundo { position: fixed; inset: 0; z-index: var(--dialogo-z, 50); border: 0; padding: 0; cursor: default; background: rgba(0, 0, 0, 0.6); }
     .caixa {
-      position: fixed; z-index: 51; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      position: fixed; z-index: calc(var(--dialogo-z, 50) + 1); left: 50%; top: 50%; transform: translate(-50%, -50%);
       width: min(94%, 440px); max-height: 86dvh; box-sizing: border-box;
       display: flex; flex-direction: column; border-radius: 24px; background: var(--card, #fff); color: var(--ink);
     }
@@ -55,14 +57,16 @@ export class Dialogo {
   constructor() {
     const anterior = document.activeElement as HTMLElement | null;
     afterNextRender(() => this.botaoFechar().nativeElement.focus());
+    abertos.push(this);
     inject(DestroyRef).onDestroy(() => {
+      abertos.splice(abertos.indexOf(this), 1);
       if (anterior?.isConnected) anterior.focus();
     });
   }
 
   @HostListener('document:keydown.escape')
   protected aoApertarEsc(): void {
-    this.fechar.emit();
+    if (abertos.at(-1) === this) this.fechar.emit();
   }
 
   /** Tab e Shift+Tab ficam dentro da janela. */

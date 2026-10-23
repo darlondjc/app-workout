@@ -72,7 +72,7 @@ describe('EventoCard: ver treino', () => {
           },
         },
         { provide: PlanService, useValue: { historico: signal<Sessao[]>([treino]) } },
-        { provide: ExerciseService, useValue: { get: () => ({ id: 'supino' }), nome: () => 'Supino reto', imagem: () => 'x.jpg' } },
+        { provide: ExerciseService, useValue: { get: () => ({ id: 'supino', equipment: 'barbell', level: 'beginner' }), nome: () => 'Supino reto', imagem: () => 'x.jpg', equipamento: () => 'Barra', nivel: () => 'Iniciante' } },
       ],
     });
   });
@@ -206,6 +206,68 @@ describe('EventoCard: ver treino', () => {
       xApagar().click();
       fixture.detectChanges();
       expect(dialogo()?.textContent).toContain('Comentário de ana');
+    });
+  });
+  describe('imagem do exercício no detalhe', () => {
+    const dialogos = () => [...(fixture.nativeElement as HTMLElement).querySelectorAll('[role="dialog"]')];
+    const abrirExercicio = () => ((fixture.nativeElement as HTMLElement).querySelector('.ex__topo') as HTMLButtonElement);
+
+    function abrirDetalhe(): void {
+      criar('eu');
+      botao().click();
+      fixture.detectChanges();
+    }
+
+    it('foto e nome formam um botão que abre a imagem de execução por cima do treino', () => {
+      abrirDetalhe();
+      const b = abrirExercicio();
+      expect(b.querySelector('img')).not.toBeNull();
+      expect(b.textContent).toContain('Supino reto');
+      expect(b.getAttribute('aria-label')).toBe('Ver imagem de Supino reto');
+      expect(dialogos().length).toBe(1);
+
+      b.click();
+      fixture.detectChanges();
+      expect(dialogos().length).toBe(2);
+      const imagem = dialogos()[1];
+      expect(imagem.textContent).toContain('Supino reto');
+      expect(imagem.textContent).toContain('Barra · Iniciante');
+      expect(imagem.querySelector('app-exercise-image')).not.toBeNull();
+    });
+
+    it('Esc fecha só a imagem; o treino continua aberto', () => {
+      abrirDetalhe();
+      abrirExercicio().click();
+      fixture.detectChanges();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(dialogos().length).toBe(1);
+      expect(dialogos()[0].textContent).toContain('Supino reto');
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(dialogos().length).toBe(0);
+    });
+
+    it('o X da imagem a fecha e o foco volta para o botão do exercício', async () => {
+      abrirDetalhe();
+      abrirExercicio().focus();
+      abrirExercicio().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      ((dialogos()[1] as HTMLElement).querySelector('.x') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(dialogos().length).toBe(1);
+      expect(document.activeElement).toBe(abrirExercicio());
+    });
+
+    it('fechar o treino também fecha a imagem', () => {
+      abrirDetalhe();
+      abrirExercicio().click();
+      fixture.detectChanges();
+      ((dialogos()[0] as HTMLElement).querySelector('.x') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(dialogos().length).toBe(0);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
 
@@ -45,10 +45,12 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
   template: `
     @for (r of linhas(); track $index) {
       <section class="ex">
-        <div class="ex__topo">
-          <img class="ex__img" [src]="ex.imagem(r.id, 0)" alt="" loading="lazy" />
-          <h4 class="ex__nome">{{ r.nome }}</h4>
-        </div>
+        <h4 class="ex__titulo">
+          <button type="button" class="ex__topo" aria-haspopup="dialog" [attr.aria-label]="'Ver imagem de ' + r.nome" (click)="verExercicio.emit(r.id)">
+            <img class="ex__img" [src]="ex.imagem(r.id, 0)" alt="" loading="lazy" />
+            <span class="ex__nome">{{ r.nome }}</span>
+          </button>
+        </h4>
         <table class="series">
           <caption class="sr-only">Séries de {{ r.nome }}</caption>
           <thead>
@@ -86,9 +88,10 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
   styles: `
     :host { display: flex; flex-direction: column; gap: 14px; }
     .ex { display: flex; flex-direction: column; gap: 6px; }
-    .ex__topo { display: flex; align-items: center; gap: 10px; }
+    .ex__titulo { margin: 0; }
+    .ex__topo { width: 100%; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; border-radius: 12px; }
     .ex__img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; background: #fff; flex: none; }
-    .ex__nome { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.25; }
+    .ex__nome { font-size: 15px; font-weight: 700; line-height: 1.25; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
     .series { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
     .series th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); padding: 2px 8px 2px 0; }
     .series td { font-size: 15px; padding: 4px 8px 4px 0; border-top: 1px solid var(--soft); }
@@ -96,6 +99,8 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
 })
 export class SessaoDetalhe {
   readonly sessao = input.required<Sessao>();
+  /** Quem usa decide como mostrar a imagem (o diálogo do treino não pode abrir outro dentro dele). */
+  readonly verExercicio = output<string>();
   protected readonly ex = inject(ExerciseService);
 
   protected readonly linhas = computed(() =>

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { Avatar } from '../core/avatar';
 import { Confirmacao } from '../core/confirmacao';
+import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
@@ -11,7 +12,7 @@ import { SocialService } from '../core/social.service';
 /** Treino de alguém na timeline, com curtidas e comentários. */
 @Component({
   selector: 'app-evento-card',
-  imports: [Avatar, Confirmacao, Icon, SessaoDetalhe, Dialogo],
+  imports: [Avatar, Confirmacao, ExercicioDialogo, Icon, SessaoDetalhe, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
@@ -81,15 +82,19 @@ import { SocialService } from '../core/social.service';
     }
 
     @if (detalhe()) {
-      <app-dialogo [titulo]="evento().fichaNome" [subtitulo]="subtituloDetalhe()" (fechar)="detalhe.set(false)">
+      <app-dialogo [titulo]="evento().fichaNome" [subtitulo]="subtituloDetalhe()" (fechar)="detalhe.set(false); exercicioAberto.set(null)">
         @if (sessao(); as s) {
-          <app-sessao-detalhe [sessao]="s" />
+          <app-sessao-detalhe [sessao]="s" (verExercicio)="exercicioAberto.set($event)" />
         } @else if (carregandoSessao()) {
           <p class="apoio">Carregando o treino…</p>
         } @else {
           <p class="apoio">Não encontrei os detalhes deste treino.</p>
         }
       </app-dialogo>
+    }
+
+    @if (exercicioAberto(); as id) {
+      <app-exercicio-dialogo [id]="id" (fechar)="exercicioAberto.set(null)" />
     }
   `,
   styles: `
@@ -129,6 +134,8 @@ export class EventoCard {
   protected readonly comentarios = signal<Comentario[]>([]);
   protected readonly aberto = signal(false);
   protected readonly detalhe = signal(false);
+  /** Exercício cuja imagem está aberta por cima do detalhe do treino. */
+  protected readonly exercicioAberto = signal<string | null>(null);
   /** Comentário esperando a confirmação para ser apagado. */
   protected readonly apagando = signal<Comentario | null>(null);
 

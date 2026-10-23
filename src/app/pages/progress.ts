@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Dialogo } from '../core/dialogo';
+import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { Sessao } from '../core/models';
@@ -32,7 +33,7 @@ function lerDispensadas(): string[] {
 
 @Component({
   selector: 'app-progress',
-  imports: [Icon, SessaoDetalhe, Dialogo],
+  imports: [ExercicioDialogo, Icon, SessaoDetalhe, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pagina">
@@ -128,9 +129,13 @@ function lerDispensadas(): string[] {
       </article>
 
       @if (sessaoDoDialogo(); as d) {
-        <app-dialogo [titulo]="d.fichaNome || 'Treino'" [subtitulo]="d.dia" (fechar)="sessaoAberta.set(null)">
-          <app-sessao-detalhe [sessao]="d.sessao" />
+        <app-dialogo [titulo]="d.fichaNome || 'Treino'" [subtitulo]="d.dia" (fechar)="sessaoAberta.set(null); exercicioAberto.set(null)">
+          <app-sessao-detalhe [sessao]="d.sessao" (verExercicio)="exercicioAberto.set($event)" />
         </app-dialogo>
+      }
+
+      @if (exercicioAberto(); as id) {
+        <app-exercicio-dialogo [id]="id" (fechar)="exercicioAberto.set(null)" />
       }
 
       <div class="numeros">
@@ -263,6 +268,8 @@ export class Progress {
   protected readonly selecionado = signal<string | null>(dataISO(this.hoje));
   /** Treino do dia aberto no diálogo, para ver os exercícios e séries. */
   protected readonly sessaoAberta = signal<string | null>(null);
+  /** Exercício cuja imagem está aberta por cima do detalhe do treino. */
+  protected readonly exercicioAberto = signal<string | null>(null);
 
   /** Sem meta escolhida, usa o número de fichas (entre 2 e 6). */
   private readonly meta = computed(() =>
