@@ -10,6 +10,9 @@ import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { Comentario, Evento, TAMANHO_COMENTARIO, tempoRelativo } from '../core/social';
 import { SocialService } from '../core/social.service';
 
+/** Prazo para colocar uma foto num treino já concluído. */
+const JANELA_FOTO_MS = 24 * 3600 * 1000;
+
 /** Treino de alguém na timeline, com curtidas e comentários. */
 @Component({
   selector: 'app-evento-card',
@@ -61,7 +64,7 @@ import { SocialService } from '../core/social.service';
           <app-icon name="comment" [size]="20" [stroke]="2" /> {{ comentarios().length || '' }}
           <span class="sr-only">Comentários</span>
         </button>
-        @if (minha() && !foto() && !fotoCarregando()) {
+        @if (podeAdicionarFoto() && !foto() && !fotoCarregando()) {
           <app-foto-botao [somenteIcone]="true" classe="acao" rotulo="Adicionar foto" (escolhida)="colocarFoto($event)" (falhou)="erroFoto.set($event)" />
         }
         <button type="button" class="acao acao--texto" aria-haspopup="dialog" (click)="abrirDetalhe()">Ver treino</button>
@@ -183,6 +186,10 @@ export class EventoCard {
   protected readonly carregandoSessao = computed(() => this.detalhe() && !this.minha() && !this.social.sessoesCarregadas(this.evento().autor));
 
   protected readonly minha = computed(() => this.evento().autor === this.social.eu()?.uid);
+  /** Foto nova só nas primeiras 24 horas depois do treino, e só no seu. Passado esse prazo o botão some. */
+  protected readonly podeAdicionarFoto = computed(
+    () => this.minha() && !this.evento().temFoto && Date.now() - this.evento().criadoEm < JANELA_FOTO_MS,
+  );
   protected readonly curtido = computed(() => this.curtidas().includes(this.social.eu()?.uid ?? ''));
   protected readonly quando = computed(() => tempoRelativo(this.evento().criadoEm, Date.now()));
   protected readonly resumo = computed(() => {

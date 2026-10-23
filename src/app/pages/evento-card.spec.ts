@@ -294,6 +294,30 @@ describe('EventoCard: ver treino', () => {
       expect(el().querySelector('app-foto-botao')).toBeNull();
     });
 
+    it('o botão de adicionar foto só vale por 24 horas depois do treino', () => {
+      const horas = (h: number) => Date.now() - h * 3600 * 1000;
+      criar('eu', { criadoEm: horas(23) });
+      expect(el().querySelector('app-foto-botao')).not.toBeNull();
+      criar('eu', { criadoEm: horas(25) });
+      expect(el().querySelector('app-foto-botao')).toBeNull();
+      expect(el().querySelector('.foto')).toBeNull();
+    });
+
+    it('treino que já tem foto não oferece adicionar, mesmo dentro do prazo', async () => {
+      fotos['eu/s1'] = FOTO;
+      criar('eu', { temFoto: true });
+      await pronto();
+      expect(el().querySelector('app-foto-botao')).toBeNull();
+    });
+
+    it('passadas as 24 horas, uma foto que já existe continua à vista e pode ser removida', async () => {
+      fotos['eu/s1'] = FOTO;
+      criar('eu', { temFoto: true, criadoEm: Date.now() - 48 * 3600 * 1000 });
+      await pronto();
+      expect(imagem()?.src).toBe(FOTO);
+      expect(el().querySelector('.foto__x')).not.toBeNull();
+    });
+
     it('com temFoto, lê e mostra a foto no card', async () => {
       fotos['ana/s1'] = FOTO;
       criar('ana', { temFoto: true });
