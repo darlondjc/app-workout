@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { TituloEmDuasLinhas } from '../core/ajuste-titulo';
 import { ConcluirTreino } from '../core/concluir-treino';
 import { ExerciseImage } from '../core/exercise-image';
 import { ExerciseService } from '../core/exercise.service';
@@ -22,7 +23,7 @@ function lerPreferencia(): boolean {
 
 @Component({
   selector: 'app-workout',
-  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino],
+  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ficha(); as f) {
@@ -76,7 +77,7 @@ function lerPreferencia(): boolean {
               <app-exercise-image [id]="it.exerciseId" [descricao]="'Demonstração: ' + nome()" />
             </a>
             <div>
-              <h1>{{ nome() }}</h1>
+              <h1 [appTituloEmDuasLinhas]="nome()">{{ nome() }}</h1>
               <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções</a>
             </div>
           </div>
