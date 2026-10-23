@@ -1,5 +1,18 @@
 [
   {
+    "versao": "1.9.10",
+    "data": "2026-10-23",
+    "titulo": "Foto com zoom, cronômetro independente e tela sempre em retrato",
+    "itens": [
+      "Ao concluir o treino, dá para mover e dar zoom na foto dentro do quadro (arrastar, dois dedos ou o controle de zoom). O trecho que você enquadra é o que vai para a timeline.",
+      "O cronômetro de descanso agora é independente do exercício: inicia ao marcar a última série e continua ao trocar de exercício.",
+      "A tela não dá mais zoom por pinça nem ao tocar nos campos. A tela fica sempre em retrato; no celular deitado aparece um aviso para girar de volta.",
+      "Ao copiar carga ou repetições para as séries seguintes, as linhas alteradas piscam para você perceber.",
+      "O link Ver instruções virou um botão no formato de pílula, e nomes de exercício muito longos diminuem sozinhos para caber em até duas linhas.",
+      "Erros do social dizem em que operação falharam (por exemplo, ao gravar a foto do treino), para facilitar descobrir o problema."
+    ]
+  },
+  {
     "versao": "1.9.9",
     "data": "2026-10-23",
     "titulo": "Fichas com vários treinos, foto de perfil e marcar séries em bloco",
