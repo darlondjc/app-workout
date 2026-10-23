@@ -42,6 +42,9 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
         }
       </div>
 
+      @if (motivoSemFoto() && !foto() && !fotoCarregando()) {
+        <p class="erro-foto" role="alert">Não consegui mostrar a foto: {{ motivoSemFoto() }}.</p>
+      }
       @if (foto() || fotoCarregando()) {
         <div class="foto" [class.foto--carregando]="!foto()">
           @if (foto(); as f) {
@@ -170,6 +173,8 @@ export class EventoCard {
   protected readonly exercicioAberto = signal<string | null>(null);
   /** Foto do treino (a do próprio card enquanto o aviso `temFoto` ainda não voltou da nuvem). */
   protected readonly foto = signal<string | null>(null);
+  /** Por que a foto que o card promete não apareceu; vazio quando está tudo certo. */
+  protected readonly motivoSemFoto = signal('');
   protected readonly fotoCarregando = signal(false);
   protected readonly removendoFoto = signal(false);
   protected readonly erroFoto = signal('');
@@ -206,9 +211,11 @@ export class EventoCard {
       let cancelado = false;
       onCleanup(() => (cancelado = true));
       this.fotoCarregando.set(true);
+      this.motivoSemFoto.set('');
       void this.social.lerFoto(e.autor, e.sessaoId).then((f) => {
         if (cancelado) return;
         this.foto.set(f);
+        if (!f) this.motivoSemFoto.set(this.social.motivosFoto?.get(`${e.autor}/${e.sessaoId}`) ?? 'a foto não foi encontrada (talvez o envio tenha falhado)');
         this.fotoCarregando.set(false);
       });
     });

@@ -492,6 +492,9 @@ export class SocialService {
   private readonly fotos = new Map<string, Promise<string | null>>();
 
   /** A foto de um treino (seu ou de um amigo); `null` se não houver ou não puder ser lida agora. */
+  /** Por que a última leitura de uma foto falhou (para o card dizer na tela, já que no celular não há console). */
+  readonly motivosFoto = new Map<string, string>();
+
   lerFoto(uid: string, sessaoId: string): Promise<string | null> {
     const api = this.api;
     if (!api) return Promise.resolve(null);
@@ -501,6 +504,8 @@ export class SocialService {
       pedido = api.lerFoto(uid, sessaoId).catch((e: unknown) => {
         // Foto que não carrega (sem regra publicada, sem rede) não é motivo para largar o amigo nem para avisar: o card só fica sem ela.
         console.warn('[social] foto indisponível', e);
+        const codigo = (e as { code?: string }).code;
+        this.motivosFoto.set(chave, codigo === 'permission-denied' ? 'sem permissão para ler a foto (publique as regras do Firestore)' : `erro ao ler a foto${codigo ? ` (${codigo})` : ''}`);
         this.fotos.delete(chave);
         return null;
       });

@@ -48,12 +48,8 @@ describe('equivalentes', () => {
     expect(equivalentes(alvo, todos, new Set())).toEqual([]);
   });
 
-  it('põe primeiro o que tem mais músculos secundários em comum', () => {
-    const todos = [
-      alvo,
-      ex('longe', { secondaryMuscles: ['biceps'] }),
-      ex('perto', { secondaryMuscles: ['triceps'] }),
-    ];
-    expect(ids(equivalentes(alvo, todos, new Set()))).toEqual(['perto', 'longe']);
+  it('ordena pelo nome, em ordem crescente, sem diferenciar maiúsculas', () => {
+    const todos = [alvo, ex('c', { name: 'cable Press' }), ex('a', { name: 'Barbell Press' }), ex('b', { name: 'Dumbbell Press' }), ex('d', { name: 'Arnold Press' })];
+    expect(ids(equivalentes(alvo, todos, new Set()))).toEqual(['d', 'a', 'c', 'b']);
   });
 });

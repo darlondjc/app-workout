@@ -413,7 +413,10 @@ export class ExerciseDetail {
     const f = this.daFicha();
     if (!e || !f) return [];
     const ids = [...this.efetivos(), ...f.itens.map((i) => i.exerciseId), ...(this.fichaAtiva()?.itens ?? []).map((i) => i.exerciseId)];
-    return equivalentes(e, this.ex.exercises(), new Set(ids));
+    // Em ordem crescente pelo nome que aparece na tela (o traduzido, quando há).
+    return equivalentes(e, this.ex.exercises(), new Set(ids)).sort((x, y) =>
+      this.ex.nome(x).localeCompare(this.ex.nome(y), 'pt', { sensitivity: 'base', numeric: true }),
+    );
   });
 
   protected nomeDe(id: string): string {
