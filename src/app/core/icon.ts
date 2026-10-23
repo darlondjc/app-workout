@@ -25,7 +25,8 @@ export type IconName =
   | 'logout'
   | 'copy'
   | 'share'
-  | 'user-add';
+  | 'user-add'
+  | 'feed';
 
 @Component({
   selector: 'app-icon',
@@ -130,6 +131,12 @@ export type IconName =
           <circle cx="10" cy="8" r="3.2" />
           <path d="M3.5 19.5c0-3.4 2.9-6 6.5-6 1.6 0 3 .5 4.1 1.4" />
           <path d="M18 12.5v6M15 15.5h6" />
+        }
+        @case ('feed') {
+          <circle cx="5.5" cy="6.5" r="1.3" />
+          <circle cx="5.5" cy="12" r="1.3" />
+          <circle cx="5.5" cy="17.5" r="1.3" />
+          <path d="M10 6.5h9M10 12h9M10 17.5h9" />
         }
         @case ('refresh') {
           <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />
