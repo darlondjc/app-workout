@@ -1,5 +1,9 @@
 <div class="progresso" [class.progresso--ativo]="loading.ativo()" role="progressbar" aria-label="Carregando" [attr.aria-hidden]="!loading.ativo()"></div>
 
+@if (mostrarOffline()) {
+  <div class="offline" role="status">Sem conexão · treinos ficam salvos e sincronizam ao voltar</div>
+}
+
 <div class="quadro" [class.com-abas]="mostrarAbas()">
   <main>
     <router-outlet />
