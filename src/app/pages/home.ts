@@ -22,16 +22,20 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
   selector: 'app-home',
   imports: [RouterLink, Icon, Avatar, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria, QuadroMedalhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(window:scroll)': 'aoRolar()' },
   template: `
     <section class="page">
-      <header class="cabeca">
-        <div>
+      <header class="cabeca" [class.compacta]="rolou()" [style.--lado.px]="rolou() ? 36 : 44">
+        <div class="saudacao">
           <p class="apoio">{{ dataTexto }}</p>
           <h1 class="titulo">{{ titulo() }}</h1>
         </div>
+        @if (rolou()) {
+          <p class="nome-fixo">{{ primeiroNome() || 'Início' }}</p>
+        }
         @if (nuvem.usuario(); as u) {
           <a class="conta" routerLink="/ajustes" aria-label="Minha conta">
-            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="44" />
+            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="rolou() ? 36 : 44" />
           </a>
         }
       </header>
@@ -205,17 +209,42 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
     </section>
   `,
   styles: `
+    /* Fica no topo ao rolar; depois de rolar um pouco, encolhe para só o nome e a foto. */
     .cabeca {
+      position: sticky;
+      top: env(safe-area-inset-top, 0px);
+      z-index: 5;
+      margin: -8px -20px -8px;
+      padding: 8px 20px;
+      background: var(--bg);
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
     }
+    .cabeca.compacta {
+      align-items: center;
+      box-shadow: 0 1px 0 var(--soft);
+    }
+    .cabeca.compacta .saudacao {
+      display: none;
+    }
+    .nome-fixo {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .conta {
       flex: none;
       display: flex;
-      width: 44px;
-      height: 44px;
+      width: var(--lado, 44px);
+      height: var(--lado, 44px);
       border-radius: 50%;
       box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--soft);
     }
@@ -522,6 +551,15 @@ export class Home {
       .reverse()
       .map((r) => ({ nome: this.nomeExercicio(r.exerciseId), carga: r.carga, data: r.data })),
   );
+
+  /** A tela já rolou o bastante para o cabeçalho encolher (com folga entre entrar e sair, para não ficar tremendo). */
+  protected readonly rolou = signal(false);
+
+  protected aoRolar(): void {
+    const y = window.scrollY;
+    if (!this.rolou() && y > 80) this.rolou.set(true);
+    else if (this.rolou() && y < 20) this.rolou.set(false);
+  }
 
   protected readonly galeriaAberta = signal(false);
   protected readonly sessaoAberta = signal(false);
