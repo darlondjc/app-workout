@@ -13,8 +13,8 @@ import { Progress } from './progress';
 type Aba = 'timeline' | 'estatisticas';
 
 // Guardados fora do componente: ao voltar de outra tela, a aba e a pessoa escolhidas continuam.
-const FOLGA_PESSOAS = 12;
-const LARGURA_MINIMA_PESSOA = 60;
+const FOLGA_PESSOAS = 4;
+const LARGURA_MINIMA_PESSOA = 46;
 
 /**
  * Largura de cada pessoa na faixa para que, com gente além da tela, sempre apareça um pedaço da próxima
@@ -107,13 +107,13 @@ const pessoaEscolhida = signal<string>('eu');
                  [class.mais-direita]="maisDireita()" [class.mais-esquerda]="maisEsquerda()">
               <button type="button" role="radio" [attr.aria-checked]="pessoa() === 'eu'" (click)="pessoaEscolhida.set('eu')">
                 @if (social.meuUsuario(); as u) {
-                  <app-avatar [usuario]="u" [tamanho]="40" />
+                  <app-avatar [usuario]="u" [tamanho]="36" />
                 }
                 <span>Eu</span>
               </button>
               @for (p of social.amigosPorAtividade(); track p.perfil.uid) {
                 <button type="button" role="radio" [attr.aria-checked]="pessoa() === p.perfil.uid" (click)="escolher(p.perfil.uid)">
-                  <app-avatar [usuario]="{ uid: p.perfil.uid, nome: p.perfil.nome, email: '', foto: p.perfil.foto }" [tamanho]="40" />
+                  <app-avatar [usuario]="{ uid: p.perfil.uid, nome: p.perfil.nome, email: '', foto: p.perfil.foto }" [tamanho]="36" />
                   <span>{{ primeiroNome(p.perfil.nome) }}</span>
                 </button>
               }
@@ -150,19 +150,19 @@ const pessoaEscolhida = signal<string>('eu');
     .abas-sociais button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 600; color: var(--muted); }
     .abas-sociais button[aria-selected='true'] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 23, 26, 0.12); }
     .faixa { display: flex; align-items: flex-start; gap: 4px; }
-    .pessoas { flex: 1; min-width: 0; display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: none; }
+    .pessoas { flex: 1; min-width: 0; display: flex; gap: 4px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: none; }
     .pessoas::-webkit-scrollbar { display: none; }
     /* Esmaece a borda onde ainda há pessoas escondidas, para indicar que a lista rola. */
     .pessoas.mais-direita { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
     .pessoas.mais-esquerda { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
     .pessoas.mais-direita.mais-esquerda { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
-    .pessoas button { flex: none; min-width: 60px; width: var(--item, auto); display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; font: inherit; font-size: 12px; color: var(--muted); padding: 4px; border-radius: 14px; }
+    .pessoas button { flex: none; min-width: 46px; width: var(--item, auto); display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; font: inherit; font-size: 11px; color: var(--muted); padding: 4px 2px; border-radius: 14px; }
     .pessoas button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pessoas button[aria-checked='true'] { color: var(--ink); font-weight: 700; }
     .pessoas button[aria-checked='true'] app-avatar { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); }
     /* Fora da rolagem: o botão de adicionar amigo fica sempre à vista. */
-    .mais { flex: none; min-width: 60px; margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); padding: 4px; border-radius: 14px; }
-    .mais app-icon { width: 40px; height: 40px; border-radius: 50%; border: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: center; }
+    .mais { flex: none; min-width: 52px; margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); padding: 4px; border-radius: 14px; }
+    .mais app-icon { width: 36px; height: 36px; border-radius: 50%; border: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: center; }
     .fim-lista { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0 16px; min-height: 64px; }
     .fim-lista .btn { min-height: 40px; font-size: 14px; }
     .reacao { padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
