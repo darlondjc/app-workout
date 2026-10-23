@@ -155,7 +155,10 @@ const pessoaEscolhida = signal<string>('eu');
     :host .page { gap: 10px; }
     /* As abas ficam no topo ao rolar. O fundo cobre o que passa por trás; as margens negativas mantêm o espaçamento de antes. */
     .amigos--barra { width: 40px; height: 40px; }
-    .abas-fixas { position: sticky; top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 5; margin: -8px -20px -8px; padding: 8px 20px; background: var(--bg); }
+    /* Abas sempre à vista, coladas acima da barra de navegação (73 px + a área segura do aparelho). */
+    .abas-fixas { position: fixed; z-index: 9; bottom: calc(73px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); box-sizing: border-box; width: 100%; max-width: 480px; padding: 8px 20px; background: color-mix(in srgb, var(--bg) 94%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); box-shadow: 0 -1px 0 color-mix(in srgb, var(--line) 70%, transparent); }
+    /* Espaço para o conteúdo não ficar escondido atrás das abas (altura delas: 68 px). */
+    .page { padding-bottom: calc(24px + 68px); }
     .abas-sociais { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--soft); }
     .abas-sociais button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 600; color: var(--muted); }
     .abas-sociais button[aria-selected='true'] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 23, 26, 0.12); }
