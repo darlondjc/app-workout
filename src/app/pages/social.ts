@@ -157,10 +157,11 @@ const pessoaEscolhida = signal<string>('eu');
     .amigos--barra { width: 40px; height: 40px; }
     /* Abas sempre à vista, coladas acima da barra de navegação (73 px + a área segura do aparelho). */
     .abas-fixas { position: fixed; z-index: 9; bottom: calc(73px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); box-sizing: border-box; width: 100%; max-width: 480px; padding: 6px 20px; background: color-mix(in srgb, var(--card) 96%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); box-shadow: 0 -1px 0 var(--line); }
-    /* Espaço para o conteúdo não ficar escondido atrás das abas (altura delas: 56 px). */
-    .page { padding-bottom: calc(24px + 56px); }
-    .abas-sociais { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border-radius: 14px; background: var(--soft); }
-    .abas-sociais button { min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 11px; background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); }
+    /* Espaço para o conteúdo não ficar escondido atrás das abas (altura delas: 50 px). */
+    .page { padding-bottom: calc(24px + 50px); }
+    /* Dois botões separados, cada um com o seu fundo e um vão entre eles (nada de um pilar branco "por cima" do outro). */
+    .abas-sociais { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+    .abas-sociais button { min-height: 38px; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; background: var(--soft); font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
     /* A aba escolhida fica escura, com letra branca: aparece bem mesmo de relance. */
     .abas-sociais button[aria-selected='true'] { background: var(--ink); color: #fff; }
     .faixa { display: flex; align-items: flex-start; gap: 4px; }
