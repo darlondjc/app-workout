@@ -22,7 +22,9 @@ export type IconName =
   | 'camera'
   | 'medal'
   | 'scale'
-  | 'logout';
+  | 'logout'
+  | 'copy'
+  | 'share';
 
 @Component({
   selector: 'app-icon',
@@ -114,6 +116,14 @@ export type IconName =
         @case ('logout') {
           <path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4" />
           <path d="M15 8l4 4-4 4M19 12H9" />
+        }
+        @case ('copy') {
+          <rect x="9" y="9" width="11" height="11" rx="2.5" />
+          <path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9" />
+        }
+        @case ('share') {
+          <path d="M12 15V4M8 8l4-4 4 4" />
+          <path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12" />
         }
         @case ('refresh') {
           <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />
