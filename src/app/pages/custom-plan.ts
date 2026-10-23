@@ -21,7 +21,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Ficha personalizada</h1>
-        <p class="apoio">Monte a divisão do seu jeito: quantos dias, o que treinar em cada um e em quais tem cardio.</p>
+        <p class="apoio">Monte uma ficha com vários treinos, um para cada dia: quantos são, o que treinar em cada um e em quais tem cardio.</p>
       </header>
 
       @if (!ex.ready()) {
@@ -33,7 +33,12 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
         }
       } @else if (!resultado()) {
         <fieldset>
-          <legend>Quantos dias de treino?</legend>
+          <legend>Nome da ficha</legend>
+          <input class="texto" type="text" maxlength="40" [value]="nomeFicha()" aria-label="Nome da ficha" [placeholder]="'Ex.: ' + nomeSugerido()" (input)="nomeFicha.set($any($event.target).value)" />
+        </fieldset>
+
+        <fieldset>
+          <legend>Quantos treinos na ficha? (um por dia)</legend>
           <div class="chips-linha">
             @for (n of opcoesDias; track n) {
               <button type="button" class="chip" [attr.aria-pressed]="dias().length === n" (click)="definirDias(n)">{{ n }}</button>
@@ -43,8 +48,8 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
 
         @for (d of dias(); track $index; let i = $index) {
           <fieldset class="card dia">
-            <legend class="dia__titulo">Dia {{ i + 1 }}</legend>
-            <input class="texto" type="text" maxlength="40" [value]="d.nome" [attr.aria-label]="'Nome do dia ' + (i + 1)" [placeholder]="'Nome (opcional): ' + nomeDoDia(d)" (input)="renomear(i, $event)" />
+            <legend class="dia__titulo">Treino {{ letra(i) }}</legend>
+            <input class="texto" type="text" maxlength="40" [value]="d.nome" [attr.aria-label]="'Nome do treino ' + letra(i)" [placeholder]="'Nome (opcional): ' + nomeDoDia(d)" (input)="renomear(i, $event)" />
             <p class="rotulo">Grupos musculares (até {{ maxGrupos }})</p>
             <div class="chips-linha">
               @for (g of grupos; track g.key) {
@@ -80,18 +85,18 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
         </fieldset>
 
         <button type="button" class="btn btn--escuro" [disabled]="!todosValidos()" (click)="gerar()">
-          <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Montar fichas
+          <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Montar ficha
         </button>
         @if (!todosValidos()) {
-          <p class="apoio nota">Cada dia precisa de pelo menos um grupo muscular ou de cardio.</p>
+          <p class="apoio nota">Cada treino precisa de pelo menos um grupo muscular ou de cardio.</p>
         }
       } @else {
         @let fichas = resultado()!;
-        <h2 class="sub">Suas fichas</h2>
+        <h2 class="sub">{{ nomeFinal() }}</h2>
         @for (f of fichas; track $index; let i = $index) {
-          <section class="bloco" [attr.aria-label]="'Dia ' + (i + 1)">
+          <section class="bloco" [attr.aria-label]="'Treino ' + letra(i)">
             <div class="bloco__topo">
-              <h3>Dia {{ i + 1 }} · {{ f.nome }}</h3>
+              <h3>Treino {{ letra(i) }} · {{ f.nome }}</h3>
               <button type="button" class="btn-mini" (click)="outros(i)">
                 <app-icon name="refresh" [size]="16" [stroke]="2.2" /> Outros exercícios
               </button>
@@ -120,13 +125,13 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
         }
         <div class="acoes">
           <button type="button" class="btn btn--escuro" [disabled]="criaveis() === 0" (click)="criar()">
-            <app-icon name="check" [size]="20" [stroke]="2.5" /> Criar {{ criaveis() === 1 ? '1 ficha' : criaveis() + ' fichas' }}
+            <app-icon name="check" [size]="20" [stroke]="2.5" /> Criar ficha com {{ criaveis() === 1 ? '1 treino' : criaveis() + ' treinos' }}
           </button>
           <button type="button" class="btn btn--claro" (click)="voltarAoForm()">
             <app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar e ajustar
           </button>
         </div>
-        <p class="apoio nota">Depois de criadas, você pode trocar, remover e ajustar séries, repetições e cargas em cada ficha.</p>
+        <p class="apoio nota">Depois de criada, você pode trocar, remover e ajustar séries, repetições e cargas em cada treino. As fichas que você já tem não mudam.</p>
       }
     </section>
   `,
@@ -178,13 +183,15 @@ export class CustomPlan {
   ];
 
   protected readonly dias = signal<DiaPersonalizado[]>([dia(), dia(), dia()]);
+  protected readonly nomeFicha = signal('');
   protected readonly nivel = signal<Nivel>('intermediate');
   /** 0 = automático. */
   protected readonly maximo = signal(0);
+  protected readonly nomeSugerido = computed(() => `Divisão de ${this.dias().length} treinos`);
   protected readonly todosValidos = computed(() => this.dias().every(diaValido));
 
   /** Só depois de "Montar fichas": as escolhas ficam fixas até criar ou voltar. */
-  private readonly pedido = signal<{ dias: DiaPersonalizado[]; nivel: Nivel; maximo: number } | null>(null);
+  private readonly pedido = signal<{ dias: DiaPersonalizado[]; nivel: Nivel; maximo: number; nome: string } | null>(null);
   private readonly variacoes = signal<number[]>([]);
 
   protected readonly resultado = computed(() => {
@@ -192,7 +199,12 @@ export class CustomPlan {
     if (!p || !this.ex.ready()) return null;
     return gerarFichas(this.ex.exercises(), p.dias, { nivel: p.nivel, maximo: p.maximo || undefined, variacoes: this.variacoes() });
   });
+  protected readonly nomeFinal = computed(() => this.pedido()?.nome ?? '');
   protected readonly criaveis = computed(() => this.resultado()?.filter((f) => f.itens.length > 0).length ?? 0);
+
+  protected letra(i: number): string {
+    return String.fromCharCode(65 + (i % 26));
+  }
 
   protected definirDias(n: number): void {
     this.dias.update((l) => (n <= l.length ? l.slice(0, n) : [...l, ...Array.from({ length: n - l.length }, dia)]));
@@ -221,7 +233,7 @@ export class CustomPlan {
   protected gerar(): void {
     if (!this.todosValidos()) return;
     this.variacoes.set(this.dias().map(() => 0));
-    this.pedido.set({ dias: this.dias(), nivel: this.nivel(), maximo: this.maximo() });
+    this.pedido.set({ dias: this.dias(), nivel: this.nivel(), maximo: this.maximo(), nome: this.nomeFicha().trim() || this.nomeSugerido() });
   }
 
   protected outros(i: number): void {
@@ -240,8 +252,8 @@ export class CustomPlan {
   protected criar(): void {
     const fichas = (this.resultado() ?? []).filter((f) => f.itens.length > 0);
     if (fichas.length === 0) return;
-    const criadas = this.plans.criarComItens(fichas.map((f) => ({ nome: f.nome, itens: f.itens })));
-    this.toast.mostrar(criadas.length === 1 ? 'Ficha criada' : `${criadas.length} fichas criadas`);
+    this.plans.criarConjunto(this.nomeFinal(), fichas.map((f) => ({ nome: f.nome, itens: f.itens })));
+    this.toast.mostrar(`Ficha criada com ${fichas.length} ${fichas.length === 1 ? 'treino' : 'treinos'}`);
     this.router.navigate(['/fichas'], { replaceUrl: true });
   }
 }

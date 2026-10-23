@@ -82,9 +82,18 @@ export class PlanService {
     return this.fichas().find((f) => f.id === id) ?? (this.rascunho()?.id === id ? this.rascunho()! : undefined);
   }
 
+  /** Letra do treino dentro da sua ficha: A, B, C… Treinos soltos (sem ficha com vários treinos) seguem juntos na ordem da lista. */
   letra(id: string): string {
-    const i = this.fichas().findIndex((f) => f.id === id);
-    return i < 0 ? '?' : String.fromCharCode(65 + (i % 26));
+    const alvo = this.fichas().find((f) => f.id === id);
+    if (!alvo) return '?';
+    const grupo = this.fichas().filter((f) => f.conjunto?.id === alvo.conjunto?.id);
+    return String.fromCharCode(65 + (grupo.findIndex((f) => f.id === id) % 26));
+  }
+
+  /** "Ficha A" para um treino solto; "Minha divisão · Treino B" para um treino de uma ficha com vários. */
+  rotulo(id: string): string {
+    const f = this.get(id);
+    return f?.conjunto ? `${f.conjunto.nome} · Treino ${this.letra(id)}` : `Ficha ${this.letra(id)}`;
   }
 
   criar(nome = 'Nova ficha'): Ficha {
@@ -114,6 +123,21 @@ export class PlanService {
     this.fichas.update((l) => [...l, ...novas]);
     this.ativaId.set(novas[0].id);
     return novas;
+  }
+
+  /** Cria uma ficha com vários treinos (A, B, C…) e ativa o primeiro. As fichas que já existem não mudam. */
+  criarConjunto(nome: string, treinos: { nome: string; itens: ItemFicha[] }[]): Ficha[] {
+    const conjunto = { id: crypto.randomUUID(), nome: nome.trim() || 'Minha ficha' };
+    const novas: Ficha[] = treinos.map((t) => ({ id: crypto.randomUUID(), nome: t.nome, itens: t.itens, conjunto }));
+    if (novas.length === 0) return novas;
+    this.fichas.update((l) => [...l, ...novas]);
+    this.ativaId.set(novas[0].id);
+    return novas;
+  }
+
+  /** Exclui a ficha inteira, com todos os seus treinos. */
+  removerConjunto(conjuntoId: string): void {
+    for (const f of this.fichas().filter((x) => x.conjunto?.id === conjuntoId)) this.remover(f.id);
   }
 
   remover(id: string): void {

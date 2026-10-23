@@ -191,6 +191,46 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
     expect(novas.map((f) => plans.letra(f.id))).toEqual(['B', 'C']);
   });
 
+  it('criarConjunto cria uma ficha com vários treinos A, B, C, sem mexer nas fichas soltas', () => {
+    const [solta] = plans.criarComItens([{ nome: 'Antiga', itens: [item('supino', 60)] }]);
+    const treinos = plans.criarConjunto('Divisão ABC', [
+      { nome: 'Peito', itens: [item('supino', 60)] },
+      { nome: 'Costas', itens: [item('remada', 40)] },
+      { nome: 'Pernas', itens: [item('agachamento', 80)] },
+    ]);
+    expect(plans.fichas().length).toBe(4);
+    expect(new Set(treinos.map((t) => t.conjunto!.id)).size).toBe(1);
+    expect(treinos[0].conjunto!.nome).toBe('Divisão ABC');
+    expect(plans.get(solta.id)!.conjunto).toBeUndefined();
+    expect(treinos.map((t) => plans.letra(t.id))).toEqual(['A', 'B', 'C']);
+    expect(plans.letra(solta.id)).toBe('A');
+    expect(plans.rotulo(treinos[1].id)).toBe('Divisão ABC · Treino B');
+    expect(plans.rotulo(solta.id)).toBe('Ficha A');
+    expect(plans.ativaId()).toBe(treinos[0].id);
+  });
+
+  it('duas fichas com vários treinos têm letras próprias', () => {
+    const a = plans.criarConjunto('Ficha 1', [{ nome: 'x', itens: [] }, { nome: 'y', itens: [] }]);
+    const b = plans.criarConjunto('Ficha 2', [{ nome: 'x', itens: [] }, { nome: 'y', itens: [] }, { nome: 'z', itens: [] }]);
+    expect(a.map((t) => plans.letra(t.id))).toEqual(['A', 'B']);
+    expect(b.map((t) => plans.letra(t.id))).toEqual(['A', 'B', 'C']);
+  });
+
+  it('removerConjunto exclui só os treinos daquela ficha', () => {
+    const [solta] = plans.criarComItens([{ nome: 'Antiga', itens: [item('supino', 60)] }]);
+    const a = plans.criarConjunto('Ficha 1', [{ nome: 'x', itens: [] }, { nome: 'y', itens: [] }]);
+    const b = plans.criarConjunto('Ficha 2', [{ nome: 'z', itens: [] }]);
+    plans.removerConjunto(a[0].conjunto!.id);
+    expect(plans.fichas().map((f) => f.id)).toEqual([solta.id, b[0].id]);
+  });
+
+  it('excluir um treino da ficha mantém os outros, que seguem juntos', () => {
+    const t = plans.criarConjunto('Ficha 1', [{ nome: 'x', itens: [] }, { nome: 'y', itens: [] }, { nome: 'z', itens: [] }]);
+    plans.remover(t[1].id);
+    expect(plans.fichas().map((f) => f.nome)).toEqual(['x', 'z']);
+    expect(plans.letra(t[2].id)).toBe('B');
+  });
+
   it('nomes iguais não se misturam: cada ficha continua sendo a sua', () => {
     const [a] = plans.criarComItens([{ nome: 'Peito', itens: [item('supino', 60)] }]);
     const [b] = plans.criarComItens([{ nome: 'Peito', itens: [item('crucifixo', 10)] }]);
