@@ -89,6 +89,24 @@ export class FirebaseSocial implements SocialBackend {
     return this.fs.setDoc(this.eventoRef(e.autor, id), limpo(dados));
   }
 
+  async gravarFoto(uid: string, sessaoId: string, dados: string): Promise<void> {
+    await this.fs.setDoc(this.usuario(uid, 'fotos', sessaoId), { dados, criadoEm: Date.now() });
+  }
+
+  async apagarFoto(uid: string, sessaoId: string): Promise<void> {
+    await this.fs.deleteDoc(this.usuario(uid, 'fotos', sessaoId));
+  }
+
+  async lerFoto(uid: string, sessaoId: string): Promise<string | null> {
+    const snap = await this.fs.getDoc(this.usuario(uid, 'fotos', sessaoId));
+    const dados = snap.exists() ? (snap.data() as { dados?: unknown }).dados : null;
+    return typeof dados === 'string' ? dados : null;
+  }
+
+  async marcarFotoEvento(uid: string, eventoId: string, tem: boolean): Promise<void> {
+    await this.fs.updateDoc(this.eventoRef(uid, eventoId), { temFoto: tem });
+  }
+
   ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void, limite = 30): Cancelar {
     const { query, collection, orderBy, limit, onSnapshot } = this.fs;
     // Por `criadoEm` (e não pelo id): o aviso de curtida tem id fixo, sem o horário na frente.

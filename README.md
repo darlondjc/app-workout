@@ -120,7 +120,9 @@ A aba **Social** tem a **Timeline** (treinos concluídos seus e dos amigos, com 
 
 - Um convite só vira amizade quando a outra pessoa aceita. Depois disso, cada um vê o histórico de treinos (calendário, cargas, recordes), os treinos publicados e pode curtir e comentar. Fichas, treino em andamento e demais dados continuam privados. Desfazer a amizade corta o acesso dos dois lados.
 - Ao concluir um treino, ele é publicado na timeline (só treinos recentes são publicados; o histórico antigo não é despejado de uma vez).
-- Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `codigos/{codigo}`, `amizades/{id}` e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`) e `atividades`. As regras estão em `firestore.rules`.
+- Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `codigos/{codigo}`, `amizades/{id}` e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`), `atividades` e `fotos`. As regras estão em `firestore.rules`.
+
+**Foto do treino:** ao concluir um treino (com a conta social ativa) o app oferece uma foto opcional, que também pode ser colocada ou removida depois no card do próprio treino na timeline. Sem usar o Firebase Storage (que exige o plano Blaze), a foto é reduzida no aparelho (`core/foto.ts`: JPEG de até 900 px e cerca de 100 KB, no máximo 250 KB) e guardada em `usuarios/{uid}/fotos/{sessaoId}` como texto base64; o card e a sessão só levam o aviso `temFoto`, e a foto é lida quando o card aparece. As regras de `fotos` exigem publicar o `firestore.rules` novo (abaixo); sem elas a foto não é enviada e a tela mostra "Sem permissão".
 
 **Importante:** depois de atualizar o app, publique as regras novas: Console do Firebase → Firestore Database → aba **Regras** → cole o conteúdo de `firestore.rules` → **Publicar**. Sem isso os amigos e a timeline mostram "Sem permissão". A 1.8.1 mudou as regras de `atividades` (quem curtiu pode atualizar o próprio aviso), então publique de novo mesmo que já tenha publicado as da 1.8.0. Sem as regras novas o app continua funcionando, mas curtir de novo um treino que você já curtiu não atualiza o aviso do dono.
 

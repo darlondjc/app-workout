@@ -33,11 +33,13 @@ describe('EventoCard: ver treino', () => {
   let amigo: { lista: ReturnType<typeof signal<Record<string, Sessao[]>>>; chamadas: string[] };
   let comentariosCb: ((c: Comentario[]) => void) | undefined;
   let apagar: jasmine.Spy;
+  let fotos: Record<string, string>;
+  let definirFoto: jasmine.Spy;
   let fixture: ComponentFixture<EventoCard>;
 
-  function criar(autor: string): void {
+  function criar(autor: string, extra: Partial<Evento> = {}): void {
     fixture = TestBed.createComponent(EventoCard);
-    fixture.componentRef.setInput('evento', evento(autor));
+    fixture.componentRef.setInput('evento', { ...evento(autor), ...extra });
     fixture.detectChanges();
   }
 
@@ -50,6 +52,8 @@ describe('EventoCard: ver treino', () => {
     const eu = signal<Perfil | null>({ uid: 'eu', nome: 'Eu', foto: null });
     comentariosCb = undefined;
     apagar = jasmine.createSpy('apagarComentario').and.resolveTo();
+    fotos = {};
+    definirFoto = jasmine.createSpy('definirFoto').and.resolveTo(true);
     TestBed.configureTestingModule({
       providers: [
         {
@@ -64,6 +68,8 @@ describe('EventoCard: ver treino', () => {
               return () => undefined;
             },
             apagarComentario: (...args: unknown[]) => apagar(...args),
+            lerFoto: (uid: string, sessao: string) => Promise.resolve(fotos[`${uid}/${sessao}`] ?? null),
+            definirFoto: (...args: unknown[]) => definirFoto(...args),
             sessoesDe: (uid: string) => {
               amigo.chamadas.push(uid);
               return amigo.lista()[uid] ?? [];
@@ -268,6 +274,81 @@ describe('EventoCard: ver treino', () => {
       ((dialogos()[0] as HTMLElement).querySelector('.x') as HTMLButtonElement).click();
       fixture.detectChanges();
       expect(dialogos().length).toBe(0);
+    });
+  });
+
+  describe('foto do treino', () => {
+    const FOTO = 'data:image/jpeg;base64,/9j/AAAA';
+    const el = () => fixture.nativeElement as HTMLElement;
+    const imagem = () => el().querySelector('.foto img') as HTMLImageElement | null;
+    const pronto = async () => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it('treino sem foto não mostra imagem; o dono vê o botão para adicionar, o amigo não', () => {
+      criar('eu');
+      expect(el().querySelector('.foto')).toBeNull();
+      expect(el().querySelector('app-foto-botao')).not.toBeNull();
+      criar('ana');
+      expect(el().querySelector('app-foto-botao')).toBeNull();
+    });
+
+    it('com temFoto, lê e mostra a foto no card', async () => {
+      fotos['ana/s1'] = FOTO;
+      criar('ana', { temFoto: true });
+      await pronto();
+      expect(imagem()?.src).toBe(FOTO);
+      expect(imagem()?.alt).toContain('Peito');
+      expect(el().querySelector('.foto__x')).toBeNull(); // amigo não remove
+    });
+
+    it('aviso de foto sem foto na nuvem some, sem deixar um quadro vazio', async () => {
+      criar('ana', { temFoto: true });
+      await pronto();
+      expect(el().querySelector('.foto')).toBeNull();
+    });
+
+    it('o dono adiciona uma foto: grava e já mostra', async () => {
+      criar('eu');
+      fixture.debugElement.query((d) => d.name === 'app-foto-botao').triggerEventHandler('escolhida', FOTO);
+      await pronto();
+      expect(definirFoto).toHaveBeenCalledOnceWith(jasmine.objectContaining({ id: 'ev1' }), FOTO);
+      expect(imagem()?.src).toBe(FOTO);
+      expect(el().querySelector('app-foto-botao')).toBeNull();
+    });
+
+    it('se o envio falha, avisa e não mostra a foto', async () => {
+      definirFoto.and.resolveTo(false);
+      criar('eu');
+      fixture.debugElement.query((d) => d.name === 'app-foto-botao').triggerEventHandler('escolhida', FOTO);
+      await pronto();
+      expect(imagem()).toBeNull();
+      expect(el().querySelector('.erro-foto')?.textContent).toContain('Não consegui enviar');
+    });
+
+    it('remover a foto pede confirmação antes de apagar', async () => {
+      fotos['eu/s1'] = FOTO;
+      criar('eu', { temFoto: true });
+      await pronto();
+      (el().querySelector('.foto__x') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="dialog"]')?.textContent).toContain('Remover foto?');
+      expect(definirFoto).not.toHaveBeenCalled();
+
+      const cancelar = [...el().querySelectorAll('[role="dialog"] button')].find((b) => b.textContent?.trim() === 'Cancelar') as HTMLButtonElement;
+      cancelar.click();
+      fixture.detectChanges();
+      expect(definirFoto).not.toHaveBeenCalled();
+      expect(imagem()).not.toBeNull();
+
+      (el().querySelector('.foto__x') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const remover = [...el().querySelectorAll('[role="dialog"] button')].find((b) => b.textContent?.trim() === 'Remover') as HTMLButtonElement;
+      remover.click();
+      await pronto();
+      expect(definirFoto).toHaveBeenCalledOnceWith(jasmine.objectContaining({ id: 'ev1' }), null);
+      expect(imagem()).toBeNull();
     });
   });
 });

@@ -242,14 +242,30 @@ export class PlanService {
     this.emAndamento.set(null);
   }
 
-  /** Conclui o treino: grava a sessão com o que foi realizado e limpa o andamento. */
-  registrarSessao(fichaId: string, registros: RegistroExercicio[] = []): void {
+  /**
+   * Conclui o treino: grava a sessão com o que foi realizado e limpa o andamento.
+   * `temFoto` marca a sessão desde o início, para o card publicado já levar o aviso de foto. Devolve o id da sessão.
+   */
+  registrarSessao(fichaId: string, registros: RegistroExercicio[] = [], temFoto = false): string {
     const ficha = this.get(fichaId);
+    const id = crypto.randomUUID();
     this.historico.update((h) => [
       ...h,
-      { id: crypto.randomUUID(), data: dataLocal(), fichaId, fichaNome: ficha?.nome, concluidaEm: Date.now(), registros },
+      { id, data: dataLocal(), fichaId, fichaNome: ficha?.nome, concluidaEm: Date.now(), registros, ...(temFoto ? { temFoto: true } : {}) },
     ]);
     this.emAndamento.set(null);
+    return id;
+  }
+
+  /** Liga ou desliga o aviso de foto de um treino já concluído. */
+  marcarFoto(sessaoId: string, tem: boolean): void {
+    this.historico.update((h) =>
+      h.map((s) => {
+        if (s.id !== sessaoId) return s;
+        const { temFoto: _antes, ...resto } = s;
+        return tem ? { ...resto, temFoto: true } : resto;
+      }),
+    );
   }
 
   /** Últimos valores realizados de um exercício, para sugerir a carga do próximo treino. */

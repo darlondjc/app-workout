@@ -59,6 +59,15 @@ service cloud.firestore {
         }
       }
 
+      // Foto do treino (JPEG reduzido, em base64), guardada à parte do card para a timeline só baixá-la quando preciso.
+      match /fotos/{sessaoId} {
+        allow read: if euOuAmigo(uid);
+        allow create, update: if logado() && request.auth.uid == uid
+          && request.resource.data.dados is string
+          && request.resource.data.dados.size() <= 400000;
+        allow delete: if logado() && request.auth.uid == uid;
+      }
+
       // Reações recebidas (curtidas e comentários): só o dono lê; amigos deixam o aviso.
       match /atividades/{atividadeId} {
         allow read, delete: if logado() && request.auth.uid == uid;

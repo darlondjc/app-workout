@@ -10,6 +10,8 @@ interface Ref {
 function firestoreFalso() {
   const gravacoes: { caminho: string; dados: Record<string, unknown> }[] = [];
   const consultas: { ordem?: [string, string]; limite?: number }[] = [];
+  const lidos: Record<string, Record<string, unknown>> = {};
+  const atualizacoes: { caminho: string; dados: Record<string, unknown> }[] = [];
   const ref = (_db: unknown, ...partes: string[]): Ref => ({ caminho: partes.join('/') });
   const fs = {
     doc: ref,
@@ -26,9 +28,14 @@ function firestoreFalso() {
       return Promise.resolve();
     }),
     deleteDoc: jasmine.createSpy('deleteDoc').and.returnValue(Promise.resolve()),
+    getDoc: jasmine.createSpy('getDoc').and.callFake((r: Ref) => Promise.resolve({ exists: () => r.caminho in lidos, data: () => lidos[r.caminho] })),
+    updateDoc: jasmine.createSpy('updateDoc').and.callFake((r: Ref, dados: Record<string, unknown>) => {
+      atualizacoes.push({ caminho: r.caminho, dados });
+      return Promise.resolve();
+    }),
     onSnapshot: jasmine.createSpy('onSnapshot').and.returnValue(() => undefined),
   };
-  return { fs, gravacoes, consultas };
+  return { fs, gravacoes, consultas, lidos, atualizacoes };
 }
 
 const eu: Perfil = { uid: 'eu', nome: 'Eu', foto: null };
@@ -175,5 +182,36 @@ describe('FirebaseBackend.ouvirSessoes', () => {
     const { backend, consultas } = criarBackend();
     backend.ouvirSessoes('ana', () => undefined, () => undefined, 400);
     expect(consultas).toEqual([{ ordem: ['data', 'desc'], limite: 400 }]);
+  });
+  describe('foto do treino', () => {
+    it('grava a foto num documento próprio, fora do card, só com os dados e a hora', async () => {
+      const { social, gravacoes } = criar();
+      await social.gravarFoto('eu', 's1', 'data:image/jpeg;base64,AAA');
+      expect(gravacoes.length).toBe(1);
+      expect(gravacoes[0].caminho).toBe('usuarios/eu/fotos/s1');
+      expect(Object.keys(gravacoes[0].dados).sort()).toEqual(['criadoEm', 'dados']);
+      expect(gravacoes[0].dados['dados']).toBe('data:image/jpeg;base64,AAA');
+    });
+
+    it('lê a foto do documento; sem documento, ou com dado estranho, devolve null', async () => {
+      const { social, lidos } = criar();
+      lidos['usuarios/ana/fotos/s1'] = { dados: 'data:image/jpeg;base64,BBB' };
+      lidos['usuarios/ana/fotos/s2'] = { dados: 42 };
+      expect(await social.lerFoto('ana', 's1')).toBe('data:image/jpeg;base64,BBB');
+      expect(await social.lerFoto('ana', 's2')).toBeNull();
+      expect(await social.lerFoto('ana', 'nao-existe')).toBeNull();
+    });
+
+    it('apagar remove o documento e o aviso é ligado ou desligado só no campo temFoto do card', async () => {
+      const { social, fs, atualizacoes } = criar();
+      await social.apagarFoto('eu', 's1');
+      expect(fs.deleteDoc).toHaveBeenCalledWith({ caminho: 'usuarios/eu/fotos/s1' });
+      await social.marcarFotoEvento('eu', 'ev1', true);
+      await social.marcarFotoEvento('eu', 'ev1', false);
+      expect(atualizacoes).toEqual([
+        { caminho: 'usuarios/eu/eventos/ev1', dados: { temFoto: true } },
+        { caminho: 'usuarios/eu/eventos/ev1', dados: { temFoto: false } },
+      ]);
+    });
   });
 });

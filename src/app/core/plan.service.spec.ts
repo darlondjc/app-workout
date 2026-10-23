@@ -136,3 +136,35 @@ describe('PlanService: ficha em rascunho', () => {
     expect(plans.rascunho()).not.toBeNull();
   });
 });
+
+describe('PlanService: foto do treino', () => {
+  let plans: PlanService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+    plans.criarComItens([{ nome: 'A', itens: [item('supino', 60)] }]);
+  });
+
+  it('concluir devolve o id da sessão e, com foto, já a marca', () => {
+    const id = plans.registrarSessao(plans.fichas()[0].id, [], true);
+    const s = plans.historico().find((x) => x.id === id);
+    expect(s?.temFoto).toBeTrue();
+  });
+
+  it('concluir sem foto não marca nada', () => {
+    const id = plans.registrarSessao(plans.fichas()[0].id, []);
+    expect(plans.historico().find((x) => x.id === id)?.temFoto).toBeUndefined();
+  });
+
+  it('marcar e desmarcar a foto de um treino só mexe nele', () => {
+    const a = plans.registrarSessao(plans.fichas()[0].id, []);
+    const b = plans.registrarSessao(plans.fichas()[0].id, []);
+    plans.marcarFoto(a, true);
+    expect(plans.historico().find((x) => x.id === a)?.temFoto).toBeTrue();
+    expect(plans.historico().find((x) => x.id === b)?.temFoto).toBeUndefined();
+    plans.marcarFoto(a, false);
+    expect('temFoto' in plans.historico().find((x) => x.id === a)!).toBeFalse();
+  });
+});
