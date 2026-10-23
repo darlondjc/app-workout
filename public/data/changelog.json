@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.9.8",
+    "data": "2026-10-23",
+    "titulo": "Foto só nas primeiras 24 horas e faixa de amigos",
+    "itens": [
+      "O botão para adicionar foto ao treino na timeline some depois de 24 horas do treino (ou se já houver foto).",
+      "Na tela Social, com 4 ou mais amigos a faixa de pessoas deixa sempre um pedaço da próxima à mostra, em qualquer tamanho de tela, para indicar que dá para rolar. Com menos amigos, tudo fica normal."
+    ]
+  },
+  {
     "versao": "1.9.7",
     "data": "2026-10-23",
     "titulo": "Foto do treino e imagem do exercício no detalhe",
