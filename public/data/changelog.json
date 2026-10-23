@@ -1,5 +1,17 @@
 [
   {
+    "versao": "1.10.1",
+    "data": "2026-10-23",
+    "titulo": "Ajustes reorganizado",
+    "itens": [
+      "Ajustes: o botão de sair (vermelho) ficou no canto superior direito, com confirmação.",
+      "Tocar na foto abre um diálogo para vê-la em tamanho grande e alterá-la.",
+      "O card Conta ficou mais enxuto, e o card Versão do app mostra o resumo da versão atual, com o link Versões anteriores.",
+      "Card de registro de peso corrigido no iPhone (o campo de data não passa mais da borda).",
+      "Social: as duas abas ficam fixas no topo ao rolar a tela."
+    ]
+  },
+  {
     "versao": "1.10.0",
     "data": "2026-10-23",
     "titulo": "Início dinâmico, medalhas e evolução do peso",
