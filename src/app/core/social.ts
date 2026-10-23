@@ -82,9 +82,9 @@ export interface SocialBackend {
   pedirAmizade(amizade: Amizade): Promise<void>;
   aceitarAmizade(id: string): Promise<void>;
   removerAmizade(id: string): Promise<void>;
-  ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void): Cancelar;
+  ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void, limite?: number): Cancelar;
   publicarEvento(evento: Evento): Promise<void>;
-  ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void): Cancelar;
+  ouvirAtividades(uid: string, cb: (a: Atividade[]) => void, erro: (e: unknown) => void, limite?: number): Cancelar;
   ouvirCurtidas(dono: string, eventoId: string, cb: (uids: string[]) => void, erro: (e: unknown) => void): Cancelar;
   ouvirComentarios(dono: string, eventoId: string, cb: (c: Comentario[]) => void, erro: (e: unknown) => void): Cancelar;
   curtir(dono: string, eventoId: string, eu: Perfil): Promise<void>;
@@ -117,7 +117,7 @@ export function idEvento(criadoEm: number, sessaoId: string): string {
 }
 
 /** Junta treinos e reações, do mais novo para o mais antigo. */
-export function montarTimeline(eventos: Evento[], atividades: Atividade[], limite = 60): ItemTimeline[] {
+export function montarTimeline(eventos: Evento[], atividades: Atividade[], limite = Infinity): ItemTimeline[] {
   const itens: ItemTimeline[] = [
     ...eventos.map((e): ItemTimeline => ({ tipo: 'evento', chave: `e:${e.autor}:${e.id}`, criadoEm: e.criadoEm, evento: e })),
     ...atividades.map((a): ItemTimeline => ({ tipo: 'atividade', chave: `a:${a.id}`, criadoEm: a.criadoEm, atividade: a })),

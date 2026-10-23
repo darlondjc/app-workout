@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
 import { CloudService } from '../core/cloud.service';
@@ -54,7 +54,7 @@ const pessoaEscolhida = signal<string>('eu');
         }
 
         @if (aba() === 'timeline') {
-          @for (item of social.timeline(); track item.chave) {
+          @for (item of social.timelineVisivel(); track item.chave) {
             @if (item.tipo === 'evento') {
               <app-evento-card [evento]="item.evento" />
             } @else {
@@ -76,6 +76,12 @@ const pessoaEscolhida = signal<string>('eu');
               <h2 class="sub">Nada por aqui ainda</h2>
               <p class="apoio">Seus treinos concluídos e os dos seus amigos aparecem aqui, com curtidas e comentários.</p>
               <a class="btn btn--escuro" routerLink="/amigos">Adicionar amigos</a>
+            </div>
+          }
+          @if (social.temMais() && social.timelineVisivel().length > 0) {
+            <div #fim class="fim-lista" role="status">
+              <app-carregando texto="Carregando mais treinos…" />
+              <button type="button" class="btn btn--claro" (click)="social.carregarMais()">Carregar mais</button>
             </div>
           }
         } @else {
@@ -125,6 +131,8 @@ const pessoaEscolhida = signal<string>('eu');
     .pessoas button[aria-checked='true'] app-avatar { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); }
     .pessoas .mais { color: var(--muted); }
     .pessoas .mais app-icon { width: 40px; height: 40px; border-radius: 50%; border: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: center; }
+    .fim-lista { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0 16px; min-height: 64px; }
+    .fim-lista .btn { min-height: 40px; font-size: 14px; }
     .reacao { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
     .reacao p { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
     .quando { margin-left: 6px; font-size: 12px; }
@@ -140,7 +148,21 @@ export class Social {
   protected readonly aba = aba;
   protected readonly pessoaEscolhida = pessoaEscolhida;
 
+  private readonly fim = viewChild<ElementRef<HTMLElement>>('fim');
+
   constructor() {
+    // Rolagem infinita: quando o fim da lista chega perto da tela, entra mais uma página.
+    // Observa de novo a cada página (se o fim continuar à vista, pede a seguinte).
+    effect((onCleanup) => {
+      const alvo = this.fim()?.nativeElement;
+      void this.social.timelineVisivel().length;
+      if (!alvo || typeof IntersectionObserver === 'undefined') return;
+      const obs = new IntersectionObserver((entradas) => {
+        if (entradas.some((e) => e.isIntersecting)) this.social.carregarMais();
+      }, { rootMargin: '400px 0px' });
+      obs.observe(alvo);
+      onCleanup(() => obs.disconnect());
+    });
     // Com a timeline na tela, o que chega (agora ou enquanto olha) já nasce visto e o aviso da aba some.
     effect(() => {
       if (aba() !== 'timeline' || !this.social.ativo()) return;

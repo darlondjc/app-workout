@@ -5,7 +5,7 @@ import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
 import { PlanService } from './plan.service';
 import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend } from './social';
-import { LIMITE_SESSOES_AMIGO, SocialService } from './social.service';
+import { LIMITE_SESSOES_AMIGO, PAGINA_TIMELINE, SocialService } from './social.service';
 import { NuvemBackend } from './sync';
 
 interface Ouvinte<T> {
@@ -40,8 +40,10 @@ class ApiFalsa implements SocialBackend {
   curtidas = new Map<string, Ouvinte<string[]>>();
   comentarios = new Map<string, Ouvinte<Comentario[]>>();
   atividadesCb?: (a: Atividade[]) => void;
-  ouvirAtividades = (_uid: string, cb: (a: Atividade[]) => void) => {
+  limiteAtividades?: number;
+  ouvirAtividades = (_uid: string, cb: (a: Atividade[]) => void, _erro?: unknown, limite?: number) => {
     this.atividadesCb = cb;
+    this.limiteAtividades = limite;
     return () => undefined;
   };
 
@@ -63,8 +65,8 @@ class ApiFalsa implements SocialBackend {
     return () => (o.cancelado = true);
   }
 
-  ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void): () => void {
-    const o = ouvinte(cb, erro);
+  ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void, limite?: number): () => void {
+    const o = ouvinte(cb, erro, limite);
     this.eventos.set(uid, o);
     return () => (o.cancelado = true);
   }
@@ -420,6 +422,79 @@ describe('SocialService', () => {
       await assentar();
       social.marcarTimelineVista();
       expect(localStorage.getItem('app-workout:social-visto:v1:eu')).toBe(String(t));
+    });
+  });
+  describe('timeline em páginas', () => {
+    const lote = (autor: string, n: number, de = 1000) => Array.from({ length: n }, (_, i) => evento(autor, de + i));
+
+    it('mostra só a primeira página e libera mais ao chegar ao fim', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('ana')?.cb(lote('ana', 15));
+      await assentar();
+      expect(social.timeline().length).toBe(15);
+      expect(social.timelineVisivel().length).toBe(PAGINA_TIMELINE);
+      expect(social.timelineVisivel()[0].criadoEm).toBe(1014); // do mais novo para o mais antigo
+      expect(social.temMais()).toBeTrue();
+
+      social.carregarMais();
+      expect(social.timelineVisivel().length).toBe(15);
+    });
+
+    it('já lido e escondido não abre nova leitura na nuvem', async () => {
+      await entrarComAmigos(amizade('ana'), amizade('bia'));
+      api.eventos.get('ana')?.cb(lote('ana', 14));
+      api.eventos.get('bia')?.cb(lote('bia', 14, 2000)); // 28 lidos, nenhuma leitura cheia
+      await assentar();
+      expect(social.timelineVisivel().length).toBe(PAGINA_TIMELINE);
+      const aberto = api.eventos.get('ana');
+      social.carregarMais(); // 20 de 28: já está lido
+      expect(social.timelineVisivel().length).toBe(20);
+      expect(api.eventos.get('ana')).toBe(aberto);
+      expect(aberto?.cancelado).toBeFalse();
+    });
+
+    it('leitura que veio cheia pede mais à nuvem quando a tela alcança o fim', async () => {
+      await entrarComAmigos(amizade('ana'));
+      const primeiro = api.eventos.get('ana')!;
+      expect(primeiro.limite).toBe(15);
+      primeiro.cb(lote('ana', 15)); // veio no limite: pode haver mais
+      await assentar();
+      social.carregarMais(); // mostra 15 (tudo o que foi lido)
+      social.carregarMais(); // quer 20, só há 15 -> abre leitura maior
+      const segundo = api.eventos.get('ana')!;
+      expect(primeiro.cancelado).toBeTrue();
+      expect(segundo).not.toBe(primeiro);
+      expect(segundo.limite).toBe(30);
+      expect(api.limiteAtividades).toBe(60);
+      // o que já chegou continua na tela até o novo resultado
+      expect(social.timeline().length).toBe(15);
+    });
+
+    it('leitura parcial é o fim: some o "tem mais" e nada novo é pedido', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('ana')?.cb(lote('ana', 12));
+      await assentar();
+      social.carregarMais();
+      expect(social.timelineVisivel().length).toBe(12);
+      expect(social.temMais()).toBeFalse();
+      const aberto = api.eventos.get('ana');
+      social.carregarMais();
+      expect(api.eventos.get('ana')).toBe(aberto);
+    });
+
+    it('novos itens depois da leitura ampliada entram na lista', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('ana')?.cb(lote('ana', 15));
+      await assentar();
+      social.carregarMais();
+      social.carregarMais();
+      api.eventos.get('ana')?.cb(lote('ana', 22)); // agora a nuvem devolveu 22 (< 30): fim
+      await assentar();
+      expect(social.timeline().length).toBe(22);
+      expect(social.temMais()).toBeTrue(); // ainda há 2 fora da tela (20 de 22)
+      social.carregarMais();
+      expect(social.timelineVisivel().length).toBe(22);
+      expect(social.temMais()).toBeFalse();
     });
   });
 });
