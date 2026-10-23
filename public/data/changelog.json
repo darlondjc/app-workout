@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.11.2",
+    "data": "2026-10-23",
+    "titulo": "Início e Social mais enxutos",
+    "itens": [
+      "Início: a barra com seu nome e foto agora aparece junto com a rolagem, sem saltos na tela.",
+      "Início: o quadro mostra só as seis melhores medalhas; as demais ficam em Ver todas.",
+      "Social: a faixa de amigos ficou mais compacta e mostra mais gente, sempre com um pedaço do próximo à vista.",
+      "Amigos: seu código e o campo para adicionar amigo ficam em um só card, com copiar e compartilhar como ícones no canto."
+    ]
+  },
+  {
     "versao": "1.11.1",
     "data": "2026-10-23",
     "titulo": "Cabeçalho animado e medalhas em ordem",
