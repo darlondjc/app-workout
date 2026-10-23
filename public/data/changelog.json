@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.11.1",
+    "data": "2026-10-23",
+    "titulo": "Cabeçalho animado e medalhas em ordem",
+    "itens": [
+      "Na tela inicial, o cabeçalho agora faz uma transição suave ao rolar: a saudação some e o nome aparece junto da foto.",
+      "As medalhas aparecem ordenadas: as de maior nível primeiro e, por último, as que ainda não foram conquistadas."
+    ]
+  },
+  {
     "versao": "1.11.0",
     "data": "2026-10-23",
     "titulo": "Cinco medalhas novas e cabeçalho fixo",
