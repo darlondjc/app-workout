@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.9.7",
+    "data": "2026-10-23",
+    "titulo": "Foto do treino e imagem do exercício no detalhe",
+    "itens": [
+      "Ao concluir um treino (com a conta ativa) você pode adicionar uma foto opcional, que aparece no seu card da timeline para os amigos. Dá para colocar, trocar ou remover a foto depois, no próprio card.",
+      "No detalhe de um treino, tocar na foto ou no nome do exercício abre a imagem animada de como executar.",
+      "Esc fecha só o diálogo de cima quando há dois abertos."
+    ]
+  },
+  {
     "versao": "1.9.6",
     "data": "2026-10-23",
     "titulo": "Timeline em páginas, telas mais compactas e detalhe do treino",
