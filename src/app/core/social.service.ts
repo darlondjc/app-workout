@@ -457,8 +457,9 @@ export class SocialService {
     let pedido = this.fotos.get(chave);
     if (!pedido) {
       pedido = api.lerFoto(uid, sessaoId).catch((e: unknown) => {
+        // Foto que não carrega (sem regra publicada, sem rede) não é motivo para largar o amigo nem para avisar: o card só fica sem ela.
+        console.warn('[social] foto indisponível', e);
         this.fotos.delete(chave);
-        this.aoErroDe(uid, e);
         return null;
       });
       this.fotos.set(chave, pedido);

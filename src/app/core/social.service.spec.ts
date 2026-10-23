@@ -555,6 +555,19 @@ describe('SocialService', () => {
       expect(await social.lerFoto('ana', 'sy')).toBe('data:image/jpeg;base64,CCC');
     });
 
+    it('foto que não pode ser lida (ex.: regra ainda não publicada) não derruba o amigo nem mostra erro', async () => {
+      spyOn(console, 'warn');
+      await entrarComAmigos(amizade('ana'));
+      api.eventos.get('ana')?.cb([evento('ana', 7)]);
+      await assentar();
+      api.falhaFoto = { code: 'permission-denied' };
+      expect(await social.lerFoto('ana', 'sz')).toBeNull();
+      await assentar();
+      expect(social.amigos().length).toBe(1);
+      expect(api.eventos.get('ana')?.cancelado).toBeFalse();
+      expect(social.erro()).toBe('');
+    });
+
     it('falha ao salvar devolve falso, avisa na tela e não deixa a foto no cache', async () => {
       await entrarComAmigos();
       api.falhaFoto = { code: 'permission-denied' };
