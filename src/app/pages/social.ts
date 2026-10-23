@@ -59,7 +59,7 @@ const pessoaEscolhida = signal<string>('eu');
               <app-evento-card [evento]="item.evento" />
             } @else {
               <div class="card reacao">
-                <app-avatar [usuario]="{ uid: item.atividade.autor, nome: social.nomeDe(item.atividade.autor, item.atividade.autorNome), email: '', foto: social.fotoDe(item.atividade.autor, item.atividade.autorFoto) }" [tamanho]="36" />
+                <app-avatar [usuario]="{ uid: item.atividade.autor, nome: social.nomeDe(item.atividade.autor, item.atividade.autorNome), email: '', foto: social.fotoDe(item.atividade.autor, item.atividade.autorFoto) }" [tamanho]="28" />
                 <p>
                   <strong>{{ social.nomeDe(item.atividade.autor, item.atividade.autorNome) }}</strong>
                   @if (item.atividade.tipo === 'curtida') {
@@ -116,6 +116,8 @@ const pessoaEscolhida = signal<string>('eu');
     .cabeca { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .amigos { position: relative; width: 44px; height: 44px; border-radius: 50%; background: var(--soft); color: var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
     .aviso-n { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--ink); color: var(--accent); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    /* Timeline mais junta: menos espaço entre os cartões. */
+    :host .page { gap: 10px; }
     .abas-sociais { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--soft); }
     .abas-sociais button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 600; color: var(--muted); }
     .abas-sociais button[aria-selected='true'] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 23, 26, 0.12); }
@@ -125,8 +127,8 @@ const pessoaEscolhida = signal<string>('eu');
     .pessoas button[aria-checked='true'] app-avatar { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); }
     .pessoas .mais { color: var(--muted); }
     .pessoas .mais app-icon { width: 40px; height: 40px; border-radius: 50%; border: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: center; }
-    .reacao { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
-    .reacao p { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+    .reacao { padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+    .reacao p { margin: 0; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
     .quando { margin-left: 6px; font-size: 12px; }
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
     .sub { font-size: 18px; margin: 0; }
