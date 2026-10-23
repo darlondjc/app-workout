@@ -46,7 +46,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
         <article class="destaque">
           <div class="destaque__topo">
             <div>
-              <p class="destaque__rotulo">Treino de hoje · Ficha {{ plans.letra(ficha.id) }}</p>
+              <p class="destaque__rotulo">Treino de hoje · {{ plans.rotulo(ficha.id) }}</p>
               <h2 class="destaque__nome">{{ ficha.nome }}</h2>
             </div>
             <span class="selo">{{ ficha.itens.length }} {{ ficha.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
@@ -79,7 +79,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
           <a class="btn btn--destaque" routerLink="/biblioteca">
             <app-icon name="plus" [size]="18" [stroke]="2.5" /> Escolher exercícios
           </a>
-          <a class="btn btn--claro" routerLink="/fichas/sugestao">Sugerir fichas para mim</a>
+          <a class="btn btn--claro" routerLink="/fichas/sugestao">Sugerir ficha</a>
         </article>
       }
 
@@ -100,7 +100,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
               <span class="letra">{{ plans.letra(f.id) }}</span>
               <span class="linha__texto">
                 <span class="linha__nome">{{ f.nome }}</span>
-                <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
+                <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}@if (f.conjunto) { · {{ f.conjunto.nome }} }</span>
                 @if (grupos(f.itens); as gs) {
                   @if (gs.length > 0) {
                     <ul class="grupos" aria-label="Grupos musculares">

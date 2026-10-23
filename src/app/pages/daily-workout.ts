@@ -111,7 +111,11 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
             </button>
           </div>
           <p class="apoio nota">
-            Ao aceitar, o treino vira uma ficha nova e você já pode começar. Ajuste as cargas na hora; na dúvida, consulte um profissional.
+            @if (fichaAtual(); as f) {
+              Ao aceitar, o treino é adicionado à sua ficha atual ({{ f }}) e você já pode começar.
+            } @else {
+              Ao aceitar, o treino vira sua primeira ficha e você já pode começar.
+            } Ajuste as cargas na hora; na dúvida, consulte um profissional.
           </p>
         }
       }
@@ -210,6 +214,11 @@ export class DailyWorkout {
   private readonly router = inject(Router);
 
   protected readonly grupos = GRUPOS;
+  /** Nome da ficha que recebe o treino do dia: a atual (a ativa). */
+  protected readonly fichaAtual = computed(() => {
+    const a = this.plans.fichas().find((f) => f.id === this.plans.ativaId()) ?? this.plans.fichas()[0];
+    return a ? (a.conjunto?.nome ?? a.nome) : '';
+  });
   protected readonly niveis: { key: Nivel; label: string }[] = [
     { key: 'beginner', label: 'Iniciante' },
     { key: 'intermediate', label: 'Intermediário' },
@@ -271,8 +280,8 @@ export class DailyWorkout {
     const r = this.resultado();
     if (!r || r.itens.length === 0) return;
     const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const [ficha] = this.plans.criarComItens([{ nome: `Treino do dia · ${hoje}`, itens: r.itens }]);
-    this.toast.mostrar('Treino salvo na sua ficha');
-    this.router.navigate(['/treino', ficha.id], { replaceUrl: true });
+    const { treino, ficha } = this.plans.adicionarTreino(`Treino do dia · ${hoje}`, r.itens);
+    this.toast.mostrar(`Treino adicionado à ficha ${ficha}`);
+    this.router.navigate(['/treino', treino.id], { replaceUrl: true });
   }
 }

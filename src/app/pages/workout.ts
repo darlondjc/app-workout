@@ -33,7 +33,7 @@ function lerPreferencia(): boolean {
               <app-icon name="close" [size]="20" [stroke]="2.2" />
             </button>
             <div>
-              <p class="rotulo">Ficha {{ plans.letra(f.id) }} · {{ f.nome }}</p>
+              <p class="rotulo">{{ plans.rotulo(f.id) }} · {{ f.nome }}</p>
               <p class="posicao">Exercício {{ indice() + 1 }} de {{ f.itens.length }}</p>
             </div>
           </header>

@@ -23,8 +23,8 @@ import { ToastService } from '../core/toast.service';
     <section class="page">
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
-        <h1 class="titulo">Sugestão de fichas</h1>
-        <p class="apoio">Responda quatro perguntas e eu monto as fichas da semana.</p>
+        <h1 class="titulo">Sugerir ficha</h1>
+        <p class="apoio">Responda quatro perguntas e eu monto uma ficha com os treinos da semana.</p>
       </header>
 
       <fieldset>
@@ -97,7 +97,7 @@ import { ToastService } from '../core/toast.service';
         <div class="acoes">
           <button type="button" class="btn btn--escuro" (click)="adicionar()">
             <app-icon name="plus" [size]="20" [stroke]="2.5" />
-            Adicionar {{ fichas().length }} fichas
+            Adicionar ficha com {{ fichas().length }} treinos
           </button>
           <button type="button" class="btn btn--claro" (click)="variacao.set(variacao() + 1)">Gerar outra variação</button>
         </div>
@@ -279,8 +279,10 @@ export class Suggest {
   }
 
   protected adicionar(): void {
-    const criadas = this.plans.criarComItens(this.fichas().filter((f) => f.itens.length > 0));
-    this.toast.mostrar(`${criadas.length} fichas adicionadas`);
+    const treinos = this.fichas().filter((f) => f.itens.length > 0);
+    const objetivo = OBJETIVOS.find((o) => o.key === this.objetivo())?.label ?? 'Sugestão';
+    this.plans.criarConjunto(`${objetivo} · ${treinos.length} dias`, treinos);
+    this.toast.mostrar(`Ficha criada com ${treinos.length} treinos`);
     this.router.navigate(['/fichas']);
   }
 }

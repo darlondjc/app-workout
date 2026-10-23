@@ -34,8 +34,14 @@ export interface ItemFicha {
 
 export interface Ficha {
   id: string;
+  /** Nome do treino (ex.: "Peito e Tríceps"). */
   nome: string;
   itens: ItemFicha[];
+  /**
+   * Quando o treino faz parte de uma ficha com vários treinos (A, B, C…), a ficha a que pertence.
+   * Sem isto, é uma ficha de um treino só, como eram todas antes.
+   */
+  conjunto?: { id: string; nome: string };
 }
 
 /** Valores realizados em uma série. */

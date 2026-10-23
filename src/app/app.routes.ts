@@ -30,8 +30,14 @@ export const routes: Routes = [
   {
     path: 'fichas/sugestao',
     canActivate: [logado],
-    title: 'Sugestão de fichas · App Workout',
+    title: 'Sugerir ficha · App Workout',
     loadComponent: () => import('./pages/suggest').then((m) => m.Suggest),
+  },
+  {
+    path: 'fichas/personalizada',
+    canActivate: [logado],
+    title: 'Ficha personalizada · App Workout',
+    loadComponent: () => import('./pages/custom-plan').then((m) => m.CustomPlan),
   },
   {
     path: 'treino-do-dia',

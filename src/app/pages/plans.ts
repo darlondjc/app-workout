@@ -1,33 +1,65 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Confirmacao } from '../core/confirmacao';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
+import { Ficha } from '../core/models';
 import { PlanService } from '../core/plan.service';
 
 @Component({
   selector: 'app-plans',
-  imports: [Confirmacao, RouterLink, Icon],
+  imports: [Confirmacao, RouterLink, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <header>
         <h1 class="titulo">Fichas</h1>
         <p class="apoio">
-          {{ plans.fichas().length }} {{ plans.fichas().length === 1 ? 'ficha' : 'fichas' }}
+          {{ blocos().length }} {{ blocos().length === 1 ? 'ficha' : 'fichas' }}
         </p>
       </header>
 
       <ul class="lista">
-        @for (f of plans.fichas(); track f.id) {
+        @for (b of blocos(); track b.chave) {
+          @if (b.conjunto; as c) {
+            <li class="conjunto">
+              <button type="button" class="conjunto__topo" [attr.aria-expanded]="aberto(b)" [attr.aria-controls]="'conj-' + c.id" (click)="alternar(b)">
+                <span class="conjunto__texto">
+                  <strong class="conjunto__nome">{{ c.nome }}</strong>
+                  <span class="apoio">{{ b.fichas.length }} {{ b.fichas.length === 1 ? 'treino' : 'treinos' }}@if (!aberto(b)) { · {{ resumo(b) }} }</span>
+                </span>
+                <app-icon [name]="aberto(b) ? 'up' : 'down'" [size]="22" [stroke]="2.2" />
+              </button>
+              @if (aberto(b)) {
+                <ul class="lista" [id]="'conj-' + c.id">
+                  @for (f of b.fichas; track f.id) {
+                    <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: f }" />
+                  }
+                </ul>
+                <button type="button" class="conjunto__excluir" aria-haspopup="dialog" (click)="excluindoConjunto.set({ id: c.id, nome: c.nome, treinos: b.fichas.length })">
+                  <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
+                </button>
+              }
+            </li>
+          } @else {
+            <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: b.fichas[0] }" />
+          }
+        } @empty {
+          <li class="apoio vazio">Você ainda não tem fichas. Crie a primeira para começar.</li>
+        }
+      </ul>
+
+
+      <ng-template #linha let-f>
           <li class="item">
             <button
               type="button"
               class="lixeira"
-              [attr.aria-label]="'Excluir ficha ' + f.nome"
+              [attr.aria-label]="(f.conjunto ? 'Excluir treino ' : 'Excluir ficha ') + f.nome"
               [attr.tabindex]="aberta() === f.id ? 0 : -1"
               [style.opacity]="deslocamento(f.id) > 0 ? 1 : 0"
-              aria-haspopup="dialog" (click)="excluindo.set({ id: f.id, nome: f.nome })"
+              aria-haspopup="dialog" (click)="excluindo.set({ id: f.id, nome: f.nome, treino: !!f.conjunto })"
             >
               <app-icon name="trash" [size]="22" [stroke]="2" />
             </button>
@@ -63,10 +95,7 @@ import { PlanService } from '../core/plan.service';
             }
             </div>
           </li>
-        } @empty {
-          <li class="apoio vazio">Você ainda não tem fichas. Crie a primeira para começar.</li>
-        }
-      </ul>
+      </ng-template>
 
       @if (!plans.treinouHoje()) {
         <a class="btn btn--destaque" routerLink="/treino-do-dia">
@@ -74,14 +103,20 @@ import { PlanService } from '../core/plan.service';
         </a>
       }
       <a class="btn btn--claro" routerLink="/fichas/sugestao">
-        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Sugerir fichas para mim
+        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Sugerir ficha
+      </a>
+      <a class="btn btn--claro" routerLink="/fichas/personalizada">
+        <app-icon name="settings" [size]="18" [stroke]="2.2" /> Criar ficha personalizada
       </a>
       <button type="button" class="btn btn--tracejado" (click)="nova()">
         <app-icon name="plus" [size]="18" [stroke]="2.5" /> Nova ficha
       </button>
 
+      @if (excluindoConjunto(); as c) {
+        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="c.nome" [mensagem]="'Os ' + c.treinos + ' treinos dela também serão excluídos. Essa ação não pode ser desfeita.'" rotulo="Excluir" (confirmar)="confirmarExclusaoConjunto(c.id)" (cancelar)="excluindoConjunto.set(null)" />
+      }
       @if (excluindo(); as f) {
-        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="f.nome" mensagem="Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="confirmarExclusao(f)" (cancelar)="excluindo.set(null); aberta.set(null)" />
+        <app-confirmacao [titulo]="f.treino ? 'Excluir treino?' : 'Excluir ficha?'" [subtitulo]="f.nome" mensagem="Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="confirmarExclusao(f)" (cancelar)="excluindo.set(null); aberta.set(null)" />
       }
     </section>
   `,
@@ -98,6 +133,61 @@ import { PlanService } from '../core/plan.service';
       position: relative;
       border-radius: 16px;
       overflow: hidden;
+    }
+    .conjunto {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 0 4px;
+      border-radius: 20px;
+    }
+    .conjunto__topo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      min-height: 52px;
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 16px;
+      background: transparent;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+    }
+    .conjunto__texto {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .conjunto__texto .apoio {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .conjunto__nome {
+      font-family: var(--font-display);
+      font-size: 17px;
+    }
+    .conjunto__excluir {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 10px;
+      border: 0;
+      background: transparent;
+      color: #b3261e;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .conjunto .lista {
+      padding-left: 10px;
+      border-left: 3px solid #d8e6a0;
     }
     .lixeira {
       position: absolute;
@@ -150,6 +240,45 @@ export class Plans {
   private readonly exercicios = inject(ExerciseService);
   private readonly router = inject(Router);
 
+  /** Fichas na ordem da lista: cada treino solto é uma ficha; os treinos de uma ficha com vários ficam juntos, onde está o primeiro. */
+  protected readonly blocos = computed(() => {
+    const out: { chave: string; conjunto?: { id: string; nome: string }; fichas: Ficha[] }[] = [];
+    const porConjunto = new Map<string, (typeof out)[number]>();
+    for (const f of this.plans.fichas()) {
+      if (!f.conjunto) {
+        out.push({ chave: f.id, fichas: [f] });
+        continue;
+      }
+      const existente = porConjunto.get(f.conjunto.id);
+      if (existente) existente.fichas.push(f);
+      else {
+        const novo = { chave: f.conjunto.id, conjunto: f.conjunto, fichas: [f] };
+        porConjunto.set(f.conjunto.id, novo);
+        out.push(novo);
+      }
+    }
+    return out;
+  });
+  /** Fichas que a pessoa abriu ou fechou à mão; as demais seguem o padrão: só a ficha atual fica aberta. */
+  private readonly manual = signal<Record<string, boolean>>({});
+
+  protected aberto(b: { chave: string; fichas: Ficha[] }): boolean {
+    const escolha = this.manual()[b.chave];
+    return escolha ?? b.fichas.some((f) => f.id === this.plans.ativaId());
+  }
+
+  protected alternar(b: { chave: string; fichas: Ficha[] }): void {
+    const agora = !this.aberto(b);
+    this.manual.update((m) => ({ ...m, [b.chave]: agora }));
+  }
+
+  /** Nomes dos treinos, para a ficha fechada mostrar do que se trata. */
+  protected resumo(b: { fichas: Ficha[] }): string {
+    return b.fichas.map((f) => f.nome).join(' · ');
+  }
+
+  protected readonly excluindoConjunto = signal<{ id: string; nome: string; treinos: number } | null>(null);
+
   /** Largura da lixeira que aparece ao arrastar a ficha para a direita. */
   private static readonly ABERTURA = 88;
 
@@ -178,6 +307,11 @@ export class Plans {
     };
     host.addEventListener('click', aoClicar, true);
     inject(DestroyRef).onDestroy(() => host.removeEventListener('click', aoClicar, true));
+  }
+
+  protected confirmarExclusaoConjunto(id: string): void {
+    this.plans.removerConjunto(id);
+    this.excluindoConjunto.set(null);
   }
 
   protected grupos(itens: { exerciseId: string }[]): string[] {
@@ -222,7 +356,7 @@ export class Plans {
     this.aberta.set(x > Plans.ABERTURA / 2 ? g.id : null);
   }
 
-  protected readonly excluindo = signal<{ id: string; nome: string } | null>(null);
+  protected readonly excluindo = signal<{ id: string; nome: string; treino: boolean } | null>(null);
 
   protected confirmarExclusao(f: { id: string }): void {
     this.excluindo.set(null);

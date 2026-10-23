@@ -19,7 +19,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       <section class="page">
         <header>
           <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
-          <p class="apoio">Ficha {{ plans.letra(f.id) }}</p>
+          <p class="apoio">{{ plans.rotulo(f.id) }}</p>
           <label class="sr-only" for="nome-ficha">Nome da ficha</label>
           <input
             id="nome-ficha"
