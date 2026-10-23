@@ -85,6 +85,9 @@ export class SocialService {
     return this.timeline().filter((i) => i.criadoEm > visto && (i.tipo === 'evento' ? i.evento.autor : i.atividade.autor) !== eu).length;
   });
 
+  /** O que o selo da aba Social mostra: novidades da timeline mais convites de amizade esperando resposta. */
+  readonly avisosDaAba = computed(() => this.novidades() + this.convitesRecebidos().length);
+
   /** A pessoa está olhando a timeline: tudo o que há nela passa a ser visto. */
   marcarTimelineVista(): void {
     if (!this.uid) return;

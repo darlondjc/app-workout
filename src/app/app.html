@@ -16,11 +16,11 @@
       <a routerLink="/fichas" routerLinkActive="ativa">
         <app-icon name="clipboard" /> Fichas
       </a>
-      <a routerLink="/social" routerLinkActive="ativa" [attr.aria-label]="social.novidades() > 0 ? 'Social, ' + social.novidades() + (social.novidades() === 1 ? ' novidade' : ' novidades') : null">
+      <a routerLink="/social" routerLinkActive="ativa" [attr.aria-label]="social.avisosDaAba() > 0 ? 'Social, ' + social.avisosDaAba() + (social.avisosDaAba() === 1 ? ' aviso' : ' avisos') : null">
         <span class="aba-icone">
           <app-icon name="people" />
-          @if (social.novidades() > 0) {
-            <span class="aba-aviso" aria-hidden="true">{{ social.novidades() > 9 ? '9+' : social.novidades() }}</span>
+          @if (social.avisosDaAba() > 0) {
+            <span class="aba-aviso" aria-hidden="true">{{ social.avisosDaAba() > 9 ? '9+' : social.avisosDaAba() }}</span>
           }
         </span>
         Social

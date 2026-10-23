@@ -385,6 +385,20 @@ describe('SocialService', () => {
       expect(social.novidades()).toBe(0);
     });
 
+    it('convites de amizade recebidos entram no aviso da aba e saem quando respondidos', async () => {
+      await entrarComAmigos({ ...amizade('bia', 'pendente'), id: 'bia_eu', de: 'bia' });
+      expect(social.novidades()).toBe(0);
+      expect(social.avisosDaAba()).toBe(1);
+      api.amizades?.cb([]);
+      await assentar();
+      expect(social.avisosDaAba()).toBe(0);
+    });
+
+    it('convite que eu enviei não conta como aviso', async () => {
+      await entrarComAmigos(amizade('bia', 'pendente'));
+      expect(social.avisosDaAba()).toBe(0);
+    });
+
     it('os próprios treinos não contam', async () => {
       await entrarComAmigos(amizade('ana'));
       api.eventos.get('eu')?.cb([evento('eu', futuro())]);
