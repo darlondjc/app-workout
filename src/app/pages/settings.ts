@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ChangelogService } from '../core/changelog.service';
 import { CloudService } from '../core/cloud.service';
 import { Avatar } from '../core/avatar';
+import { Dialogo } from '../core/dialogo';
 import { FotoBotao } from '../core/foto-botao';
 import { Icon } from '../core/icon';
 import { PesoRegistro } from '../core/peso-registro';
@@ -11,23 +12,30 @@ import { UpdateService } from '../core/update.service';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar, FotoBotao, PesoRegistro],
+  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <header>
+      <header class="cabeca">
         <h1 class="titulo">Ajustes</h1>
+        @if (nuvem.usuario()) {
+          <button type="button" class="sair" aria-label="Sair da conta" (click)="confirmando.set(true)">
+            <app-icon name="logout" [size]="22" [stroke]="2.2" />
+          </button>
+        }
       </header>
 
       <article class="card bloco" aria-labelledby="t-conta">
-        <h2 id="t-conta" class="sub">Conta e backup</h2>
+        <h2 id="t-conta" class="sub">Conta</h2>
         @if (!nuvem.configurado) {
           <p class="apoio">Login indisponível nesta versão. Suas fichas e treinos ficam apenas neste aparelho.</p>
         } @else if (!nuvem.pronto()) {
           <app-carregando texto="Verificando conta…" />
         } @else if (nuvem.usuario(); as u) {
           <div class="conta">
-            <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="56" />
+            <button type="button" class="foto" aria-label="Ver a foto de perfil" (click)="fotoAberta.set(true)">
+              <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="56" />
+            </button>
             <div class="rot">
               <strong>{{ u.nome || u.email }}</strong>
               @if (u.nome) {
@@ -35,20 +43,6 @@ import { UpdateService } from '../core/update.service';
               }
             </div>
           </div>
-          @if (social.eu()) {
-            <div class="acoes-linha">
-              <app-foto-botao [perfil]="true" rotulo="Alterar foto" (escolhida)="trocarFoto($event)" (falhou)="erroFoto.set($event)" />
-              @if (social.eu()?.fotoPropria) {
-                <button type="button" class="btn btn--claro" [disabled]="salvandoFoto()" (click)="usarFotoDaConta()">Foto da conta</button>
-              }
-            </div>
-            @if (salvandoFoto()) {
-              <p class="apoio" role="status">Salvando a foto…</p>
-            }
-            @if (erroFoto()) {
-              <p class="apoio erro" role="alert">{{ erroFoto() }}</p>
-            }
-          }
           <p class="status" role="status">
             @if (!nuvem.online()) {
               Sem conexão. Tudo fica salvo no aparelho e é enviado quando voltar.
@@ -62,17 +56,6 @@ import { UpdateService } from '../core/update.service';
           </p>
           @if (nuvem.erro()) {
             <p class="apoio erro" role="alert">{{ nuvem.erro() }}</p>
-          }
-          @if (confirmando()) {
-            <p class="apoio">Ao sair, os dados saem deste aparelho, mas continuam na sua conta. Entre de novo para recuperá-los.</p>
-            <div class="acoes-linha">
-              <button type="button" class="btn btn--claro" (click)="confirmando.set(false)">Cancelar</button>
-              <button type="button" class="btn btn--escuro" [disabled]="nuvem.ocupado()" (click)="sair()">
-                {{ nuvem.ocupado() ? 'Saindo…' : 'Sair' }}
-              </button>
-            </div>
-          } @else {
-            <button type="button" class="btn btn--claro" (click)="confirmando.set(true)">Sair da conta</button>
           }
         } @else {
           <p class="apoio">
@@ -149,38 +132,89 @@ import { UpdateService } from '../core/update.service';
         @if (up.falhou()) {
           <p class="apoio">A última atualização não pôde ser baixada. Tentaremos de novo.</p>
         }
-      </article>
 
-      <section aria-labelledby="t-hist">
-        <h2 id="t-hist" class="sub">O que mudou</h2>
         @if (log.pronto()) {
-          <div class="historico">
-            @for (v of log.lista(); track v.versao; let i = $index) {
-              <details class="card versao-item" [open]="i === 0">
-                <summary>
-                  <span class="rot">
-                    <strong>{{ v.versao }}</strong>
-                    <span class="apoio">{{ v.titulo }}</span>
-                  </span>
-                  @if (v.data) {
-                    <time class="apoio" [attr.datetime]="v.data">{{ formatar(v.data) }}</time>
-                  }
-                </summary>
-                <ul>
-                  @for (item of v.itens; track item) {
-                    <li>{{ item }}</li>
-                  }
-                </ul>
-              </details>
-            }
-          </div>
+          @if (log.lista()[0]; as atual) {
+            <div class="resumo">
+              <p class="resumo__topo">
+                <strong>{{ atual.titulo }}</strong>
+                @if (atual.data) {
+                  <time class="apoio" [attr.datetime]="atual.data">{{ formatar(atual.data) }}</time>
+                }
+              </p>
+              <ul>
+                @for (item of atual.itens; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+          @if (anteriores().length > 0) {
+            <details class="historico">
+              <summary>Versões anteriores ({{ anteriores().length }})</summary>
+              @for (v of anteriores(); track v.versao) {
+                <details class="versao-item">
+                  <summary>
+                    <span class="rot">
+                      <strong>{{ v.versao }}</strong>
+                      <span class="apoio">{{ v.titulo }}</span>
+                    </span>
+                    @if (v.data) {
+                      <time class="apoio" [attr.datetime]="v.data">{{ formatar(v.data) }}</time>
+                    }
+                  </summary>
+                  <ul>
+                    @for (item of v.itens; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </details>
+              }
+            </details>
+          }
         } @else if (log.erro()) {
           <p class="apoio">Não foi possível carregar o histórico.</p>
           <button type="button" class="btn btn--claro" (click)="log.carregar()">Tentar de novo</button>
         } @else {
           <app-carregando texto="Carregando histórico…" />
         }
-      </section>
+      </article>
+
+      @if (fotoAberta()) {
+        @if (nuvem.usuario(); as u) {
+          <app-dialogo titulo="Foto de perfil" (fechar)="fotoAberta.set(false)">
+            <div class="foto-grande">
+              <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="240" />
+            </div>
+            @if (social.eu()) {
+              <div class="acoes-coluna">
+                <app-foto-botao [perfil]="true" rotulo="Alterar foto" (escolhida)="trocarFoto($event)" (falhou)="erroFoto.set($event)" />
+                @if (social.eu()?.fotoPropria) {
+                  <button type="button" class="btn btn--claro" [disabled]="salvandoFoto()" (click)="usarFotoDaConta()">Usar a foto da conta</button>
+                }
+              </div>
+              @if (salvandoFoto()) {
+                <p class="apoio" role="status">Salvando a foto…</p>
+              }
+              @if (erroFoto()) {
+                <p class="apoio erro" role="alert">{{ erroFoto() }}</p>
+              }
+            }
+          </app-dialogo>
+        }
+      }
+
+      @if (confirmando()) {
+        <app-dialogo titulo="Sair da conta?" (fechar)="confirmando.set(false)">
+          <p class="apoio">Ao sair, os dados saem deste aparelho, mas continuam na sua conta. Entre de novo para recuperá-los.</p>
+          <div class="acoes-linha confirma">
+            <button type="button" class="btn btn--claro" (click)="confirmando.set(false)">Cancelar</button>
+            <button type="button" class="btn btn--escuro" [disabled]="nuvem.ocupado()" (click)="sair()">
+              {{ nuvem.ocupado() ? 'Saindo…' : 'Sair' }}
+            </button>
+          </div>
+        </app-dialogo>
+      }
     </section>
   `,
   styles: `
@@ -219,8 +253,7 @@ import { UpdateService } from '../core/update.service';
       border-radius: 12px;
       background: #f1f8cf;
     }
-    .novidades,
-    .versao-item ul {
+    .novidades {
       margin: 0;
       padding-left: 20px;
       display: flex;
@@ -229,15 +262,43 @@ import { UpdateService } from '../core/update.service';
       font-size: 14px;
       line-height: 1.4;
     }
-    .historico {
+    .resumo {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+    }
+    .resumo__topo {
+      margin: 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .resumo ul {
+      margin: 0;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .historico > summary {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      list-style: none;
+    }
+    .historico > summary::-webkit-details-marker {
+      display: none;
     }
     .versao-item {
-      padding: 4px 16px;
+      border-top: 1px solid var(--soft);
     }
-    summary {
+    .versao-item > summary {
       min-height: 52px;
       display: flex;
       align-items: center;
@@ -247,7 +308,7 @@ import { UpdateService } from '../core/update.service';
       cursor: pointer;
       list-style: none;
     }
-    summary::-webkit-details-marker {
+    .versao-item > summary::-webkit-details-marker {
       display: none;
     }
     time {
@@ -261,7 +322,52 @@ import { UpdateService } from '../core/update.service';
       min-width: 0;
     }
     .versao-item ul {
-      padding-bottom: 14px;
+      margin: 0;
+      padding: 0 0 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .cabeca {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .sair {
+      flex: none;
+      width: 44px;
+      height: 44px;
+      border: 0;
+      border-radius: 50%;
+      background: #d93025;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .foto {
+      flex: none;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      display: flex;
+    }
+    .foto-grande {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .acoes-coluna {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .confirma {
+      margin-top: 16px;
     }
     .conta {
       display: flex;
@@ -290,6 +396,8 @@ export class Settings {
   protected readonly nuvem = inject(CloudService);
   protected readonly social = inject(SocialService);
   protected readonly confirmando = signal(false);
+  protected readonly fotoAberta = signal(false);
+  protected readonly anteriores = computed(() => this.log.lista().slice(1));
   protected readonly erroFoto = signal('');
   protected readonly salvandoFoto = signal(false);
 
