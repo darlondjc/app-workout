@@ -26,20 +26,26 @@ import { Carregando } from '../core/spinner';
         }
       } @else {
         <article class="card bloco" aria-labelledby="t-cod">
-          <h2 id="t-cod" class="rot">Seu código</h2>
+          <div class="topo">
+            <h2 id="t-cod" class="rot">Seu código</h2>
+            <div class="icones">
+              <button type="button" class="icone" [disabled]="copiado()" [attr.aria-label]="copiado() ? 'Código copiado' : 'Copiar código'" (click)="copiar()">
+                <app-icon [name]="copiado() ? 'check' : 'copy'" [size]="20" [stroke]="2.2" />
+              </button>
+              @if (podeCompartilhar) {
+                <button type="button" class="icone icone--escuro" aria-label="Compartilhar código" (click)="compartilhar()">
+                  <app-icon name="share" [size]="20" [stroke]="2.2" />
+                </button>
+              }
+            </div>
+          </div>
           <p class="codigo" aria-label="Seu código de amigo">{{ social.eu()?.codigo }}</p>
           <p class="apoio">Passe o código para quem você quer ter como amigo.</p>
-          <div class="linha">
-            <button type="button" class="btn btn--claro" [disabled]="copiado()" (click)="copiar()">{{ copiado() ? 'Copiado!' : 'Copiar' }}</button>
-            @if (podeCompartilhar) {
-              <button type="button" class="btn btn--escuro" (click)="compartilhar()">Compartilhar</button>
-            }
-          </div>
-        </article>
 
-        <article class="card bloco" aria-labelledby="t-add">
+          <div class="divisor" role="presentation"></div>
+
           <h2 id="t-add" class="rot">Adicionar amigo</h2>
-          <form class="linha" (submit)="adicionar($event, campo)">
+          <form class="linha" (submit)="adicionar($event, campo)" aria-labelledby="t-add">
             <input #campo class="campo" type="text" autocapitalize="characters" autocomplete="off" maxlength="12" placeholder="Código do amigo" aria-label="Código do amigo" />
             <button type="submit" class="btn btn--escuro" [disabled]="enviando()">{{ enviando() ? '…' : 'Adicionar' }}</button>
           </form>
@@ -107,10 +113,16 @@ import { Carregando } from '../core/spinner';
     .rot { font-size: 15px; font-weight: 500; color: var(--muted); margin: 0; }
     .sub { font-size: 18px; margin: 0 0 8px; }
     .codigo { font-family: var(--font-display); font-size: 34px; font-weight: 700; letter-spacing: 0.12em; margin: 0; user-select: all; }
-    .linha { display: flex; gap: 8px; }
+    .topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .icones { display: flex; gap: 8px; margin: -6px -6px -6px 0; }
+    .icone { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--soft); color: var(--ink); display: flex; align-items: center; justify-content: center; }
+    .icone--escuro { background: var(--ink); color: #fff; }
+    .divisor { height: 1px; background: var(--soft); margin: 4px 0; }
+    .linha { display: flex; gap: 8px; padding: 0; }
     .linha .btn { flex: 1; min-height: 48px; }
     form.linha .btn { flex: none; padding: 0 18px; }
     .campo { flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font: inherit; text-transform: uppercase; letter-spacing: 0.1em; }
+    .campo::placeholder { letter-spacing: 0.03em; }
     .pessoa { padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
     .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mini { min-height: 40px; padding: 0 14px; font-size: 14px; flex: none; }
