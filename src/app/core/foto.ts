@@ -41,3 +41,69 @@ export async function reduzirFoto(arquivo: Blob, limite = LIMITE_FOTO, ladoMaxim
     imagem.close();
   }
 }
+
+/** Proporção (largura / altura) do quadro de enquadramento da foto do treino. */
+export const PROPORCAO_FOTO = 4 / 3;
+export const ZOOM_MAXIMO = 4;
+
+/** Como a foto está posicionada no quadro: zoom (1 = a foto cobre o quadro) e deslocamento do centro dela, em px do quadro. */
+export interface Enquadramento {
+  zoom: number;
+  x: number;
+  y: number;
+}
+
+/**
+ * Tamanho da foto na tela e o deslocamento já limitado: a foto nunca deixa uma borda vazia no quadro.
+ * `iw`/`ih` são o tamanho da foto; `fw`/`fh`, o do quadro.
+ */
+export function posicionar(iw: number, ih: number, fw: number, fh: number, e: Enquadramento) {
+  const zoom = Math.min(ZOOM_MAXIMO, Math.max(1, e.zoom));
+  const escala = Math.max(fw / iw, fh / ih) * zoom;
+  const largura = iw * escala;
+  const altura = ih * escala;
+  const folgaX = Math.max(0, (largura - fw) / 2);
+  const folgaY = Math.max(0, (altura - fh) / 2);
+  return {
+    zoom,
+    escala,
+    largura,
+    altura,
+    x: Math.min(folgaX, Math.max(-folgaX, e.x)),
+    y: Math.min(folgaY, Math.max(-folgaY, e.y)),
+  };
+}
+
+/** Trecho da foto (em px dela) que aparece no quadro. */
+export function trechoVisivel(iw: number, ih: number, fw: number, fh: number, e: Enquadramento) {
+  const p = posicionar(iw, ih, fw, fh, e);
+  const largura = fw / p.escala;
+  const altura = fh / p.escala;
+  return { x: iw / 2 - p.x / p.escala - largura / 2, y: ih / 2 - p.y / p.escala - altura / 2, largura, altura };
+}
+
+function carregar(src: string): Promise<HTMLImageElement> {
+  return new Promise((ok, erro) => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = () => erro(new Error('Não consegui abrir a foto.'));
+    img.src = src;
+  });
+}
+
+/** Recorta o trecho enquadrado e devolve um JPEG pequeno em data URL, nos mesmos limites de `reduzirFoto`. */
+export async function recortarFoto(src: string, fw: number, fh: number, e: Enquadramento): Promise<string> {
+  const img = await carregar(src);
+  const t = trechoVisivel(img.naturalWidth, img.naturalHeight, fw, fh, e);
+  const largura = Math.min(LADO_MAXIMO, Math.round(t.largura));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, largura);
+  canvas.height = Math.max(1, Math.round(largura / PROPORCAO_FOTO));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Sem suporte a imagens neste navegador.');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, t.x, t.y, t.largura, t.altura, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob>((ok, erro) => canvas.toBlob((b) => (b ? ok(b) : erro(new Error('Falha ao gerar a foto.'))), 'image/jpeg', 0.9));
+  return reduzirFoto(blob);
+}

@@ -339,6 +339,14 @@ describe('SocialService', () => {
   });
 
   describe('erros', () => {
+    it('o erro diz em que operação falhou, para dar para diagnosticar pelo celular', async () => {
+      await entrarComAmigos(amizade('ana'));
+      api.gravarFoto = () => Promise.reject({ code: 'permission-denied' });
+      await social.salvarFoto('s1', 'data:image/jpeg;base64,AAAA');
+      expect(social.erro()).toContain('ao gravar foto do treino');
+      expect(social.erro()).toContain('Sem permissão');
+    });
+
     it('"sem permissão" nos próprios dados pede para publicar as regras do Firestore', async () => {
       await entrarComAmigos(amizade('ana'));
       api.eventos.get('eu')?.erro({ code: 'permission-denied' });

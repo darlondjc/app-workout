@@ -22,17 +22,20 @@ describe('ConcluirTreino', () => {
   it('a foto é opcional: concluir sem escolher nada entrega null', () => {
     expect(el().querySelector('[role="dialog"]')?.textContent).toContain('Concluir treino');
     expect(el().querySelector('input[type="file"]')).not.toBeNull();
-    expect(el().querySelector('.previa')).toBeNull();
+    expect(el().querySelector('app-enquadrar-foto')).toBeNull();
     botao('Concluir treino')!.click();
     expect(concluidos).toEqual([null]);
   });
 
-  it('com a foto escolhida mostra a prévia e entrega a foto ao concluir', () => {
+  it('com a foto escolhida mostra o quadro de enquadramento e entrega a foto ao concluir', async () => {
     const botaoFoto = fixture.debugElement.query((d) => d.name === 'app-foto-botao');
     botaoFoto.triggerEventHandler('escolhida', FOTO);
     fixture.detectChanges();
-    expect((el().querySelector('.previa') as HTMLImageElement).src).toBe(FOTO);
+    expect((el().querySelector('app-enquadrar-foto img') as HTMLImageElement).src).toBe(FOTO);
     botao('Concluir treino')!.click();
+    // A foto de teste não abre como imagem: o recorte falha e vai a foto inteira.
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 50));
     expect(concluidos).toEqual([FOTO]);
   });
 
@@ -41,7 +44,7 @@ describe('ConcluirTreino', () => {
     fixture.detectChanges();
     botao('Remover')!.click();
     fixture.detectChanges();
-    expect(el().querySelector('.previa')).toBeNull();
+    expect(el().querySelector('app-enquadrar-foto')).toBeNull();
     botao('Concluir treino')!.click();
     expect(concluidos).toEqual([null]);
   });

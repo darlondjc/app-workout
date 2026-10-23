@@ -1,16 +1,17 @@
-import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, signal, viewChild } from '@angular/core';
 import { Dialogo } from './dialogo';
+import { EnquadrarFoto } from './enquadrar-foto';
 import { FotoBotao } from './foto-botao';
 
 /** Último passo do treino: foto opcional para a timeline e o botão de concluir. Fechar volta para o treino. */
 @Component({
   selector: 'app-concluir-treino',
-  imports: [Dialogo, FotoBotao],
+  imports: [Dialogo, FotoBotao, EnquadrarFoto],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dialogo titulo="Concluir treino" subtitulo="Quer postar uma foto deste treino na timeline?" (fechar)="cancelar.emit()">
       @if (foto(); as f) {
-        <img class="previa" [src]="f" alt="Foto escolhida para o treino" />
+        <app-enquadrar-foto [foto]="f" />
         <div class="duas">
           <app-foto-botao rotulo="Trocar foto" (escolhida)="foto.set($event)" />
           <button type="button" class="btn btn--claro" (click)="foto.set(null)">Remover</button>
@@ -18,11 +19,10 @@ import { FotoBotao } from './foto-botao';
       } @else {
         <app-foto-botao (escolhida)="foto.set($event)" />
       }
-      <button type="button" class="btn btn--destaque concluir" (click)="concluir.emit(foto())">Concluir treino</button>
+      <button type="button" class="btn btn--destaque concluir" [disabled]="concluindo()" (click)="finalizar()">{{ concluindo() ? 'Preparando a foto…' : 'Concluir treino' }}</button>
     </app-dialogo>
   `,
   styles: `
-    .previa { display: block; width: 100%; max-height: 300px; object-fit: cover; border-radius: 16px; margin-bottom: 10px; background: var(--soft); }
     .duas { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
     .concluir { width: 100%; margin-top: 14px; }
   `,
@@ -32,4 +32,24 @@ export class ConcluirTreino {
   readonly concluir = output<string | null>();
   readonly cancelar = output<void>();
   protected readonly foto = signal<string | null>(null);
+  protected readonly concluindo = signal(false);
+  private readonly enquadrador = viewChild(EnquadrarFoto);
+
+  /** Entrega a foto já recortada no que a pessoa enquadrou; se o recorte falhar, vai a foto inteira. */
+  protected async finalizar(): Promise<void> {
+    const original = this.foto();
+    if (!original) {
+      this.concluir.emit(null);
+      return;
+    }
+    this.concluindo.set(true);
+    let final = original;
+    try {
+      final = (await this.enquadrador()?.recortar()) ?? original;
+    } catch {
+      /* mantém a foto inteira */
+    }
+    this.concluindo.set(false);
+    this.concluir.emit(final);
+  }
 }

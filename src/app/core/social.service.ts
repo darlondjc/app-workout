@@ -206,18 +206,18 @@ export class SocialService {
       if (this.uid !== uid) return; // saiu da conta enquanto carregava
       this.eu.set(perfil);
       this.parar.push(
-        api.ouvirAmizades(uid, (l) => this.aoAmizades(l), (e) => this.falhou(e)),
+        api.ouvirAmizades(uid, (l) => this.aoAmizades(l), (e) => this.falhou(e, 'ouvir amizades')),
       );
       this.ouvirAtividadesProprias();
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'entrar na conta social (gravar perfil)');
     }
   }
 
   private ouvirAtividadesProprias(): void {
     this.ouvinteAtividades?.();
     if (!this.api || !this.uid) return;
-    this.ouvinteAtividades = this.api.ouvirAtividades(this.uid, (l) => this.atividades.set(l), (e) => this.falhou(e), this.limiteAtividades());
+    this.ouvinteAtividades = this.api.ouvirAtividades(this.uid, (l) => this.atividades.set(l), (e) => this.falhou(e, 'ouvir reações (atividades)'), this.limiteAtividades());
   }
 
   private encerrar(): void {
@@ -247,13 +247,15 @@ export class SocialService {
     this.erro.set('');
   }
 
-  private falhou(e: unknown): void {
+  /** Mostra o erro na tela, dizendo em que operação foi (a pessoa testa no celular e não vê o console). */
+  private falhou(e: unknown, onde = ''): void {
     const codigo = (e as { code?: string }).code;
-    console.error('[social]', e);
+    console.error('[social]', onde, e);
+    const em = onde ? ` ao ${onde}` : '';
     this.erro.set(
       codigo === 'permission-denied'
-        ? 'Sem permissão. Publique as regras novas do Firestore (veja o README) e tente de novo.'
-        : `Não foi possível falar com o servidor agora. Tente de novo em instantes.${codigo ? ` (${codigo})` : ''}${codigo === 'failed-precondition' ? ` ${(e as { message?: string }).message ?? ''}` : ''}`,
+        ? `Sem permissão${em}. Publique as regras novas do Firestore (veja o README) e tente de novo.`
+        : `Não foi possível falar com o servidor agora${em}. Tente de novo em instantes.${codigo ? ` (${codigo})` : ''}${codigo === 'failed-precondition' ? ` ${(e as { message?: string }).message ?? ''}` : ''}`,
     );
   }
 
@@ -266,7 +268,7 @@ export class SocialService {
     try {
       await this.api.gravarPerfil(novo);
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'gravar meta no perfil');
     }
   }
 
@@ -361,7 +363,7 @@ export class SocialService {
       await this.api.pedirAmizade({ id, membros: [this.uid, uid].sort(), de: this.uid, status: 'pendente', criadoEm: Date.now() });
       return { ok: true, mensagem: `Convite enviado para ${perfil.nome}. Falta a pessoa aceitar.` };
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'enviar convite');
       return { ok: false, mensagem: this.erro() };
     }
   }
@@ -370,7 +372,7 @@ export class SocialService {
     try {
       await this.api?.aceitarAmizade(a.id);
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'aceitar convite');
     }
   }
 
@@ -379,7 +381,7 @@ export class SocialService {
     try {
       await this.api?.removerAmizade(a.id);
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'remover amizade');
     }
   }
 
@@ -428,7 +430,7 @@ export class SocialService {
       this.soltar(uid);
       return;
     }
-    this.falhou(e);
+    this.falhou(e, uid === this.uid ? 'ler seus treinos' : 'ler treinos de um amigo');
   }
 
   /** Publica na timeline os treinos concluídos há pouco que ainda não foram publicados. */
@@ -463,7 +465,7 @@ export class SocialService {
         salvarPublicados(this.publicados);
       } catch (e) {
         this.publicados.delete(s.id);
-        this.falhou(e);
+        this.falhou(e, 'publicar treino na timeline');
       }
     }
   }
@@ -520,7 +522,7 @@ export class SocialService {
       return true;
     } catch (e) {
       this.fotos.delete(`${eu.uid}/${sessaoId}`);
-      this.falhou(e);
+      this.falhou(e, 'gravar foto do treino (usuarios/…/fotos)');
       return false;
     }
   }
@@ -542,7 +544,7 @@ export class SocialService {
       await this.api.marcarFotoEvento(eu.uid, evento.id, dados !== null);
       return true;
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'trocar/remover foto do card');
       return false;
     }
   }
@@ -554,7 +556,7 @@ export class SocialService {
       if (curtido) await this.api.descurtir(dono, eventoId, eu.uid);
       else await this.api.curtir(dono, eventoId, eu);
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'curtir');
     }
   }
 
@@ -564,7 +566,7 @@ export class SocialService {
     try {
       await this.api.comentar(dono, eventoId, eu, texto);
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'comentar');
     }
   }
 
@@ -572,7 +574,7 @@ export class SocialService {
     try {
       await this.api?.apagarComentario(dono, eventoId, c.id);
     } catch (e) {
-      this.falhou(e);
+      this.falhou(e, 'apagar comentário');
     }
   }
 
