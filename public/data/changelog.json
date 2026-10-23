@@ -1,5 +1,20 @@
 [
   {
+    "versao": "1.9.9",
+    "data": "2026-10-23",
+    "titulo": "Fichas com vários treinos, foto de perfil e marcar séries em bloco",
+    "itens": [
+      "Uma ficha agora pode ter vários treinos (A, B, C…), um para cada dia. Em Fichas há o botão Criar ficha personalizada: você escolhe quantos treinos, os grupos musculares de cada um e em quais tem cardio. Sugerir ficha também cria uma ficha só, com os treinos dentro.",
+      "Na lista de Fichas, só a ficha atual fica aberta; as outras ficam fechadas e abrem com um toque. As fichas que você já tinha continuam iguais.",
+      "O treino aleatório do dia, ao ser aceito, entra na sua ficha atual.",
+      "Em Ajustes dá para escolher uma foto de perfil (por exemplo, se a conta Google não tem foto) e voltar à foto da conta quando quiser.",
+      "Na faixa de pessoas da tela Social, os amigos com atividade mais recente ficam mais à esquerda, e com 4 ou mais amigos sempre aparece um pedaço do próximo.",
+      "Na tela do treino, Marcar todos marca as séries do exercício; ao finalizar com séries sem marcar, o app pergunta se pode marcá-las, e uma chave permite fazer isso sempre, sem perguntar.",
+      "A Biblioteca ganhou o chip Cardio, também para adicionar cardio a uma ficha.",
+      "O botão de adicionar foto na timeline só aparece nas primeiras 24 horas depois do treino."
+    ]
+  },
+  {
     "versao": "1.9.8",
     "data": "2026-10-23",
     "titulo": "Foto só nas primeiras 24 horas e faixa de amigos",
