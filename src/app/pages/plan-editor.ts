@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { Confirmacao } from '../core/confirmacao';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { ItemFicha } from '../core/models';
@@ -11,7 +12,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
 
 @Component({
   selector: 'app-plan-editor',
-  imports: [RouterLink, Icon],
+  imports: [Confirmacao, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ficha(); as f) {
@@ -49,7 +50,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
                 <button type="button" class="btn-icone btn-icone--neutro" aria-label="Mover para baixo" [disabled]="l.i === linhas().length - 1" (click)="mover(l.i, 1)">
                   <app-icon name="down" [size]="20" />
                 </button>
-                <button type="button" class="btn-icone btn-icone--neutro" aria-label="Remover da ficha" (click)="remover(l.i)">
+                <button type="button" class="btn-icone btn-icone--neutro" aria-label="Remover da ficha" aria-haspopup="dialog" (click)="remover(l.i)">
                   <app-icon name="close" [size]="20" />
                 </button>
               </div>
@@ -77,11 +78,15 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
           <app-icon name="plus" [size]="18" [stroke]="2.5" /> Adicionar exercício
         </a>
 
-        <div class="acoes">
-          <button type="button" class="btn btn--claro" (click)="salvar()">Salvar ficha</button>
-        </div>
+        @if (rascunho()) {
+          <button type="button" class="excluir" (click)="cancelar()">Cancelar</button>
+        } @else {
+          <div class="acoes">
+            <button type="button" class="btn btn--claro" (click)="salvar()">Salvar ficha</button>
+          </div>
 
-        <button type="button" class="excluir" (click)="excluir()">Excluir ficha</button>
+          <button type="button" class="excluir" aria-haspopup="dialog" (click)="excluindo.set(true)">Excluir ficha</button>
+        }
 
         @if (f.itens.length > 0) {
           <a
@@ -91,6 +96,13 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
           >
             <app-icon name="play" [size]="26" />
           </a>
+        }
+
+        @if (excluindo()) {
+          <app-confirmacao titulo="Excluir ficha?" [subtitulo]="f.nome" mensagem="Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="excluir()" (cancelar)="excluindo.set(false)" />
+        }
+        @if (removendo(); as r) {
+          <app-confirmacao titulo="Remover da ficha?" [subtitulo]="r.nome" rotulo="Remover" (confirmar)="confirmarRemocao(r.indice)" (cancelar)="removendo.set(null)" />
         }
       </section>
     } @else {
@@ -245,6 +257,10 @@ export class PlanEditor {
   protected readonly nav = inject(NavegacaoService);
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
+  /** Ficha ainda vazia e não gravada: em vez de excluir, só dá para cancelar. */
+  protected readonly rascunho = computed(() => this.plans.rascunho()?.id === this.id());
+  protected readonly excluindo = signal(false);
+  protected readonly removendo = signal<{ indice: number; nome: string } | null>(null);
   protected readonly linhas = computed(() =>
     (this.ficha()?.itens ?? []).map((item, i) => ({ item, i, ex: this.ex.get(item.exerciseId) })),
   );
@@ -268,7 +284,11 @@ export class PlanEditor {
     const item = this.ficha()?.itens[indice];
     if (!item) return;
     const e = this.ex.get(item.exerciseId);
-    if (!confirm(`Remover “${e ? this.ex.nome(e) : item.exerciseId}” da ficha?`)) return;
+    this.removendo.set({ indice, nome: e ? this.ex.nome(e) : item.exerciseId });
+  }
+
+  protected confirmarRemocao(indice: number): void {
+    this.removendo.set(null);
     this.plans.removerItem(this.id(), indice);
   }
 
@@ -280,11 +300,16 @@ export class PlanEditor {
 
   protected excluir(): void {
     const f = this.ficha();
+    this.excluindo.set(false);
     if (!f) return;
-    if (confirm(`Excluir a ficha “${f.nome}”? Essa ação não pode ser desfeita.`)) {
-      this.plans.remover(f.id);
-      this.toast.mostrar('Ficha excluída');
-      this.router.navigate(['/fichas']);
-    }
+    this.plans.remover(f.id);
+    this.toast.mostrar('Ficha excluída');
+    this.router.navigate(['/fichas']);
+  }
+
+  /** Desiste de uma ficha que ainda não tem exercícios: nada foi gravado. */
+  protected cancelar(): void {
+    this.plans.descartarRascunho();
+    this.router.navigate(['/fichas']);
   }
 }

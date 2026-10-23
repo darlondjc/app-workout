@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { Confirmacao } from '../core/confirmacao';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
 
 @Component({
   selector: 'app-plans',
-  imports: [RouterLink, Icon],
+  imports: [Confirmacao, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -26,7 +27,7 @@ import { PlanService } from '../core/plan.service';
               [attr.aria-label]="'Excluir ficha ' + f.nome"
               [attr.tabindex]="aberta() === f.id ? 0 : -1"
               [style.opacity]="deslocamento(f.id) > 0 ? 1 : 0"
-              (click)="excluir(f.id, f.nome)"
+              aria-haspopup="dialog" (click)="excluindo.set({ id: f.id, nome: f.nome })"
             >
               <app-icon name="trash" [size]="22" [stroke]="2" />
             </button>
@@ -78,6 +79,10 @@ import { PlanService } from '../core/plan.service';
       <button type="button" class="btn btn--tracejado" (click)="nova()">
         <app-icon name="plus" [size]="18" [stroke]="2.5" /> Nova ficha
       </button>
+
+      @if (excluindo(); as f) {
+        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="f.nome" mensagem="Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="confirmarExclusao(f)" (cancelar)="excluindo.set(null); aberta.set(null)" />
+      }
     </section>
   `,
   styles: `
@@ -217,14 +222,16 @@ export class Plans {
     this.aberta.set(x > Plans.ABERTURA / 2 ? g.id : null);
   }
 
-  protected excluir(id: string, nome: string): void {
-    if (!confirm(`Excluir a ficha “${nome}”? Essa ação não pode ser desfeita.`)) return;
+  protected readonly excluindo = signal<{ id: string; nome: string } | null>(null);
+
+  protected confirmarExclusao(f: { id: string }): void {
+    this.excluindo.set(null);
     this.aberta.set(null);
-    this.plans.remover(id);
+    this.plans.remover(f.id);
   }
 
   protected nova(): void {
-    const ficha = this.plans.criar(`Ficha ${String.fromCharCode(65 + (this.plans.fichas().length % 26))}`);
+    const ficha = this.plans.criarRascunho(`Ficha ${String.fromCharCode(65 + (this.plans.fichas().length % 26))}`);
     this.router.navigate(['/ficha', ficha.id]);
   }
 }

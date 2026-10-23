@@ -43,6 +43,13 @@ export class PlanService {
   readonly historico = signal<Sessao[]>(
     ler<Sessao[]>(CHAVE_HISTORICO, []).map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })),
   );
+  /**
+   * Ficha recém-criada e ainda vazia: só existe na memória. Vira ficha de verdade (e é gravada)
+   * quando recebe o primeiro exercício.
+   */
+  readonly rascunho = signal<Ficha | null>(null);
+  /** O próximo exercício adicionado pela biblioteca vai para o rascunho (o usuário tocou em "Adicionar exercício" nele). */
+  private readonly alvoRascunho = signal(false);
   readonly emAndamento = signal<EmAndamento | null>(ler<EmAndamento | null>(CHAVE_ANDAMENTO, null));
 
   /** Fichas, ficha ativa e treino em andamento: o que o documento da nuvem guarda. */
@@ -72,7 +79,7 @@ export class PlanService {
   }
 
   get(id: string): Ficha | undefined {
-    return this.fichas().find((f) => f.id === id);
+    return this.fichas().find((f) => f.id === id) ?? (this.rascunho()?.id === id ? this.rascunho()! : undefined);
   }
 
   letra(id: string): string {
@@ -85,6 +92,19 @@ export class PlanService {
     this.fichas.update((l) => [...l, ficha]);
     this.ativaId.set(ficha.id);
     return ficha;
+  }
+
+  /** Começa uma ficha nova sem gravá-la: ela só é salva ao receber o primeiro exercício. */
+  criarRascunho(nome: string): Ficha {
+    const ficha: Ficha = { id: crypto.randomUUID(), nome, itens: [] };
+    this.rascunho.set(ficha);
+    this.alvoRascunho.set(false);
+    return ficha;
+  }
+
+  descartarRascunho(): void {
+    this.rascunho.set(null);
+    this.alvoRascunho.set(false);
   }
 
   /** Cria várias fichas de uma vez (ex.: sugestão automática) e ativa a primeira. */
@@ -102,15 +122,31 @@ export class PlanService {
   }
 
   renomear(id: string, nome: string): void {
+    if (this.rascunho()?.id === id) {
+      this.rascunho.update((r) => (r ? { ...r, nome } : r));
+      return;
+    }
     this.atualizar(id, (f) => ({ ...f, nome }));
   }
 
   definirAtiva(id: string): void {
+    if (this.rascunho()?.id === id) {
+      this.alvoRascunho.set(true);
+      return;
+    }
+    this.alvoRascunho.set(false);
     this.ativaId.set(id);
   }
 
   /** Adiciona à ficha ativa (cria a primeira ficha se ainda não existir). */
   adicionar(exerciseId: string): { ficha: Ficha; jaEstava: boolean } {
+    const rascunho = this.rascunho();
+    if (rascunho && this.alvoRascunho()) {
+      // Primeiro exercício: a ficha passa a existir de verdade.
+      this.descartarRascunho();
+      this.fichas.update((l) => [...l, rascunho]);
+      this.ativaId.set(rascunho.id);
+    }
     let ficha = this.fichas().find((f) => f.id === this.ativaId()) ?? this.fichas()[0];
     if (!ficha) ficha = this.criar('Minha primeira ficha');
     this.ativaId.set(ficha.id);

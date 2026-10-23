@@ -80,3 +80,59 @@ describe('PlanService.treinouHoje', () => {
     expect(plans.treinouHoje()).toBeFalse();
   });
 });
+
+describe('PlanService: ficha em rascunho', () => {
+  let plans: PlanService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+    plans.criarComItens([{ nome: 'A', itens: [item('supino', 60)] }]);
+  });
+
+  it('o rascunho não entra na lista de fichas nem muda a ficha ativa, mas é encontrado pelo id', () => {
+    const ativa = plans.ativaId();
+    const r = plans.criarRascunho('Ficha B');
+    expect(plans.fichas().length).toBe(1);
+    expect(plans.ativaId()).toBe(ativa);
+    expect(plans.get(r.id)?.nome).toBe('Ficha B');
+  });
+
+  it('renomear o rascunho continua sem gravar', () => {
+    const r = plans.criarRascunho('Ficha B');
+    plans.renomear(r.id, 'Pernas');
+    expect(plans.get(r.id)?.nome).toBe('Pernas');
+    expect(plans.fichas().length).toBe(1);
+  });
+
+  it('o primeiro exercício grava a ficha, com o nome dado, e ela vira a ativa', () => {
+    const r = plans.criarRascunho('Ficha B');
+    plans.renomear(r.id, 'Pernas');
+    plans.definirAtiva(r.id);
+    const { ficha } = plans.adicionar('agachamento');
+    expect(ficha.id).toBe(r.id);
+    expect(plans.rascunho()).toBeNull();
+    expect(plans.fichas().map((f) => f.nome)).toEqual(['A', 'Pernas']);
+    expect(plans.get(r.id)?.itens.map((i) => i.exerciseId)).toEqual(['agachamento']);
+    expect(plans.ativaId()).toBe(r.id);
+  });
+
+  it('descartar o rascunho não deixa rastro, e adicionar depois vai para a ficha ativa de antes', () => {
+    const ativa = plans.ativaId();
+    const r = plans.criarRascunho('Ficha B');
+    plans.definirAtiva(r.id);
+    plans.descartarRascunho();
+    expect(plans.get(r.id)).toBeUndefined();
+    const { ficha } = plans.adicionar('remada');
+    expect(ficha.id).toBe(ativa!);
+    expect(plans.fichas().length).toBe(1);
+  });
+
+  it('sem ter tocado em "Adicionar exercício" no rascunho, a biblioteca segue adicionando à ficha ativa', () => {
+    plans.criarRascunho('Ficha B');
+    const { ficha } = plans.adicionar('remada');
+    expect(ficha.id).toBe(plans.ativaId()!);
+    expect(plans.rascunho()).not.toBeNull();
+  });
+});

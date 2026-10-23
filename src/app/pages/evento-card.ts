@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { Avatar } from '../core/avatar';
+import { Confirmacao } from '../core/confirmacao';
 import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
@@ -10,7 +11,7 @@ import { SocialService } from '../core/social.service';
 /** Treino de alguém na timeline, com curtidas e comentários. */
 @Component({
   selector: 'app-evento-card',
-  imports: [Avatar, Icon, SessaoDetalhe, Dialogo],
+  imports: [Avatar, Confirmacao, Icon, SessaoDetalhe, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
@@ -71,14 +72,9 @@ import { SocialService } from '../core/social.service';
     </article>
 
     @if (apagando(); as c) {
-      <app-dialogo titulo="Apagar comentário?" [subtitulo]="c.autor === social.eu()?.uid ? 'Seu comentário' : 'Comentário de ' + social.nomeDe(c.autor, c.autorNome)" (fechar)="apagando.set(null)">
+      <app-confirmacao titulo="Apagar comentário?" [subtitulo]="c.autor === social.eu()?.uid ? 'Seu comentário' : 'Comentário de ' + social.nomeDe(c.autor, c.autorNome)" mensagem="Essa ação não pode ser desfeita." rotulo="Apagar" (confirmar)="confirmarApagar(c)" (cancelar)="apagando.set(null)">
         <blockquote class="previa">{{ c.texto }}</blockquote>
-        <p class="apoio">Essa ação não pode ser desfeita.</p>
-        <div class="confirma">
-          <button type="button" class="btn btn--apagar" (click)="confirmarApagar(c)">Apagar</button>
-          <button type="button" class="btn btn--claro" (click)="apagando.set(null)">Cancelar</button>
-        </div>
-      </app-dialogo>
+      </app-confirmacao>
     }
 
     @if (detalhe()) {
@@ -106,8 +102,6 @@ import { SocialService } from '../core/social.service';
     .acoes { display: flex; gap: 8px; }
     .acao { min-height: 44px; min-width: 56px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); color: var(--ink); font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
     .previa { margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid var(--line); background: var(--soft); border-radius: 0 10px 10px 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
-    .confirma { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-    .btn--apagar { background: #b3261e; color: #fff; }
     .acao--texto { margin-left: auto; font-weight: 600; font-size: 14px; }
     .acao.ativa { background: var(--ink); color: var(--accent); border-color: var(--ink); }
     .comentarios { border-top: 1px solid var(--soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
