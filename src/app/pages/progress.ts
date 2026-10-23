@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Dialogo } from '../core/dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
@@ -9,6 +9,7 @@ import { LIMITE_SESSOES_AMIGO, SocialService } from '../core/social.service';
 import { calcularResumo, dataISO, gerarInsights, volumeSessao } from '../core/stats';
 
 const CHAVE_META = 'app-workout:meta-semanal:v1';
+const CHAVE_DISPENSADAS = 'app-workout:mensagens-dispensadas:v1';
 const LETRAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 
 function lerMeta(): number | null {
@@ -17,6 +18,15 @@ function lerMeta(): number | null {
     return v >= 1 && v <= 7 ? v : null;
   } catch {
     return null;
+  }
+}
+
+function lerDispensadas(): string[] {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(CHAVE_DISPENSADAS) ?? '[]');
+    return Array.isArray(v) ? v.filter((t): t is string => typeof t === 'string') : [];
+  } catch {
+    return [];
   }
 }
 
@@ -48,7 +58,14 @@ function lerMeta(): number | null {
       @if (insights().length) {
         <ul class="insights" aria-label="Motivação">
           @for (i of insights(); track i.texto) {
-            <li class="insight" [class]="'insight insight--' + i.tipo">{{ i.texto }}</li>
+            <li [class]="'insight insight--' + i.tipo">
+              <span class="insight__txt">{{ i.texto }}</span>
+              @if (editavel()) {
+                <button type="button" class="insight__x" aria-label="Dispensar esta mensagem" (click)="dispensar(i.texto)">
+                  <app-icon name="close" [size]="16" [stroke]="2.4" />
+                </button>
+              }
+            </li>
           }
         </ul>
       }
@@ -168,7 +185,9 @@ function lerMeta(): number | null {
     .trilha { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
     .trilha__cheia { height: 100%; background: var(--ink); border-radius: 4px; transition: width 0.25s; }
     .insights { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    .insight { padding: 8px 12px; border-radius: 12px; background: var(--card); border-left: 4px solid var(--line); font-size: 14px; line-height: 1.35; }
+    .insight { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--card); border-left: 4px solid var(--line); font-size: 14px; line-height: 1.35; }
+    .insight__txt { flex: 1; min-width: 0; }
+    .insight__x { flex: none; width: 32px; height: 32px; margin: -4px -8px -4px 0; border: 0; border-radius: 50%; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
     .insight--conquista { border-left-color: var(--accent); background: #f6fadf; }
     .insight--incentivo { border-left-color: var(--ink); }
     .cal__topo { display: flex; align-items: center; justify-content: space-between; }
@@ -216,6 +235,26 @@ export class Progress {
   /** Meta publicada pelo amigo. */
   readonly metaBase = input<number | undefined>(undefined);
 
+  constructor() {
+    // Esquece as dispensadas que deixaram de existir: se a mesma mensagem voltar mais tarde, é novidade de novo.
+    effect(() => {
+      if (!this.editavel()) return;
+      const atuais = new Set(this.mensagens().map((m) => m.texto));
+      untracked(() => {
+        const mantidas = this.dispensadas().filter((t) => atuais.has(t));
+        if (mantidas.length !== this.dispensadas().length) this.dispensadas.set(mantidas);
+      });
+    });
+    effect(() => {
+      const lista = this.dispensadas();
+      try {
+        localStorage.setItem(CHAVE_DISPENSADAS, JSON.stringify(lista));
+      } catch {
+        // sem armazenamento: a dispensa vale só até fechar o app
+      }
+    });
+  }
+
   protected readonly letras = LETRAS;
   private readonly hoje = new Date();
   private readonly metaEscolhida = signal<number | null>(lerMeta());
@@ -234,7 +273,18 @@ export class Progress {
   protected readonly resumo = computed(() => calcularResumo(this.historico(), this.hoje, this.meta()));
   /** Do amigo só se leem os treinos mais recentes: com o limite atingido, o total deixa de ser o total. */
   protected readonly totalParcial = computed(() => !this.editavel() && this.historico().length >= LIMITE_SESSOES_AMIGO);
-  protected readonly insights = computed(() => gerarInsights(this.resumo(), this.hoje, this.nome()).slice(0, 4));
+  private readonly mensagens = computed(() => gerarInsights(this.resumo(), this.hoje, this.nome()));
+  /** Mensagens que a própria pessoa dispensou; uma mensagem nova (texto diferente) aparece de novo. */
+  private readonly dispensadas = signal<string[]>(lerDispensadas());
+  protected readonly insights = computed(() => {
+    const fora = this.dispensadas();
+    const lista = this.editavel() ? this.mensagens().filter((m) => !fora.includes(m.texto)) : this.mensagens();
+    return lista.slice(0, 4);
+  });
+
+  protected dispensar(texto: string): void {
+    this.dispensadas.update((l) => (l.includes(texto) ? l : [...l, texto]));
+  }
   protected readonly percentualMeta = computed(() =>
     Math.min(100, Math.round((this.resumo().treinosSemana / this.resumo().metaSemanal) * 100)),
   );
