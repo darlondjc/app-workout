@@ -21,6 +21,7 @@ export type IconName =
   | 'trash'
   | 'camera'
   | 'mirror'
+  | 'rotate'
   | 'medal'
   | 'scale'
   | 'logout'
@@ -82,6 +83,10 @@ export type IconName =
           <path d="M12 3v2M12 8v2M12 14v2M12 19v2" />
           <path d="M9.5 6L3 19h6.5z" />
           <path d="M14.5 6L21 19h-6.5z" />
+        }
+        @case ('rotate') {
+          <path d="M20 12a8 8 0 1 1-2.5-5.8" />
+          <path d="M20 4v5h-5" />
         }
         @case ('close') {
           <path d="M6 6l12 12M18 6L6 18" />

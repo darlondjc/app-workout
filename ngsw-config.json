@@ -38,11 +38,12 @@
     }
   ],
   "appData": {
-    "versao": "1.13.0",
-    "titulo": "Adicionar atividade",
+    "versao": "1.14.0",
+    "titulo": "Girar e espelhar fotos, e ajustes na atividade",
     "novidades": [
-      "Na tela inicial, o botão + registra uma atividade fora da ficha: corrida, caminhada, futebol, vôlei, beach tennis, tênis, natação ou outra.",
-      "Informe duração, distância e esforço, e adicione uma foto se quiser. A atividade vale como o treino do dia e entra na semana, nas medalhas e na timeline."
+      "Na foto do treino e da atividade, dois botões no canto do quadro giram a foto 90° e a espelham. O que aparece no quadro é o que vai para a timeline.",
+      "Adicionar atividade: asterisco nos campos obrigatórios, botões centralizados, e a tela rola até o enquadramento depois de escolher a foto.",
+      "Ajustes: o campo de dia do peso ficou alinhado com o de peso, também no iPhone."
     ]
   }
 }

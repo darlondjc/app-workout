@@ -30,7 +30,11 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
         </label>
         <label class="campo">
           <span class="apoio">Dia</span>
-          <input #campoDia type="date" [value]="data()" [max]="hoje" (input)="data.set(campoDia.value)" />
+          <span class="data">
+            <span class="data__texto">{{ textoDia() }}</span>
+            <!-- O campo nativo fica invisível por cima: abre o seletor do aparelho, mas o visual é igual ao do peso em qualquer navegador. -->
+            <input #campoDia type="date" aria-label="Dia" [value]="data()" [max]="hoje" (input)="data.set(campoDia.value)" />
+          </span>
         </label>
         <button type="submit" class="btn btn--escuro">{{ jaTem() ? 'Atualizar' : 'Registrar' }}</button>
       </form>
@@ -69,8 +73,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
     .grande small { font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--muted); }
     .form { display: flex; flex-direction: column; gap: 10px; }
     .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    /* No iOS o campo de data tem largura mínima e aparência próprias: sem isto ele estoura o card e fica mais baixo que o de peso. */
-    .campo input {
+    .campo input:not([type='date']) {
       display: block;
       width: 100%;
       min-width: 0;
@@ -82,10 +85,11 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
       background: var(--card);
       -webkit-appearance: none;
       appearance: none;
-      text-align: left;
     }
-    .campo input::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
-    .campo input::-webkit-datetime-edit { padding: 0; }
+    /* O campo de data nativo muda de altura e alinhamento conforme o navegador (no iOS o texto sobe); por isso só o texto formatado aparece. */
+    .data { position: relative; display: flex; align-items: center; height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .data:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+    .data input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
     .erro { color: #b3261e; }
     .historico summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; font-size: 14px; cursor: pointer; }
     .historico ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -141,6 +145,12 @@ export class PesoRegistro {
   protected kg(v: number): string {
     return formatarKg(v);
   }
+
+  protected readonly textoDia = computed(() => {
+    const d = this.data();
+    if (!ISO.test(d)) return 'Escolha o dia';
+    return d === this.hoje ? `Hoje · ${dataCurta(d)}` : dataCurta(d);
+  });
 
   protected dia(iso: string): string {
     return dataCurta(iso);

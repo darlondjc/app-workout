@@ -1,4 +1,4 @@
-import { LIMITE_FOTO, espelharFoto, ZOOM_MAXIMO, posicionar, recortarFoto, reduzirFoto, trechoVisivel } from './foto';
+import { LIMITE_FOTO, espelharFoto, girarFoto, ZOOM_MAXIMO, posicionar, recortarFoto, reduzirFoto, trechoVisivel } from './foto';
 
 /** Imagem sintética em PNG; com `ruido`, cada pixel é aleatório (a pior situação para a compressão). */
 async function imagem(largura: number, altura: number, ruido: boolean): Promise<Blob> {
@@ -169,5 +169,33 @@ describe('espelharFoto', () => {
     expect(x2.getImageData(2, 5, 1, 1).data[1]).toBeGreaterThan(200);
     expect(dr).toBeGreaterThan(200);
     expect(dg).toBeLessThan(60); // direita agora é vermelha
+  });
+});
+
+describe('girarFoto', () => {
+  it('gira 90° no sentido horário: troca largura e altura e leva a esquerda para o alto', async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 20;
+    canvas.height = 10;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 20, 10);
+    ctx.fillStyle = '#f00';
+    ctx.fillRect(0, 0, 10, 10); // metade esquerda vermelha
+
+    const girada = await girarFoto(canvas.toDataURL('image/png'));
+    const img = new Image();
+    await new Promise<void>((ok) => {
+      img.onload = () => ok();
+      img.src = girada;
+    });
+    expect([img.naturalWidth, img.naturalHeight]).toEqual([10, 20]);
+    const c2 = document.createElement('canvas');
+    c2.width = 10;
+    c2.height = 20;
+    const x2 = c2.getContext('2d')!;
+    x2.drawImage(img, 0, 0);
+    expect(x2.getImageData(5, 3, 1, 1).data[1]).toBeLessThan(60); // alto: vermelho
+    expect(x2.getImageData(5, 16, 1, 1).data[1]).toBeGreaterThan(200); // embaixo: branco
   });
 });

@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.14.0",
+    "data": "2026-10-24",
+    "titulo": "Girar e espelhar fotos, e ajustes na atividade",
+    "itens": [
+      "Na foto do treino e da atividade, dois botões no canto do quadro giram a foto 90° e a espelham. O que aparece no quadro é o que vai para a timeline.",
+      "Adicionar atividade: asterisco nos campos obrigatórios, botões centralizados, e a tela rola até o enquadramento depois de escolher a foto.",
+      "Ajustes: o campo de dia do peso ficou alinhado com o de peso, também no iPhone."
+    ]
+  },
+  {
     "versao": "1.13.0",
     "data": "2026-10-24",
     "titulo": "Adicionar atividade",

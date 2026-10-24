@@ -105,6 +105,20 @@ export async function espelharFoto(src: string): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.92);
 }
 
+/** A foto girada 90° no sentido horário, como JPEG. */
+export async function girarFoto(src: string): Promise<string> {
+  const img = await carregar(src);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalHeight;
+  canvas.height = img.naturalWidth;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Sem suporte a imagens neste navegador.');
+  ctx.translate(canvas.width, 0);
+  ctx.rotate(Math.PI / 2);
+  ctx.drawImage(img, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
 /** Recorta o trecho enquadrado e devolve um JPEG pequeno em data URL, nos mesmos limites de `reduzirFoto`. */
 export async function recortarFoto(src: string, fw: number, fh: number, e: Enquadramento): Promise<string> {
   const img = await carregar(src);
