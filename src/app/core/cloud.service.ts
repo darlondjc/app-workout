@@ -1,6 +1,7 @@
 import { Injectable, effect, inject, signal, untracked } from '@angular/core';
 import { FIREBASE_CONFIG } from './firebase.config';
 import type { FirebaseBackend } from './firebase.backend';
+import { MedalhasService } from './medalhas.service';
 import { PlanService } from './plan.service';
 import { SocialBackend } from './social';
 import { AlvoLocal, NuvemBackend, Sincronizador, StatusSync, Usuario } from './sync';
@@ -32,6 +33,7 @@ export class CloudService {
   readonly carregado = signal(false);
 
   private readonly plans = inject(PlanService);
+  private readonly medalhas = inject(MedalhasService);
 
   private readonly alvo: AlvoLocal = {
     lerEstado: () => this.plans.estadoNuvem(),
@@ -100,6 +102,7 @@ export class CloudService {
       // Os dados continuam na nuvem; o aparelho fica limpo para a próxima pessoa.
       this.social.set(null);
       this.plans.limparLocal();
+      this.medalhas.limpar();
       this.esquecer();
       await this.backend?.sair();
     } finally {

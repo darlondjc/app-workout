@@ -7,8 +7,11 @@ import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { RegistroExercicio, SerieEmAndamento } from '../core/models';
 import { NavegacaoService } from '../core/navegacao.service';
+import { MedalhasService } from '../core/medalhas.service';
+import { DadosResumo, ResumoTreino } from '../core/resumo-treino';
 import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
+import { volumeSessao } from '../core/stats';
 import { ToastService } from '../core/toast.service';
 
 const CHAVE_MARCAR_AO_FINALIZAR = 'app-workout:marcar-tudo-ao-finalizar:v1';
@@ -23,7 +26,7 @@ function lerPreferencia(): boolean {
 
 @Component({
   selector: 'app-workout',
-  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino, TituloEmDuasLinhas],
+  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ficha(); as f) {
@@ -157,6 +160,10 @@ function lerPreferencia(): boolean {
         <h1 class="titulo">Ficha não encontrada</h1>
         <a class="btn btn--claro" routerLink="/fichas">Voltar para as fichas</a>
       </section>
+    }
+
+    @if (resumo(); as r) {
+      <app-resumo-treino [dados]="r" (ok)="fecharResumo()" />
     }
   `,
   styles: `
@@ -479,6 +486,9 @@ export class Workout {
   readonly id = input.required<string>();
 
   protected readonly plans = inject(PlanService);
+  private readonly medalhas = inject(MedalhasService);
+  /** Resumo mostrado depois de gravar o treino; ao fechar, volta para o início. */
+  protected readonly resumo = signal<DadosResumo | null>(null);
   private readonly ex = inject(ExerciseService);
   private readonly toast = inject(ToastService);
   private readonly social = inject(SocialService);
@@ -740,8 +750,24 @@ export class Workout {
       return series.length ? [{ exerciseId: efetivos[i], ...(it.unidade ? { unidade: it.unidade } : {}), series }] : [];
     });
     const sessaoId = this.plans.registrarSessao(this.id(), registros, foto !== null);
+    const ganhas = this.medalhas.aposTreino(sessaoId);
     if (foto) void this.social.salvarFoto(sessaoId, foto);
-    this.toast.mostrar('Treino concluído. Bom trabalho!');
+    const todas = this.medalhas.conquistas();
+    this.resumo.set({
+      nome: f?.nome ?? 'Treino',
+      exercicios: registros.length,
+      series: registros.reduce((t, r) => t + r.series.length, 0),
+      volume: volumeSessao({ data: '', fichaId: '', registros }),
+      medalhas: ganhas.flatMap((g) => {
+        const c = todas.find((x) => x.id === g.id);
+        return c ? [{ titulo: c.titulo, nivel: g.nivel }] : [];
+      }),
+    });
+  }
+
+  /** Fecha o resumo e volta para o início. */
+  protected fecharResumo(): void {
+    this.resumo.set(null);
     this.router.navigate(['/']);
   }
 

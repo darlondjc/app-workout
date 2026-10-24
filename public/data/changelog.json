@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.12.0",
+    "data": "2026-10-23",
+    "titulo": "Medalhas guardadas e novas em destaque",
+    "itens": [
+      "As medalhas são calculadas quando você termina o treino e ficam guardadas, sem recalcular a cada tela.",
+      "Ao voltar para o início, um chip \"N novas\" aparece em Medalhas e os cards que subiram de nível ganham destaque.",
+      "Ao tocar numa medalha, a galeria abre rolando suavemente até ela e a faz piscar.",
+      "Ao concluir um treino, aparece um resumo com os números do treino e as medalhas novas; toque em OK para voltar ao início."
+    ]
+  },
+  {
     "versao": "1.11.4",
     "data": "2026-10-23",
     "titulo": "Abas do Social mais visíveis",
