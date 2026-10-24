@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.14.1",
+    "data": "2026-10-24",
+    "titulo": "Tela de treino mais compacta",
+    "itens": [
+      "Os botões Anterior e Próximo ficam sempre visíveis, mesmo com muitas séries: a tela rola por baixo deles.",
+      "As séries ficam juntas num card só, e o cronômetro de descanso ocupa uma linha, sem o chip de séries feitas. Com 4 séries, tudo cabe sem rolar na maioria dos celulares."
+    ]
+  },
+  {
     "versao": "1.14.0",
     "data": "2026-10-24",
     "titulo": "Girar e espelhar fotos, e ajustes na atividade",

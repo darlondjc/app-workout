@@ -38,12 +38,11 @@
     }
   ],
   "appData": {
-    "versao": "1.14.0",
-    "titulo": "Girar e espelhar fotos, e ajustes na atividade",
+    "versao": "1.14.1",
+    "titulo": "Tela de treino mais compacta",
     "novidades": [
-      "Na foto do treino e da atividade, dois botões no canto do quadro giram a foto 90° e a espelham. O que aparece no quadro é o que vai para a timeline.",
-      "Adicionar atividade: asterisco nos campos obrigatórios, botões centralizados, e a tela rola até o enquadramento depois de escolher a foto.",
-      "Ajustes: o campo de dia do peso ficou alinhado com o de peso, também no iPhone."
+      "Os botões Anterior e Próximo ficam sempre visíveis, mesmo com muitas séries: a tela rola por baixo deles.",
+      "As séries ficam juntas num card só, e o cronômetro de descanso ocupa uma linha, sem o chip de séries feitas. Com 4 séries, tudo cabe sem rolar na maioria dos celulares."
     ]
   }
 }
