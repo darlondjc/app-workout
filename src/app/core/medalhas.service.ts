@@ -30,6 +30,17 @@ function ler(): Guardado | null {
   }
 }
 
+/** Junta novas pendentes com as recém-ganhas; para a mesma meta vale o nível mais recente. */
+function juntar(pendentes: NovaMedalha[], ganhas: NovaMedalha[]): NovaMedalha[] {
+  const out = [...pendentes];
+  for (const g of ganhas) {
+    const i = out.findIndex((p) => p.id === g.id);
+    if (i >= 0) out[i] = g;
+    else out.push(g);
+  }
+  return out;
+}
+
 /**
  * Medalhas guardadas no aparelho. Elas são calculadas quando o treino termina (e só então, ou quando o histórico,
  * a meta ou o ano mudam por fora) e a tela inicial lê o resultado pronto. As que subiram de nível no treino ficam
@@ -66,7 +77,11 @@ export class MedalhasService {
     const base = this.impressao(h);
     const atual = this.guardado();
     if (atual?.base === base) return;
-    this.gravar({ v: 1, base, conquistas: this.calcular(h), novas: atual?.novas ?? [] });
+    const conquistas = this.calcular(h);
+    // Treino que chegou de outro aparelho: o que subiu de nível por causa dele também conta como novo aqui.
+    // Sem guardado anterior (primeiro uso ou conta recém-aberta) não há com o que comparar, então nada é "novo".
+    const subiram = atual && atual.conquistas.length > 0 ? niveisGanhos(atual.conquistas, conquistas, dataLocal()).map((n) => ({ ...n, em: conquistas.find((c) => c.id === n.id)?.dataDoNivel ?? n.em })) : [];
+    this.gravar({ v: 1, base, conquistas, novas: juntar(atual?.novas ?? [], subiram) });
   }
 
   /** Chamado ao concluir um treino: calcula as medalhas, guarda e devolve o que subiu de nível neste treino. */
@@ -75,14 +90,8 @@ export class MedalhasService {
     const h = this.plans.historico();
     const antes = this.calcular(h.filter((s) => s.id !== sessaoId));
     const depois = this.calcular(h);
-    const pendentes = [...(this.guardado()?.novas ?? [])];
     const ganhos = niveisGanhos(antes, depois, dataLocal());
-    for (const g of ganhos) {
-      const i = pendentes.findIndex((p) => p.id === g.id);
-      if (i >= 0) pendentes[i] = g;
-      else pendentes.push(g);
-    }
-    this.gravar({ v: 1, base: this.impressao(h), conquistas: depois, novas: pendentes });
+    this.gravar({ v: 1, base: this.impressao(h), conquistas: depois, novas: juntar(this.guardado()?.novas ?? [], ganhos) });
     return ganhos;
   }
 

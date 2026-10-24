@@ -1,0 +1,190 @@
+<section class="page">
+  @if (nuvem.usuario(); as u) {
+    <app-barra-topo [titulo]="primeiroNome() || 'Início'" icone="icons/icon-96x96.png">
+      <a class="barra-conta" routerLink="/ajustes" tabindex="-1">
+        <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="34" />
+      </a>
+    </app-barra-topo>
+  }
+  <header class="cabeca">
+    <div>
+      <p class="apoio">{{ dataTexto }}</p>
+      <h1 class="titulo">{{ titulo() }}</h1>
+    </div>
+    @if (nuvem.usuario(); as u) {
+      <a class="conta" routerLink="/ajustes" aria-label="Minha conta">
+        <app-avatar [usuario]="social.meuUsuario() ?? u" [tamanho]="44" />
+      </a>
+    }
+  </header>
+
+  <ol class="semana" aria-label="Semana de treinos">
+    @for (d of semana(); track d.data) {
+      <li>
+        <span class="apoio" aria-hidden="true">{{ d.letra }}</span>
+        <span class="dia" [class.feito]="d.feito" [class.hoje]="d.hoje" aria-hidden="true">
+          @if (d.feito) {
+            <app-icon name="check" [size]="16" [stroke]="3" />
+          }
+        </span>
+        <span class="sr-only">{{ d.descricao }}</span>
+      </li>
+    }
+  </ol>
+
+  @if (concluidoHoje() && resumoHoje(); as r) {
+    <article class="destaque" aria-labelledby="t-feito">
+      <div class="destaque__topo">
+        <div>
+          <p class="destaque__rotulo" id="t-feito">Treino de hoje concluído</p>
+          <h2 class="destaque__nome">{{ r.nome }}</h2>
+        </div>
+        <span class="selo selo--feito"><app-icon name="check" [size]="14" [stroke]="3" /> Feito</span>
+      </div>
+      <ul class="numeros" aria-label="Resumo do treino">
+        <li><strong>{{ r.exercicios }}</strong><span>{{ r.exercicios === 1 ? 'exercício' : 'exercícios' }}</span></li>
+        <li><strong>{{ r.series }}</strong><span>{{ r.series === 1 ? 'série' : 'séries' }}</span></li>
+        @if (r.volume > 0) {
+          <li><strong>{{ carga(r.volume) }}</strong><span>de carga</span></li>
+        }
+      </ul>
+      @if (r.textoRecordes) {
+        <p class="recorde"><app-icon name="medal" [size]="18" [stroke]="2.2" /> {{ r.textoRecordes }}</p>
+      }
+      @if (r.sessao.registros?.length) {
+        <button type="button" class="btn btn--claro" aria-haspopup="dialog" (click)="sessaoAberta.set(true)">Ver detalhes do treino</button>
+      }
+    </article>
+
+    @if (plans.proxima(); as prox) {
+      <a class="card linha" [routerLink]="['/ficha', prox.id]">
+        <span class="letra">{{ plans.letra(prox.id) }}</span>
+        <span class="linha__texto">
+          <span class="apoio">Próximo treino</span>
+          <span class="linha__nome">{{ prox.nome }}</span>
+          <span class="apoio">{{ plans.rotulo(prox.id) }} · {{ prox.itens.length }} {{ prox.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
+        </span>
+        <app-icon name="chevron" [size]="18" />
+      </a>
+    }
+  } @else if (plans.proxima(); as ficha) {
+    <article class="destaque">
+      <div class="destaque__topo">
+        <div>
+          <p class="destaque__rotulo">Treino de hoje · {{ plans.rotulo(ficha.id) }}</p>
+          <h2 class="destaque__nome">{{ ficha.nome }}</h2>
+        </div>
+        <span class="selo">{{ ficha.itens.length }} {{ ficha.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
+      </div>
+      @if (grupos(ficha.itens); as gs) {
+        @if (gs.length > 0) {
+          <ul class="grupos grupos--escuro" aria-label="Grupos musculares do treino">
+            @for (g of gs; track g) {
+              <li class="grupo">{{ g }}</li>
+            }
+          </ul>
+        }
+      }
+      <div class="miniaturas">
+        @for (item of ficha.itens.slice(0, 3); track item.exerciseId) {
+          <img [src]="exercicios.imagem(item.exerciseId, 0)" alt="" loading="lazy" />
+        }
+        @if (ficha.itens.length > 3) {
+          <span class="mais">+{{ ficha.itens.length - 3 }}</span>
+        }
+      </div>
+      <a class="btn btn--destaque" [routerLink]="['/treino', ficha.id]">
+        <app-icon name="play" [size]="18" /> {{ plans.emAndamento()?.fichaId === ficha.id ? 'Continuar treino' : 'Iniciar treino' }}
+      </a>
+    </article>
+  } @else {
+    <article class="destaque">
+      <h2 class="destaque__nome">Monte sua primeira ficha</h2>
+      <p class="destaque__rotulo">Escolha exercícios na biblioteca e defina séries, repetições e carga.</p>
+      <a class="btn btn--destaque" routerLink="/biblioteca">
+        <app-icon name="plus" [size]="18" [stroke]="2.5" /> Escolher exercícios
+      </a>
+      <a class="btn btn--claro" routerLink="/fichas/sugestao">Sugerir ficha</a>
+    </article>
+  }
+
+  @if (!plans.treinouHoje()) {
+    <a class="btn btn--claro" routerLink="/treino-do-dia">
+      <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino customizado para hoje
+    </a>
+  }
+
+  @if (plans.fichas().length > 0 || plans.historico().length > 0) {
+    <article class="card bloco" aria-labelledby="t-meta-home">
+      <div class="bloco__topo">
+        <h2 id="t-meta-home" class="rot">Meta da semana</h2>
+        <span class="apoio">{{ meta() }}× por semana</span>
+      </div>
+      <p class="grande">{{ treinosSemana() }} <small>de {{ meta() }} treinos</small></p>
+      <div class="trilha" role="progressbar" aria-label="Treinos da semana" aria-valuemin="0" [attr.aria-valuemax]="meta()" [attr.aria-valuenow]="treinosSemana()">
+        <div class="trilha__cheia" [style.width.%]="percentualMeta()"></div>
+      </div>
+      <p class="apoio">{{ textoMeta() }}</p>
+    </article>
+
+    <section class="lista" aria-labelledby="titulo-conquistas">
+      <div class="lista__topo">
+        <h2 id="titulo-conquistas">Medalhas</h2>
+        @if (novasIds().length > 0) {
+          <span class="chip-novas" role="status">{{ novasIds().length }} {{ novasIds().length === 1 ? 'nova' : 'novas' }}</span>
+        }
+        <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="abrirGaleria(null)">Ver todas</button>
+      </div>
+      <app-quadro-medalhas [conquistas]="melhores()" [novas]="novasIds()" (abrir)="abrirGaleria($event)" />
+      @if (proxima(); as p) {
+        @if (p.proximo; as alvo) {
+          <p class="apoio proxima">Próxima: <strong>{{ nomes[alvo.nivel] }}</strong> em {{ p.titulo }} · {{ progresso(p.id, p.atual, alvo.alvo) }}</p>
+        }
+      }
+    </section>
+  }
+
+  @if (plans.fichas().length > 0) {
+    <section class="lista" aria-labelledby="titulo-fichas">
+      <div class="lista__topo">
+        <h2 id="titulo-fichas">Minhas fichas</h2>
+        <a routerLink="/fichas" class="ver-todas">Ver todas</a>
+      </div>
+      @for (f of plans.fichas().slice(0, 3); track f.id) {
+        <a class="card linha" [routerLink]="['/ficha', f.id]">
+          <span class="letra">{{ plans.letra(f.id) }}</span>
+          <span class="linha__texto">
+            <span class="linha__nome">{{ f.nome }}</span>
+            <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}@if (f.conjunto) { · {{ f.conjunto.nome }} }</span>
+            @if (grupos(f.itens); as gs) {
+              @if (gs.length > 0) {
+                <ul class="grupos" aria-label="Grupos musculares">
+                  @for (g of gs; track g) {
+                    <li class="grupo">{{ g }}</li>
+                  }
+                </ul>
+              }
+            }
+          </span>
+          <app-icon name="chevron" [size]="18" />
+        </a>
+      }
+    </section>
+  }
+
+  @if (galeriaAberta()) {
+    <app-dialogo titulo="Medalhas" [subtitulo]="resumoConquistas()" (fechar)="fecharGaleria()">
+      <app-medalhas-galeria [conquistas]="conquistas()" [recordes]="recordesRecentes()" [foco]="focoGaleria()" [novas]="novasNaGaleria()" />
+    </app-dialogo>
+  }
+
+  @if (sessaoAberta() && resumoHoje(); as r) {
+    <app-dialogo [titulo]="r.nome" subtitulo="Treino de hoje" (fechar)="sessaoAberta.set(false); exercicioAberto.set(null)">
+      <app-sessao-detalhe [sessao]="r.sessao" (verExercicio)="exercicioAberto.set($event)" />
+    </app-dialogo>
+  }
+
+  @if (exercicioAberto(); as id) {
+    <app-exercicio-dialogo [id]="id" (fechar)="exercicioAberto.set(null)" />
+  }
+</section>

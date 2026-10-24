@@ -4,7 +4,7 @@ PWA em Angular para montar fichas de treino. A biblioteca tem 876 exercícios co
 
 ## O que já faz
 
-- **Início**: treino do dia (rodízio entre as fichas) com os grupos musculares de cada ficha e semana com os treinos concluídos. Depois de treinar, mostra o resumo do treino de hoje e o próximo treino. Tem também a meta da semana e o quadro de medalhas: cada meta (treinos, constância, carga levantada e recordes) tem uma medalha que evolui de bronze a prata, ouro e diamante, com a galeria completa em Ver todas.
+- **Início**: treino do dia (rodízio entre as fichas) com os grupos musculares de cada ficha e semana com os treinos concluídos. Depois de treinar, mostra o resumo do treino de hoje e o próximo treino. Tem também a meta da semana e o quadro de medalhas (as 6 melhores; o resto em Ver todas). Veja [Medalhas](#medalhas).
 - **Peso**: em Ajustes se registra o peso do dia; em Social › Estatísticas, o gráfico de evolução por semana, mês ou ano. Os registros sincronizam com a conta, junto com as fichas.
 - **Biblioteca**: busca por nome em português ou inglês, filtro por grupo muscular, equipamento e nível.
 - **Exercício**: foto alternando entre as duas posições, músculos, equipamento e instruções.
@@ -43,8 +43,16 @@ public/exercises/<id>/0.jpg, 1.jpg    fotos de cada exercício (início e fim)
 public/exercises/<id>/anim.webp       animação das duas fotos em loop (gerada)
 tools/gerar_animacoes.py              gera os anim.webp a partir das fotos
 src/app/core/                         serviços (exercícios, fichas, avisos) e componentes de apoio
-src/app/pages/                        telas
+src/app/pages/                        telas (as maiores têm .html e .scss ao lado do .ts)
 ```
+
+## Medalhas
+
+Nove metas, cada uma com bronze, prata, ouro e diamante: treinos concluídos, treinos no ano (zera a cada ano), constância (semanas seguidas cumprindo a meta), dias seguidos, carga levantada, recordes, superiores, inferiores e cardio. A medalha atual substitui a anterior; a galeria mostra a trilha completa e os recordes recentes. A regra fica em `core/medalhas.ts` (funções puras, com testes).
+
+As medalhas **são calculadas ao concluir o treino** e guardadas no aparelho (`core/medalhas.service.ts`, chave `app-workout:medalhas:v1`); a tela inicial só lê o resultado. O serviço recalcula sozinho se o histórico, a meta semanal ou o ano mudarem por fora, por exemplo um treino que chega de outro aparelho; nesse caso o que subiu de nível também vira "nova". As **novas** (chip "N novas" e cards em destaque na Home) ficam até a galeria ser aberta, ou por 7 dias. Ao sair da conta o que está guardado é apagado.
+
+Ao concluir um treino aparece o **resumo** (`core/resumo-treino.ts`): números do treino e as medalhas novas, centralizadas e com rolagem horizontal quando passam de três. Ao tocar numa medalha, a galeria rola até ela e a faz piscar.
 
 ## Sugestão automática de fichas
 

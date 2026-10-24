@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.12.1",
+    "data": "2026-10-23",
+    "titulo": "Medalhas mais consistentes entre aparelhos",
+    "itens": [
+      "Treinos feitos em outro aparelho que rendem medalha nova agora também aparecem como \"novas\" aqui."
+    ]
+  },
+  {
     "versao": "1.12.0",
     "data": "2026-10-23",
     "titulo": "Medalhas guardadas e novas em destaque",
