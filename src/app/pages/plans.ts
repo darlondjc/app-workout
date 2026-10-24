@@ -76,13 +76,13 @@ import { PlanService } from '../core/plan.service';
               <span class="letra">{{ plans.letra(f.id) }}</span>
               <span class="linha__texto">
                 <span class="linha__nome">{{ f.nome }}</span>
-                @if (plans.proxima()?.id === f.id) {
-                  <span class="chip-proximo">{{ plans.emAndamento() ? 'Em andamento' : 'Próximo sugerido' }}</span>
-                }
                 <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
                 @if (grupos(f.itens); as gs) {
-                  @if (gs.length > 0) {
+                  @if (gs.length > 0 || plans.proxima()?.id === f.id) {
                     <ul class="grupos" aria-label="Grupos musculares">
+                      @if (plans.proxima()?.id === f.id) {
+                        <li class="grupo chip-proximo">{{ plans.emAndamento() ? 'Em andamento' : 'Próximo sugerido' }}</li>
+                      }
                       @for (g of gs; track g) {
                         <li class="grupo">{{ g }}</li>
                       }
@@ -133,15 +133,10 @@ import { PlanService } from '../core/plan.service';
       gap: 10px;
     }
     .chip-proximo {
-      align-self: flex-start;
-      margin: 3px 0 1px;
-      padding: 2px 8px;
-      border-radius: 999px;
       background: var(--accent);
+      border-color: transparent;
       color: var(--ink);
-      font-size: 11px;
       font-weight: 700;
-      line-height: 1.4;
     }
     .item {
       position: relative;
