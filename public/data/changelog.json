@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.12.4",
+    "data": "2026-10-24",
+    "titulo": "Próximo treino sugerido nas fichas",
+    "itens": [
+      "Na lista de fichas, o treino que o app sugere como próximo ganha o chip \"Próximo sugerido\" (ou \"Em andamento\", se você já começou um)."
+    ]
+  },
+  {
     "versao": "1.12.2",
     "data": "2026-10-23",
     "titulo": "Carregamento em cinza neutro",
