@@ -85,4 +85,29 @@ describe('Plans — fichas com vários treinos', () => {
       expect(el().querySelectorAll('.item').length).toBe(1);
     });
   });
+
+  describe('chip do próximo treino', () => {
+    const chips = () => [...el().querySelectorAll('.chip-proximo')];
+    const nomeDoChip = () => chips()[0]?.closest('.link')?.querySelector('.linha__nome')?.textContent?.trim();
+
+    it('marca só o treino sugerido como próximo', () => {
+      expect(chips().length).toBe(1);
+      expect(chips()[0].textContent!.trim()).toBe('Próximo sugerido');
+      expect(nomeDoChip()).toBe('Antiga');
+    });
+
+    it('depois de concluir um treino, o chip passa para o seguinte', () => {
+      plans.registrarSessao(plans.fichas()[0].id);
+      fixture.detectChanges();
+      expect(chips().length).toBe(1);
+      expect(nomeDoChip()).toBe('Peito');
+    });
+
+    it('com um treino em andamento, o chip vira "Em andamento"', () => {
+      plans.trocarNoTreino(plans.fichas()[1].id, 0, 'outro');
+      fixture.detectChanges();
+      expect(chips().length).toBe(1);
+      expect(chips()[0].textContent!.trim()).toBe('Em andamento');
+    });
+  });
 });
