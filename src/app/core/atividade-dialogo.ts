@@ -15,7 +15,7 @@ import { SocialService } from './social.service';
     <app-dialogo titulo="Adicionar atividade" subtitulo="Conta como o treino de hoje" (fechar)="cancelar.emit()">
       <form class="form" (submit)="enviar($event)" novalidate>
         <fieldset class="opcoes">
-          <legend class="rot">Qual foi a atividade?</legend>
+          <legend class="rot">Qual foi a atividade? *</legend>
           <div class="chips">
             @for (t of tipos; track t.key) {
               <button type="button" class="chip" [class.ativo]="tipo().key === t.key" [attr.aria-pressed]="tipo().key === t.key" (click)="tipoKey.set(t.key)">{{ t.nome }}</button>
@@ -25,24 +25,24 @@ import { SocialService } from './social.service';
 
         @if (tipo().key === 'outra') {
           <label class="campo">
-            <span class="apoio">Nome da atividade</span>
+            <span class="apoio">Nome da atividade *</span>
             <input #campoNome type="text" maxlength="30" autocomplete="off" placeholder="Ex.: Ciclismo" [value]="nomeOutra()" (input)="nomeOutra.set(campoNome.value)" />
           </label>
         }
 
         <div class="duas">
           <label class="campo">
-            <span class="apoio">Duração (min)</span>
+            <span class="apoio">Duração (min) *</span>
             <input #campoMin type="text" inputmode="numeric" autocomplete="off" placeholder="45" [value]="minutos()" (input)="minutos.set(campoMin.value)" />
           </label>
           <label class="campo">
-            <span class="apoio">Distância (km) · opcional</span>
+            <span class="apoio">Distância (km)</span>
             <input #campoKm type="text" inputmode="decimal" autocomplete="off" placeholder="5,2" [value]="distancia()" (input)="distancia.set(campoKm.value)" />
           </label>
         </div>
 
         <fieldset class="opcoes">
-          <legend class="rot">Esforço · opcional</legend>
+          <legend class="rot">Esforço</legend>
           <div class="chips">
             @for (e of esforcos; track e.key) {
               <button type="button" class="chip" [class.ativo]="esforco() === e.key" [attr.aria-pressed]="esforco() === e.key" (click)="esforco.set(esforco() === e.key ? null : e.key)">{{ e.nome }}</button>
@@ -58,7 +58,7 @@ import { SocialService } from './social.service';
               <button type="button" class="btn btn--claro" (click)="foto.set(null)">Remover</button>
             </div>
           } @else {
-            <app-foto-botao rotulo="Adicionar foto (opcional)" (escolhida)="foto.set($event)" />
+            <app-foto-botao rotulo="Adicionar foto" (escolhida)="foto.set($event)" />
           }
         }
 
@@ -73,7 +73,7 @@ import { SocialService } from './social.service';
     .form { display: flex; flex-direction: column; gap: 14px; }
     .opcoes { margin: 0; padding: 0; border: 0; min-width: 0; }
     .opcoes .rot { padding: 0; margin-bottom: 8px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
     .chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 14px; }
     .chip.ativo { background: var(--ink); border-color: var(--ink); color: var(--accent); font-weight: 700; }
     .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
