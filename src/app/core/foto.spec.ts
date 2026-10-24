@@ -1,4 +1,4 @@
-import { LIMITE_FOTO, ZOOM_MAXIMO, posicionar, recortarFoto, reduzirFoto, trechoVisivel } from './foto';
+import { LIMITE_FOTO, espelharFoto, ZOOM_MAXIMO, posicionar, recortarFoto, reduzirFoto, trechoVisivel } from './foto';
 
 /** Imagem sintética em PNG; com `ruido`, cada pixel é aleatório (a pior situação para a compressão). */
 async function imagem(largura: number, altura: number, ruido: boolean): Promise<Blob> {
@@ -137,5 +137,37 @@ describe('recortarFoto', () => {
     const [r, , b] = ctx.getImageData(c.width - 5, c.height / 2, 1, 1).data;
     expect(r).toBeGreaterThan(150);
     expect(b).toBeLessThan(100);
+  });
+});
+
+describe('espelharFoto', () => {
+  it('inverte a foto na horizontal e mantém o tamanho', async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 20;
+    canvas.height = 10;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 20, 10);
+    ctx.fillStyle = '#f00';
+    ctx.fillRect(0, 0, 10, 10); // metade esquerda vermelha
+
+    const espelhada = await espelharFoto(canvas.toDataURL('image/png'));
+    const img = new Image();
+    await new Promise<void>((ok) => {
+      img.onload = () => ok();
+      img.src = espelhada;
+    });
+    expect([img.naturalWidth, img.naturalHeight]).toEqual([20, 10]);
+    const c2 = document.createElement('canvas');
+    c2.width = 20;
+    c2.height = 10;
+    const x2 = c2.getContext('2d')!;
+    x2.drawImage(img, 0, 0);
+    const er = x2.getImageData(2, 5, 1, 1).data[0];
+    const [dr, dg] = x2.getImageData(17, 5, 1, 1).data;
+    expect(er).toBeGreaterThan(200); // esquerda agora é branca (R alto, G alto)
+    expect(x2.getImageData(2, 5, 1, 1).data[1]).toBeGreaterThan(200);
+    expect(dr).toBeGreaterThan(200);
+    expect(dg).toBeLessThan(60); // direita agora é vermelha
   });
 });

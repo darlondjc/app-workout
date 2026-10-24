@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
-import { PROPORCAO_FOTO, ZOOM_MAXIMO, posicionar, recortarFoto } from './foto';
+import { PROPORCAO_FOTO, ZOOM_MAXIMO, espelharFoto, posicionar, recortarFoto } from './foto';
+import { Icon } from './icon';
 
 /**
  * Quadro para a pessoa escolher o trecho da foto: arrasta para mover e usa dois dedos (ou o controle de zoom)
@@ -7,6 +8,7 @@ import { PROPORCAO_FOTO, ZOOM_MAXIMO, posicionar, recortarFoto } from './foto';
  */
 @Component({
   selector: 'app-enquadrar-foto',
+  imports: [Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -27,8 +29,11 @@ import { PROPORCAO_FOTO, ZOOM_MAXIMO, posicionar, recortarFoto } from './foto';
         (load)="aoCarregar($event)"
         [style.width.px]="pos()?.largura"
         [style.height.px]="pos()?.altura"
-        [style.transform]="'translate(-50%, -50%) translate(' + (pos()?.x ?? 0) + 'px, ' + (pos()?.y ?? 0) + 'px)'"
+        [style.transform]="'translate(-50%, -50%) translate(' + (pos()?.x ?? 0) + 'px, ' + (pos()?.y ?? 0) + 'px)' + (espelhada() ? ' scaleX(-1)' : '')"
       />
+      <button type="button" class="espelhar" aria-label="Espelhar foto" [attr.aria-pressed]="espelhada()" (pointerdown)="$event.stopPropagation()" (click)="espelhada.set(!espelhada())">
+        <app-icon name="mirror" [size]="20" [stroke]="2.2" />
+      </button>
     </div>
     <label class="zoom">
       <span>Zoom</span>
@@ -41,6 +46,8 @@ import { PROPORCAO_FOTO, ZOOM_MAXIMO, posicionar, recortarFoto } from './foto';
     .quadro { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 16px; background: var(--soft); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
     .quadro:active { cursor: grabbing; }
     img { position: absolute; left: 50%; top: 50%; max-width: none; pointer-events: none; }
+    .espelhar { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .espelhar[aria-pressed='true'] { background: var(--accent); color: var(--ink); }
     .zoom { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 13px; color: var(--muted); }
     .zoom input { flex: 1; min-width: 0; accent-color: var(--ink); }
     .dica { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
@@ -52,6 +59,7 @@ export class EnquadrarFoto {
 
   protected readonly zoomMaximo = ZOOM_MAXIMO;
   protected readonly zoom = signal(1);
+  protected readonly espelhada = signal(false);
   private readonly x = signal(0);
   private readonly y = signal(0);
   private readonly tamanhoFoto = signal<{ w: number; h: number } | null>(null);
@@ -70,6 +78,7 @@ export class EnquadrarFoto {
     // Foto nova: volta ao enquadramento inicial.
     effect(() => {
       this.foto();
+      this.espelhada.set(false);
       this.zoom.set(1);
       this.x.set(0);
       this.y.set(0);
@@ -139,6 +148,7 @@ export class EnquadrarFoto {
   /** A foto recortada no que está enquadrado. */
   async recortar(): Promise<string> {
     const q = this.tamanhoQuadro();
-    return recortarFoto(this.foto(), q.w, q.h, { zoom: this.zoom(), x: this.x(), y: this.y() });
+    const origem = this.espelhada() ? await espelharFoto(this.foto()) : this.foto();
+    return recortarFoto(origem, q.w, q.h, { zoom: this.zoom(), x: this.x(), y: this.y() });
   }
 }

@@ -20,6 +20,7 @@ export type IconName =
   | 'people'
   | 'trash'
   | 'camera'
+  | 'mirror'
   | 'medal'
   | 'scale'
   | 'logout'
@@ -76,6 +77,11 @@ export type IconName =
         @case ('camera') {
           <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
           <circle cx="12" cy="13" r="3.5" />
+        }
+        @case ('mirror') {
+          <path d="M12 3v2M12 8v2M12 14v2M12 19v2" />
+          <path d="M9.5 6L3 19h6.5z" />
+          <path d="M14.5 6L21 19h-6.5z" />
         }
         @case ('close') {
           <path d="M6 6l12 12M18 6L6 18" />

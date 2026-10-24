@@ -91,6 +91,20 @@ function carregar(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/** A foto espelhada na horizontal (como a câmera frontal mostra), no mesmo tamanho e como JPEG. */
+export async function espelharFoto(src: string): Promise<string> {
+  const img = await carregar(src);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Sem suporte a imagens neste navegador.');
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(img, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
 /** Recorta o trecho enquadrado e devolve um JPEG pequeno em data URL, nos mesmos limites de `reduzirFoto`. */
 export async function recortarFoto(src: string, fw: number, fh: number, e: Enquadramento): Promise<string> {
   const img = await carregar(src);
