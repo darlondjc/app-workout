@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, output, signal, viewChild } from '@angular/core';
 import { DISTANCIA_MAXIMA_KM, ESFORCOS, MINUTOS_MAXIMO, TIPOS_ATIVIDADE, lerNumero } from './atividade';
 import { Dialogo } from './dialogo';
 import { EnquadrarFoto } from './enquadrar-foto';
@@ -52,10 +52,12 @@ import { SocialService } from './social.service';
 
         @if (social.ativo()) {
           @if (foto(); as f) {
-            <app-enquadrar-foto [foto]="f" />
-            <div class="foto-acoes">
-              <app-foto-botao rotulo="Trocar foto" (escolhida)="foto.set($event)" />
-              <button type="button" class="btn btn--claro" (click)="foto.set(null)">Remover</button>
+            <div #blocoFoto class="foto-bloco">
+              <app-enquadrar-foto [foto]="f" />
+              <div class="foto-acoes">
+                <app-foto-botao rotulo="Trocar foto" (escolhida)="foto.set($event)" />
+                <button type="button" class="btn btn--claro" (click)="foto.set(null)">Remover</button>
+              </div>
             </div>
           } @else {
             <app-foto-botao rotulo="Adicionar foto" (escolhida)="foto.set($event)" />
@@ -79,6 +81,7 @@ import { SocialService } from './social.service';
     .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .campo input { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; background: var(--card); color: var(--ink); }
+    .foto-bloco { scroll-margin-top: 8px; }
     .foto-acoes { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
     .erro { margin: 0; font-size: 13px; color: #b3261e; }
   `,
@@ -101,6 +104,12 @@ export class AtividadeDialogo {
   protected readonly erro = signal('');
   protected readonly salvando = signal(false);
   private readonly enquadrador = viewChild(EnquadrarFoto);
+  private readonly blocoFoto = viewChild<ElementRef<HTMLElement>>('blocoFoto');
+
+  constructor() {
+    // A foto escolhida entra no fim do formulário, fora da área visível: leva a tela até o enquadramento.
+    effect(() => this.blocoFoto()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
 
   protected async enviar(ev: Event): Promise<void> {
     ev.preventDefault();
