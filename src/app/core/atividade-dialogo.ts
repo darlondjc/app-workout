@@ -14,7 +14,7 @@ import { SocialService } from './social.service';
   template: `
     <app-dialogo titulo="Adicionar atividade" subtitulo="Conta como o treino de hoje" (fechar)="cancelar.emit()">
       <form class="form" (submit)="enviar($event)" novalidate>
-        <fieldset class="grupo">
+        <fieldset class="opcoes">
           <legend class="rot">Qual foi a atividade?</legend>
           <div class="chips">
             @for (t of tipos; track t.key) {
@@ -41,7 +41,7 @@ import { SocialService } from './social.service';
           </label>
         </div>
 
-        <fieldset class="grupo">
+        <fieldset class="opcoes">
           <legend class="rot">Esforço · opcional</legend>
           <div class="chips">
             @for (e of esforcos; track e.key) {
@@ -71,8 +71,8 @@ import { SocialService } from './social.service';
   `,
   styles: `
     .form { display: flex; flex-direction: column; gap: 14px; }
-    .grupo { margin: 0; padding: 0; border: 0; min-width: 0; }
-    .grupo .rot { padding: 0; margin-bottom: 8px; }
+    .opcoes { margin: 0; padding: 0; border: 0; min-width: 0; }
+    .opcoes .rot { padding: 0; margin-bottom: 8px; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 14px; }
     .chip.ativo { background: var(--ink); border-color: var(--ink); color: var(--accent); font-weight: 700; }
