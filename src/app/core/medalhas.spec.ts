@@ -225,16 +225,16 @@ describe('niveisGanhos', () => {
   const calc = (h: Sessao[]) => calcularConquistas(h, 3, ctx);
 
   it('aponta a meta cujo nível subiu com o último treino', () => {
-    const todos = treinos(10);
-    const novas = niveisGanhos(calc(todos.slice(0, 9)), calc(todos), '2026-03-10');
+    const todos = treinos(5);
+    const novas = niveisGanhos(calc(todos.slice(0, 4)), calc(todos), '2026-03-10');
     const treinosNova = novas.find((x) => x.id === 'treinos');
     expect(treinosNova?.nivel).toBe('bronze');
     expect(treinosNova?.em).toBe('2026-03-10');
   });
 
   it('não aponta nada quando nenhum nível mudou', () => {
-    const todos = treinos(12);
-    expect(niveisGanhos(calc(todos.slice(0, 11)), calc(todos), '2026-03-12').find((x) => x.id === 'treinos')).toBeUndefined();
+    const todos = treinos(7);
+    expect(niveisGanhos(calc(todos.slice(0, 6)), calc(todos), '2026-03-07').find((x) => x.id === 'treinos')).toBeUndefined();
   });
 });
 

@@ -69,19 +69,21 @@ export class MedalhasService {
     this.gravar({ v: 1, base, conquistas: this.calcular(h), novas: atual?.novas ?? [] });
   }
 
-  /** Chamado ao concluir um treino: calcula as medalhas, guarda e separa o que subiu de nível neste treino. */
-  aposTreino(sessaoId: string): void {
-    if (!this.exercicios.ready()) return;
+  /** Chamado ao concluir um treino: calcula as medalhas, guarda e devolve o que subiu de nível neste treino. */
+  aposTreino(sessaoId: string): NovaMedalha[] {
+    if (!this.exercicios.ready()) return [];
     const h = this.plans.historico();
     const antes = this.calcular(h.filter((s) => s.id !== sessaoId));
     const depois = this.calcular(h);
     const pendentes = [...(this.guardado()?.novas ?? [])];
-    for (const g of niveisGanhos(antes, depois, dataLocal())) {
+    const ganhos = niveisGanhos(antes, depois, dataLocal());
+    for (const g of ganhos) {
       const i = pendentes.findIndex((p) => p.id === g.id);
       if (i >= 0) pendentes[i] = g;
       else pendentes.push(g);
     }
     this.gravar({ v: 1, base: this.impressao(h), conquistas: depois, novas: pendentes });
+    return ganhos;
   }
 
   /** A pessoa viu as novas (abriu a galeria): somem os destaques. */

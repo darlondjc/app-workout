@@ -86,6 +86,20 @@ describe('Workout — marcar séries em bloco', () => {
     expect(sessao.registros![1].series[0]).toEqual(jasmine.objectContaining({ carga: 30, reps: 12 }));
   });
 
+  it('ao concluir, mostra o resumo e só volta para o início quando a pessoa toca em OK', () => {
+    clicar(botao('Próximo exercício'));
+    clicar(botao('Finalizar treino'));
+    clicar(botao('Marcar e finalizar'));
+    const navegar = TestBed.inject(Router).navigate as jasmine.Spy;
+    expect(navegar).not.toHaveBeenCalled();
+    const resumo = el().querySelector('app-resumo-treino')!;
+    expect(resumo.textContent).toContain('Treino concluído');
+    expect(resumo.textContent).toContain('Ficha A');
+    clicar(resumo.querySelector('button.ok') as HTMLButtonElement);
+    expect(navegar).toHaveBeenCalledWith(['/']);
+    expect(el().querySelector('app-resumo-treino')).toBeNull();
+  });
+
   it('"Finalizar sem marcar" grava só o que foi marcado', () => {
     clicar(botao('Marcar todos'));
     clicar(botao('Próximo exercício'));
