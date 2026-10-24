@@ -7,6 +7,7 @@ import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { RegistroExercicio, SerieEmAndamento } from '../core/models';
 import { NavegacaoService } from '../core/navegacao.service';
+import { MedalhasService } from '../core/medalhas.service';
 import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
 import { ToastService } from '../core/toast.service';
@@ -479,6 +480,7 @@ export class Workout {
   readonly id = input.required<string>();
 
   protected readonly plans = inject(PlanService);
+  private readonly medalhas = inject(MedalhasService);
   private readonly ex = inject(ExerciseService);
   private readonly toast = inject(ToastService);
   private readonly social = inject(SocialService);
@@ -740,6 +742,7 @@ export class Workout {
       return series.length ? [{ exerciseId: efetivos[i], ...(it.unidade ? { unidade: it.unidade } : {}), series }] : [];
     });
     const sessaoId = this.plans.registrarSessao(this.id(), registros, foto !== null);
+    this.medalhas.aposTreino(sessaoId);
     if (foto) void this.social.salvarFoto(sessaoId, foto);
     this.toast.mostrar('Treino concluído. Bom trabalho!');
     this.router.navigate(['/']);

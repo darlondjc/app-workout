@@ -279,3 +279,32 @@ export function formatarValor(id: TipoConquista, v: number): string {
       return v >= 1000 ? `${(v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} t` : `${Math.round(v)} kg`;
   }
 }
+
+/** Um nível novo conquistado, ainda não visto pela pessoa. */
+export interface NovaMedalha {
+  id: TipoConquista;
+  nivel: Nivel;
+  /** Dia em que foi conquistado (yyyy-mm-dd). */
+  em: string;
+}
+
+/** Níveis que subiram de `antes` para `depois`, um por meta (o maior alcançado). */
+export function niveisGanhos(antes: Conquista[], depois: Conquista[], em: string): NovaMedalha[] {
+  const rank = (n: Nivel | null) => (n ? NIVEIS.indexOf(n) : -1);
+  const out: NovaMedalha[] = [];
+  for (const d of depois) {
+    const a = antes.find((x) => x.id === d.id);
+    if (d.nivel && rank(d.nivel) > rank(a?.nivel ?? null)) out.push({ id: d.id, nivel: d.nivel, em });
+  }
+  return out;
+}
+
+/**
+ * Identifica o que as medalhas guardadas levaram em conta: histórico, meta semanal e ano. Se mudar
+ * (treino vindo da nuvem, meta alterada, virada do ano), é hora de recalcular; senão, vale o que está guardado.
+ */
+export function impressaoDoHistorico(h: Sessao[], meta: number, ano: number): string {
+  const ultimo = h.reduce((m, s) => Math.max(m, s.concluidaEm ?? 0), 0);
+  const soma = h.reduce((t, s) => t + (s.registros?.length ?? 0), 0);
+  return `${h.length}:${ultimo}:${soma}:${meta}:${ano}`;
+}

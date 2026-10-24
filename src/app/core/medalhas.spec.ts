@@ -1,6 +1,6 @@
 import { Exercise, Sessao } from './models';
 import { dataISO } from './stats';
-import { Conquista, calcularConquistas, formatarProgresso, formatarValor, fracaoAteOProximo, historicoDeRecordes, ordenarPorNivel, proximaConquista, regiaoDoExercicio, RegiaoDoExercicio } from './medalhas';
+import { Conquista, calcularConquistas, formatarProgresso, formatarValor, fracaoAteOProximo, historicoDeRecordes, impressaoDoHistorico, niveisGanhos, ordenarPorNivel, proximaConquista, regiaoDoExercicio, RegiaoDoExercicio } from './medalhas';
 
 let n = 0;
 
@@ -217,5 +217,34 @@ describe('formatarValor', () => {
     expect(formatarValor('volume', 840)).toBe('840 kg');
     expect(formatarValor('volume', 10000)).toBe('10 t');
     expect(formatarValor('volume', 2500)).toBe('2,5 t');
+  });
+});
+
+describe('niveisGanhos', () => {
+  const ctx = { hoje: new Date(2026, 2, 31), regiaoDe: () => null };
+  const calc = (h: Sessao[]) => calcularConquistas(h, 3, ctx);
+
+  it('aponta a meta cujo nível subiu com o último treino', () => {
+    const todos = treinos(10);
+    const novas = niveisGanhos(calc(todos.slice(0, 9)), calc(todos), '2026-03-10');
+    const treinosNova = novas.find((x) => x.id === 'treinos');
+    expect(treinosNova?.nivel).toBe('bronze');
+    expect(treinosNova?.em).toBe('2026-03-10');
+  });
+
+  it('não aponta nada quando nenhum nível mudou', () => {
+    const todos = treinos(12);
+    expect(niveisGanhos(calc(todos.slice(0, 11)), calc(todos), '2026-03-12').find((x) => x.id === 'treinos')).toBeUndefined();
+  });
+});
+
+describe('impressaoDoHistorico', () => {
+  it('muda com treino novo, meta ou ano, e é estável caso contrário', () => {
+    const h = treinos(3);
+    const base = impressaoDoHistorico(h, 3, 2026);
+    expect(impressaoDoHistorico([...h], 3, 2026)).toBe(base);
+    expect(impressaoDoHistorico([...h, sessao('2026-03-20')], 3, 2026)).not.toBe(base);
+    expect(impressaoDoHistorico(h, 4, 2026)).not.toBe(base);
+    expect(impressaoDoHistorico(h, 3, 2027)).not.toBe(base);
   });
 });

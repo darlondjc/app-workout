@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Medalha } from './medalha';
-import { Conquista, NOMES_NIVEL, formatarProgresso, fracaoAteOProximo } from './medalhas';
+import { Conquista, NOMES_NIVEL, TipoConquista, formatarProgresso, fracaoAteOProximo } from './medalhas';
 
 /**
  * Quadro com a medalha atual de cada meta. Quando a pessoa sobe de nível, a medalha nova toma o lugar da anterior
@@ -14,12 +14,12 @@ import { Conquista, NOMES_NIVEL, formatarProgresso, fracaoAteOProximo } from './
     <ul class="quadro" aria-label="Quadro de medalhas">
       @for (c of conquistas(); track c.id) {
         <li>
-          <button type="button" class="medalha-card" aria-haspopup="dialog" [attr.aria-label]="rotulo(c)" (click)="abrir.emit()">
+          <button type="button" class="medalha-card" aria-haspopup="dialog" [attr.aria-label]="rotulo(c)" [class.medalha-card--nova]="ehNova(c)" (click)="abrir.emit(c.id)">
             <app-medalha [nivel]="c.nivel" [size]="52" />
             <span class="titulo-meta">{{ c.titulo }}</span>
             <span class="nivel" [class]="'nivel nivel--' + (c.nivel ?? 'nenhum')">
               {{ c.nivel ? nomes[c.nivel] : 'Sem medalha' }}
-              @if (c.nivel && c.dataDoNivel === hoje()) {
+              @if (ehNova(c)) {
                 <span class="nova">Nova</span>
               }
             </span>
@@ -61,6 +61,19 @@ import { Conquista, NOMES_NIVEL, formatarProgresso, fracaoAteOProximo } from './
       text-align: center;
       font: inherit;
       color: inherit;
+    }
+    .medalha-card--nova {
+      background: #f6fbdc;
+      box-shadow: inset 0 0 0 2px var(--accent-ink);
+      animation: chegou 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes chegou {
+      from { transform: scale(0.94); }
+      60% { transform: scale(1.025); }
+      to { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .medalha-card--nova { animation: none; }
     }
     .titulo-meta {
       margin-top: 6px;
@@ -110,11 +123,16 @@ import { Conquista, NOMES_NIVEL, formatarProgresso, fracaoAteOProximo } from './
 })
 export class QuadroMedalhas {
   readonly conquistas = input.required<Conquista[]>();
-  /** Dia de hoje (yyyy-mm-dd), para marcar o que subiu de nível hoje. */
-  readonly hoje = input<string>('');
-  readonly abrir = output<void>();
+  /** Metas que subiram de nível e ainda não foram vistas: ganham destaque. */
+  readonly novas = input<TipoConquista[]>([]);
+  /** Medalha tocada (a galeria abre já rolando até ela). */
+  readonly abrir = output<TipoConquista>();
 
   protected readonly nomes = NOMES_NIVEL;
+
+  protected ehNova(c: Conquista): boolean {
+    return !!c.nivel && this.novas().includes(c.id);
+  }
 
   protected percentual(c: Conquista): number {
     return Math.round(fracaoAteOProximo(c) * 100);

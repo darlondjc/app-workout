@@ -8,7 +8,8 @@ import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { MedalhasGaleria } from '../core/medalhas-galeria';
-import { NOMES_NIVEL, TipoConquista, calcularConquistas, formatarProgresso, historicoDeRecordes, ordenarPorNivel, proximaConquista, regiaoDoExercicio } from '../core/medalhas';
+import { NOMES_NIVEL, TipoConquista, formatarProgresso, historicoDeRecordes, ordenarPorNivel, proximaConquista } from '../core/medalhas';
+import { MedalhasService } from '../core/medalhas.service';
 import { QuadroMedalhas } from '../core/quadro-medalhas';
 import { lerMeta, metaPadrao } from '../core/meta';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
@@ -159,9 +160,12 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
         <section class="lista" aria-labelledby="titulo-conquistas">
           <div class="lista__topo">
             <h2 id="titulo-conquistas">Medalhas</h2>
-            <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="galeriaAberta.set(true)">Ver todas</button>
+            @if (novasIds().length > 0) {
+              <span class="chip-novas" role="status">{{ novasIds().length }} {{ novasIds().length === 1 ? 'nova' : 'novas' }}</span>
+            }
+            <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="abrirGaleria(null)">Ver todas</button>
           </div>
-          <app-quadro-medalhas [conquistas]="melhores()" [hoje]="hojeISO" (abrir)="galeriaAberta.set(true)" />
+          <app-quadro-medalhas [conquistas]="melhores()" [novas]="novasIds()" (abrir)="abrirGaleria($event)" />
           @if (proxima(); as p) {
             @if (p.proximo; as alvo) {
               <p class="apoio proxima">Próxima: <strong>{{ nomes[alvo.nivel] }}</strong> em {{ p.titulo }} · {{ progresso(p.id, p.atual, alvo.alvo) }}</p>
@@ -199,8 +203,8 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
       }
 
       @if (galeriaAberta()) {
-        <app-dialogo titulo="Medalhas" [subtitulo]="resumoConquistas()" (fechar)="galeriaAberta.set(false)">
-          <app-medalhas-galeria [conquistas]="conquistas()" [recordes]="recordesRecentes()" />
+        <app-dialogo titulo="Medalhas" [subtitulo]="resumoConquistas()" (fechar)="fecharGaleria()">
+          <app-medalhas-galeria [conquistas]="conquistas()" [recordes]="recordesRecentes()" [foco]="focoGaleria()" [novas]="novasNaGaleria()" />
         </app-dialogo>
       }
 
@@ -418,6 +422,19 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
     .lista__topo h2 {
       font-size: 18px;
     }
+    .chip-novas {
+      margin-left: 8px;
+      margin-right: auto;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      animation: chip-chega 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes chip-chega { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .chip-novas { animation: none; } }
     .ver-todas {
       min-height: 32px;
       padding: 0;
@@ -525,9 +542,17 @@ export class Home {
     return `Faltam ${faltam} ${faltam === 1 ? 'treino' : 'treinos'} para bater a meta.`;
   });
 
-  protected readonly conquistas = computed(() => ordenarPorNivel(calcularConquistas(this.plans.historico(), this.meta(), { hoje: this.agora, regiaoDe: (id) => regiaoDoExercicio(this.exercicios.get(id)) })));
+  private readonly medalhas = inject(MedalhasService);
+  /** Medalhas guardadas no fim do último treino (nada é recalculado a cada tela). */
+  protected readonly conquistas = computed(() => ordenarPorNivel(this.medalhas.conquistas()));
+  protected readonly novasIds = this.medalhas.idsNovos;
   /** Na tela inicial só as melhores (as de maior nível, já que a lista vem ordenada); o resto fica em "Ver todas". */
-  protected readonly melhores = computed(() => this.conquistas().slice(0, MEDALHAS_NA_INICIAL));
+  protected readonly melhores = computed(() => {
+    // As que subiram de nível vão primeiro, para o destaque nunca ficar escondido em "Ver todas".
+    const novas = this.novasIds();
+    const todas = this.conquistas();
+    return [...todas.filter((c) => novas.includes(c.id)), ...todas.filter((c) => !novas.includes(c.id))].slice(0, MEDALHAS_NA_INICIAL);
+  });
   protected readonly proxima = computed(() => proximaConquista(this.conquistas()));
   protected readonly nomes = NOMES_NIVEL;
   protected readonly resumoConquistas = computed(() => {
@@ -542,6 +567,22 @@ export class Home {
   );
 
   protected readonly galeriaAberta = signal(false);
+  protected readonly focoGaleria = signal<TipoConquista | null>(null);
+  /** Novas congeladas enquanto a galeria está aberta (o realce fica até fechar). */
+  protected readonly novasNaGaleria = signal<TipoConquista[]>([]);
+
+  protected abrirGaleria(foco: TipoConquista | null): void {
+    this.novasNaGaleria.set([...this.novasIds()]);
+    // Sem medalha tocada, mas com novas: vai até a primeira nova.
+    this.focoGaleria.set(foco ?? this.novasIds()[0] ?? null);
+    this.galeriaAberta.set(true);
+  }
+
+  protected fecharGaleria(): void {
+    this.galeriaAberta.set(false);
+    this.focoGaleria.set(null);
+    this.medalhas.reconhecer();
+  }
   protected readonly sessaoAberta = signal(false);
   protected readonly exercicioAberto = signal<string | null>(null);
 
