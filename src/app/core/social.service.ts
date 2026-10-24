@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { CloudService } from './cloud.service';
 import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
+import { resumoAtividade } from './atividade';
 import { PlanService } from './plan.service';
 import {
   Amizade,
@@ -458,6 +459,7 @@ export class SocialService {
         volume: volumeSessao(s),
         recordes: recordesDaSessao(historico, s).slice(0, 3).map((r) => ({ nome: this.nomeExercicio(r.exerciseId), carga: r.carga })),
         marco: marcoDoTreino(ordenados.findIndex((x) => x.id === s.id) + 1),
+        ...(s.atividade ? { detalhe: resumoAtividade(s.atividade) } : {}),
         ...(s.temFoto ? { temFoto: true } : {}),
       };
       try {

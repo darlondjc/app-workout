@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.13.0",
+    "data": "2026-10-24",
+    "titulo": "Adicionar atividade",
+    "itens": [
+      "Na tela inicial, o botão + registra uma atividade fora da ficha: corrida, caminhada, futebol, vôlei, beach tennis, tênis, natação ou outra.",
+      "Informe duração, distância e esforço, e adicione uma foto se quiser. A atividade vale como o treino do dia e entra na semana, nas medalhas e na timeline."
+    ]
+  },
+  {
     "versao": "1.12.4",
     "data": "2026-10-24",
     "titulo": "Próximo treino sugerido nas fichas",

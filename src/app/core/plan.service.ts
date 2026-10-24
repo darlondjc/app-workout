@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
+import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
 import { PesoService } from './peso.service';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
@@ -71,7 +71,8 @@ export class PlanService {
     if (emCurso && emCurso.itens.length > 0) return emCurso;
     const fichas = this.fichas().filter((f) => f.itens.length > 0);
     if (fichas.length === 0) return null;
-    const ultima = this.historico().at(-1);
+    // Atividade fora da ficha não avança o rodízio.
+    const ultima = this.historico().filter((s) => s.fichaId).at(-1);
     const idx = ultima ? fichas.findIndex((f) => f.id === ultima.fichaId) : -1;
     return fichas[(idx + 1) % fichas.length];
   });
@@ -306,6 +307,19 @@ export class PlanService {
       { id, data: dataLocal(), fichaId, fichaNome: ficha?.nome, concluidaEm: Date.now(), registros, ...(temFoto ? { temFoto: true } : {}) },
     ]);
     this.emAndamento.set(null);
+    return id;
+  }
+
+  /**
+   * Registra uma atividade fora da ficha. Ela vale como o treino do dia (fica no histórico, conta na semana
+   * e nas medalhas), mas não avança o rodízio das fichas. Devolve o id da sessão.
+   */
+  registrarAtividade(atividade: AtividadeRegistro, temFoto = false): string {
+    const id = crypto.randomUUID();
+    this.historico.update((h) => [
+      ...h,
+      { id, data: dataLocal(), fichaId: '', fichaNome: atividade.nome, atividade, concluidaEm: Date.now(), registros: [], ...(temFoto ? { temFoto: true } : {}) },
+    ]);
     return id;
   }
 

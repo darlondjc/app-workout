@@ -58,13 +58,28 @@ export interface RegistroExercicio {
   series: SerieRegistro[];
 }
 
+/** Atividade física fora da ficha (corrida, esporte…), registrada à mão. */
+export interface AtividadeRegistro {
+  /** Chave do tipo em `TIPOS_ATIVIDADE` ('corrida', 'futebol'…). */
+  tipo: string;
+  /** Nome mostrado: o do tipo, ou o que a pessoa digitou em "Outra". */
+  nome: string;
+  minutos: number;
+  /** Só quando informada. */
+  distanciaKm?: number;
+  esforco?: 'leve' | 'moderado' | 'intenso';
+}
+
 export interface Sessao {
   /** Identificador estável, usado para sincronizar sem duplicar. */
   id?: string;
   /** Data local no formato yyyy-mm-dd */
   data: string;
+  /** Vazio quando a sessão é uma atividade (`atividade`), que não pertence a nenhuma ficha. */
   fichaId: string;
   fichaNome?: string;
+  /** Presente quando a sessão é uma atividade registrada fora da ficha; `registros` fica vazio. */
+  atividade?: AtividadeRegistro;
   concluidaEm?: number;
   registros?: RegistroExercicio[];
   /** Este treino tem uma foto guardada na nuvem (a foto em si não fica no histórico). */

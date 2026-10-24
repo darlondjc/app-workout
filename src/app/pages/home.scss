@@ -235,3 +235,30 @@
   justify-content: center;
   font-weight: 700;
 }
+
+.fab {
+  position: fixed;
+  z-index: 9;
+  bottom: calc(84px + 16px + env(safe-area-inset-bottom));
+  /* O app tem no máximo 480px de largura e fica centralizado. */
+  right: max(20px, calc(50% - 240px + 20px));
+  width: 60px;
+  height: 60px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(20, 23, 26, 0.28);
+  transition: transform 0.15s ease;
+}
+.fab:active {
+  transform: scale(0.94);
+}
+
+/* Espaço para o botão flutuante não cobrir o fim da tela. */
+.page {
+  padding-bottom: 72px;
+}

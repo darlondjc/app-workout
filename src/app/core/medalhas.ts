@@ -180,6 +180,8 @@ function medir(def: Definicao, ordenadas: Sessao[], recordes: RecordeEvento[], m
       const regiao: RegiaoDoExercicio = def.id === 'superiores' ? 'superior' : def.id === 'inferiores' ? 'inferior' : 'cardio';
       const datas: string[] = [];
       for (const s of ordenadas) {
+        // Atividade fora da ficha (corrida, esporte…) conta como cardio.
+        if (s.atividade && regiao === 'cardio') datas.push(s.data);
         for (const r of s.registros ?? []) {
           if (r.series.length === 0) continue;
           const doExercicio = r.unidade === 'min' ? 'cardio' : ctx.regiaoDe(r.exerciseId);

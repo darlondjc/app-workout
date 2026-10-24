@@ -248,3 +248,14 @@ describe('impressaoDoHistorico', () => {
     expect(impressaoDoHistorico(h, 3, 2027)).not.toBe(base);
   });
 });
+
+describe('atividade fora da ficha', () => {
+  const atividade: Sessao = { id: 'a1', data: '2026-10-05', fichaId: '', fichaNome: 'Corrida', atividade: { tipo: 'corrida', nome: 'Corrida', minutos: 30 }, concluidaEm: 1, registros: [] };
+
+  it('conta como treino concluído e como cardio, sem carga', () => {
+    const lista = calcularConquistas([atividade], 3, { hoje: new Date(2026, 9, 6), regiaoDe });
+    expect(meta(lista, 'treinos').atual).toBe(1);
+    expect(meta(lista, 'cardio').atual).toBe(1);
+    expect(meta(lista, 'volume').atual).toBe(0);
+  });
+});

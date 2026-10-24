@@ -36,18 +36,22 @@
     <article class="destaque" aria-labelledby="t-feito">
       <div class="destaque__topo">
         <div>
-          <p class="destaque__rotulo" id="t-feito">Treino de hoje concluído</p>
+          <p class="destaque__rotulo" id="t-feito">{{ r.atividade ? 'Atividade de hoje registrada' : 'Treino de hoje concluído' }}</p>
           <h2 class="destaque__nome">{{ r.nome }}</h2>
         </div>
         <span class="selo selo--feito"><app-icon name="check" [size]="14" [stroke]="3" /> Feito</span>
       </div>
-      <ul class="numeros" aria-label="Resumo do treino">
-        <li><strong>{{ r.exercicios }}</strong><span>{{ r.exercicios === 1 ? 'exercício' : 'exercícios' }}</span></li>
-        <li><strong>{{ r.series }}</strong><span>{{ r.series === 1 ? 'série' : 'séries' }}</span></li>
-        @if (r.volume > 0) {
-          <li><strong>{{ carga(r.volume) }}</strong><span>de carga</span></li>
-        }
-      </ul>
+      @if (r.atividade) {
+        <p class="destaque__rotulo">{{ r.atividade }}</p>
+      } @else {
+        <ul class="numeros" aria-label="Resumo do treino">
+          <li><strong>{{ r.exercicios }}</strong><span>{{ r.exercicios === 1 ? 'exercício' : 'exercícios' }}</span></li>
+          <li><strong>{{ r.series }}</strong><span>{{ r.series === 1 ? 'série' : 'séries' }}</span></li>
+          @if (r.volume > 0) {
+            <li><strong>{{ carga(r.volume) }}</strong><span>de carga</span></li>
+          }
+        </ul>
+      }
       @if (r.textoRecordes) {
         <p class="recorde"><app-icon name="medal" [size]="18" [stroke]="2.2" /> {{ r.textoRecordes }}</p>
       }
@@ -170,6 +174,14 @@
         </a>
       }
     </section>
+  }
+
+  <button type="button" class="fab" aria-haspopup="dialog" aria-label="Adicionar atividade" (click)="adicionandoAtividade.set(true)">
+    <app-icon name="plus" [size]="28" [stroke]="2.6" />
+  </button>
+
+  @if (adicionandoAtividade()) {
+    <app-atividade-dialogo (adicionar)="adicionarAtividade($event)" (cancelar)="adicionandoAtividade.set(false)" />
   }
 
   @if (galeriaAberta()) {

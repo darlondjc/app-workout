@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { resumoAtividade } from '../core/atividade';
 import { Dialogo } from '../core/dialogo';
 import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
@@ -329,7 +330,7 @@ export class Progress {
       .map((s, i) => {
         const exercicios = s.registros?.length ?? 0;
         const vol = volumeSessao(s);
-        const partes = [exercicios ? `${exercicios} ${exercicios === 1 ? 'exercício' : 'exercícios'}` : '', vol ? `${this.volume(vol)} de carga` : ''].filter(Boolean);
+        const partes = s.atividade ? [resumoAtividade(s.atividade)] : [exercicios ? `${exercicios} ${exercicios === 1 ? 'exercício' : 'exercícios'}` : '', vol ? `${this.volume(vol)} de carga` : ''].filter(Boolean);
         return { chave: `${iso}:${s.id ?? i}`, sessao: s, fichaNome: s.fichaNome ?? this.plans.get(s.fichaId)?.nome, resumo: partes.join(' · ') || 'Treino concluído' };
       });
   });

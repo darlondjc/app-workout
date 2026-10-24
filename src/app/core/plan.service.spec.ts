@@ -267,3 +267,31 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
     expect(plans.fichas().length).toBe(2);
   });
 });
+
+describe('PlanService: atividade fora da ficha', () => {
+  let plans: PlanService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+  });
+
+  it('vale como o treino do dia, com o nome da atividade', () => {
+    expect(plans.treinouHoje()).toBeFalse();
+    const id = plans.registrarAtividade({ tipo: 'corrida', nome: 'Corrida', minutos: 30, distanciaKm: 5 }, true);
+    expect(plans.treinouHoje()).toBeTrue();
+    expect(plans.historico()).toEqual([jasmine.objectContaining({ id, fichaId: '', fichaNome: 'Corrida', temFoto: true, registros: [] })]);
+  });
+
+  it('não avança o rodízio das fichas', () => {
+    const [a, b] = plans.criarComItens([
+      { nome: 'A', itens: [item('supino', 60)] },
+      { nome: 'B', itens: [item('remada', 40)] },
+    ]);
+    plans.registrarSessao(a.id);
+    expect(plans.proxima()?.id).toBe(b.id);
+    plans.registrarAtividade({ tipo: 'futebol', nome: 'Futebol', minutos: 60 });
+    expect(plans.proxima()?.id).toBe(b.id);
+  });
+});

@@ -43,6 +43,8 @@ export interface Evento {
   exercicios: number;
   volume: number;
   recordes: { nome: string; carga: number }[];
+  /** Resumo da atividade (ex.: "5,2 km · 31 min"), quando o evento é uma atividade fora da ficha; `fichaNome` traz o nome dela. */
+  detalhe?: string;
   /** Ex.: "50º treino", quando o total de treinos chega a um marco. */
   marco?: string;
   /** Há uma foto deste treino em `usuarios/{autor}/fotos/{sessaoId}`; ela é lida só quando o card aparece. */

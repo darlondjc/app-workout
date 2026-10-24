@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AtividadeDialogo } from '../core/atividade-dialogo';
+import { resumoAtividade } from '../core/atividade';
 import { Avatar } from '../core/avatar';
 import { BarraTopo } from '../core/barra-topo';
 import { CloudService } from '../core/cloud.service';
@@ -15,6 +17,8 @@ import { lerMeta, metaPadrao } from '../core/meta';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { SocialService } from '../core/social.service';
 import { PlanService, dataLocal } from '../core/plan.service';
+import { AtividadeRegistro } from '../core/models';
+import { ToastService } from '../core/toast.service';
 import { recordesDaSessao, treinosNaSemana, volumeSessao } from '../core/stats';
 
 /** Quantas medalhas aparecem no quadro da tela inicial. */
@@ -25,7 +29,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Icon, Avatar, BarraTopo, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria, QuadroMedalhas],
+  imports: [RouterLink, Icon, Avatar, BarraTopo, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria, QuadroMedalhas, AtividadeDialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.html',
   styleUrl: './home.scss',
@@ -73,8 +77,11 @@ export class Home {
     });
   });
 
-  /** Último treino concluído hoje. */
-  private readonly sessaoHoje = computed(() => this.plans.historico().filter((s) => s.data === this.hojeISO).at(-1) ?? null);
+  /** Último treino concluído hoje; a atividade só aparece quando não houve treino de ficha no dia. */
+  private readonly sessaoHoje = computed(() => {
+    const hoje = this.plans.historico().filter((s) => s.data === this.hojeISO);
+    return hoje.filter((s) => s.fichaId).at(-1) ?? hoje.at(-1) ?? null;
+  });
 
   /** Já treinou hoje e não há outro treino em curso: a tela mostra o resumo no lugar do botão de iniciar. */
   protected readonly concluidoHoje = computed(() => this.sessaoHoje() !== null && !this.plans.emAndamento());
@@ -87,6 +94,9 @@ export class Home {
   protected readonly resumoHoje = computed(() => {
     const sessao = this.sessaoHoje();
     if (!sessao) return null;
+    if (sessao.atividade) {
+      return { sessao, nome: sessao.atividade.nome, atividade: resumoAtividade(sessao.atividade), exercicios: 0, series: 0, volume: 0, textoRecordes: '' };
+    }
     const registros = sessao.registros ?? [];
     const nomes = recordesDaSessao(this.plans.historico(), sessao).map((r) => this.nomeExercicio(r.exerciseId));
     const mostrados = nomes.slice(0, 2).join(', ');
@@ -94,6 +104,7 @@ export class Home {
     const lista = resto > 0 ? `${mostrados} e mais ${resto}` : mostrados;
     return {
       sessao,
+      atividade: '',
       nome: sessao.fichaNome ?? this.plans.get(sessao.fichaId)?.nome ?? 'Treino',
       exercicios: registros.length,
       series: registros.reduce((t, r) => t + r.series.length, 0),
@@ -155,6 +166,17 @@ export class Home {
     this.medalhas.reconhecer();
   }
   protected readonly sessaoAberta = signal(false);
+  protected readonly adicionandoAtividade = signal(false);
+  private readonly toast = inject(ToastService);
+
+  /** Grava a atividade (que vale como o treino do dia) e manda a foto, se houver, para a timeline. */
+  protected adicionarAtividade(dados: { atividade: AtividadeRegistro; foto: string | null }): void {
+    const id = this.plans.registrarAtividade(dados.atividade, dados.foto !== null);
+    this.medalhas.aposTreino(id);
+    if (dados.foto) void this.social.salvarFoto(id, dados.foto);
+    this.adicionandoAtividade.set(false);
+    this.toast.mostrar(`${dados.atividade.nome} registrada!`);
+  }
   protected readonly exercicioAberto = signal<string | null>(null);
 
   private nomeExercicio(id: string): string {

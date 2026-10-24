@@ -70,7 +70,9 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
         @if ((podeAdicionarFoto() || (minha() && motivoSemFoto())) && !foto() && !fotoCarregando()) {
           <app-foto-botao [somenteIcone]="true" classe="acao" rotulo="Adicionar foto" (escolhida)="colocarFoto($event)" (falhou)="erroFoto.set($event)" />
         }
-        <button type="button" class="acao acao--texto" aria-haspopup="dialog" (click)="abrirDetalhe()">Ver treino</button>
+        @if (!evento().detalhe) {
+          <button type="button" class="acao acao--texto" aria-haspopup="dialog" (click)="abrirDetalhe()">Ver treino</button>
+        }
       </div>
       @if (erroFoto()) {
         <p class="erro-foto" role="alert">{{ erroFoto() }}</p>
@@ -201,6 +203,7 @@ export class EventoCard {
   protected readonly quando = computed(() => tempoRelativo(this.evento().criadoEm, Date.now()));
   protected readonly resumo = computed(() => {
     const e = this.evento();
+    if (e.detalhe) return e.detalhe;
     const partes = [e.exercicios ? `${e.exercicios} ${e.exercicios === 1 ? 'exercício' : 'exercícios'}` : '', e.volume ? `${e.volume >= 1000 ? (e.volume / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' t' : e.volume + ' kg'} de carga` : ''];
     return partes.filter(Boolean).join(' · ') || 'Treino concluído';
   });
