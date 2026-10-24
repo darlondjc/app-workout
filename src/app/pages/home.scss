@@ -1,0 +1,237 @@
+.cabeca {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.barra-conta {
+  display: flex;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--soft);
+}
+.conta {
+  flex: none;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--soft);
+}
+.semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.semana li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.dia {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dia.hoje {
+  border-color: var(--ink);
+  border-width: 2px;
+}
+.dia.feito {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--accent);
+}
+.destaque {
+  background: var(--ink);
+  color: #fff;
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.destaque__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.destaque__rotulo {
+  font-size: 13px;
+  font-weight: 500;
+  color: #b9c0ba;
+}
+.destaque__nome {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+.selo {
+  flex: none;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+.selo--feito {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.numeros {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.numeros li {
+  flex: 1;
+  min-width: 0;
+  background: var(--dark2);
+  border-radius: 12px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.numeros strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.1;
+}
+.numeros span {
+  font-size: 12px;
+  color: #b9c0ba;
+}
+.recorde {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--accent);
+}
+.miniaturas {
+  display: flex;
+  gap: 8px;
+}
+.miniaturas img,
+.mais {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+}
+.miniaturas img {
+  object-fit: cover;
+  background: #fff;
+}
+.mais {
+  background: var(--dark2);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bloco {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bloco__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rot {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.grande {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+.grande small {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.trilha {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--soft);
+  overflow: hidden;
+}
+.trilha__cheia {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 4px;
+  transition: width 0.25s;
+}
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lista__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.lista__topo h2 {
+  font-size: 18px;
+}
+.chip-novas {
+  margin-left: 8px;
+  margin-right: auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  animation: chip-chega 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes chip-chega { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .chip-novas { animation: none; } }
+.ver-todas {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.proxima {
+  margin: 0;
+}
+.letra {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #e8f3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}

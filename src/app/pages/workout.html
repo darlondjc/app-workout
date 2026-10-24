@@ -1,0 +1,136 @@
+@if (ficha(); as f) {
+  @if (item(); as it) {
+    <div class="treino">
+      <header class="topo">
+        <button type="button" class="sair" (click)="sair()" aria-label="Sair do treino">
+          <app-icon name="close" [size]="20" [stroke]="2.2" />
+        </button>
+        <div>
+          <p class="rotulo">{{ plans.rotulo(f.id) }} · {{ f.nome }}</p>
+          <p class="posicao">Exercício {{ indice() + 1 }} de {{ f.itens.length }}</p>
+        </div>
+      </header>
+
+      @if (confirmandoSaida()) {
+        <button type="button" class="fundo" tabindex="-1" aria-label="Fechar e continuar treinando" (click)="confirmandoSaida.set(false)"></button>
+        <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="saida-titulo" aria-describedby="saida-texto" (keydown.escape)="confirmandoSaida.set(false)">
+          <h2 id="saida-titulo" class="folha__titulo">Sair do treino?</h2>
+          <p id="saida-texto" class="folha__texto">Pausando, o treino fica guardado e você continua de onde parou. Cancelando, o que você marcou neste treino é descartado.</p>
+          <button type="button" class="btn btn--destaque" (click)="pausar()">Pausar treino</button>
+          <button type="button" class="btn btn--perigo" (click)="cancelarTreino()">Cancelar treino</button>
+          <button type="button" class="btn btn--escuro-suave" (click)="confirmandoSaida.set(false)">Continuar treinando</button>
+        </div>
+      }
+
+      @if (perguntandoFaltantes()) {
+        <button type="button" class="fundo" tabindex="-1" aria-label="Voltar ao treino" (click)="perguntandoFaltantes.set(false)"></button>
+        <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="falta-titulo" aria-describedby="falta-texto" (keydown.escape)="perguntandoFaltantes.set(false)">
+          <h2 id="falta-titulo" class="folha__titulo">Marcar o que falta como feito?</h2>
+          <p id="falta-texto" class="folha__texto">
+            {{ faltantes() === 1 ? 'Falta 1 série' : 'Faltam ' + faltantes() + ' séries' }} sem marcar. Posso marcar
+            {{ faltantes() === 1 ? 'ela' : 'todas' }} como feita{{ faltantes() === 1 ? '' : 's' }}, com as repetições e cargas que estão na tela.
+          </p>
+          <button type="button" class="btn btn--destaque" (click)="finalizarMarcandoTudo()">Marcar e finalizar</button>
+          <button type="button" class="btn btn--escuro-suave" (click)="finalizarSemMarcar()">Finalizar sem marcar</button>
+          <button type="button" class="btn btn--escuro-suave" (click)="perguntandoFaltantes.set(false)">Voltar ao treino</button>
+        </div>
+      }
+
+      @if (concluindo()) {
+        <app-concluir-treino (concluir)="finalizar($event)" (cancelar)="concluindo.set(false)" />
+      }
+
+      <div class="barra" role="progressbar" aria-label="Progresso do treino" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progresso()">
+        <div class="barra__cheia" [style.width.%]="progresso()"></div>
+      </div>
+
+      <div class="exercicio">
+        <a class="foto" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }" aria-label="Ver instruções do exercício">
+          <app-exercise-image [id]="it.exerciseId" [descricao]="'Demonstração: ' + nome()" />
+        </a>
+        <div>
+          <h1 [appTituloEmDuasLinhas]="nome()">{{ nome() }}</h1>
+          <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
+        </div>
+      </div>
+
+      <div class="tabela" role="group" aria-label="Séries">
+        <div class="todos">
+          <button type="button" class="todos__botao" (click)="marcarTodos()">
+            <app-icon name="check" [size]="16" [stroke]="3" />
+            {{ feitas() === series().length ? 'Desmarcar todos' : 'Marcar todos' }}
+          </button>
+        </div>
+        <div class="cabecalho" aria-hidden="true">
+          <span>Série</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Carga (kg)</span><span>Feito</span>
+        </div>
+        @for (s of series(); track s.n) {
+          <div class="serie" [class.feita]="s.feita" [class.pisca-a]="piscadas()[s.n] % 2 === 1" [class.pisca-b]="piscadas()[s.n] > 0 && piscadas()[s.n] % 2 === 0">
+            <span class="n">{{ s.n }}</span>
+            <input class="valor" type="number" inputmode="numeric" min="0" [value]="s.reps"
+              [attr.aria-label]="(it.unidade === 'min' ? 'Minutos' : 'Repetições') + ' da série ' + s.n" (change)="editar(s.n - 1, 'reps', $event)" />
+            <input class="valor" type="number" inputmode="decimal" min="0" step="0.5" [value]="s.carga"
+              [attr.aria-label]="'Carga da série ' + s.n + ' (kg)'" (change)="editar(s.n - 1, 'carga', $event)" />
+            <button
+              type="button"
+              class="marca"
+              [attr.aria-pressed]="s.feita"
+              [attr.aria-label]="'Marcar série ' + s.n + ' como feita'"
+              (click)="alternar(s.n - 1)"
+            >
+              <app-icon name="check" [size]="20" [stroke]="3" />
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (ultima(); as u) {
+        <p class="ultima">Última vez: {{ u }}</p>
+      }
+
+      <!-- Com uma série só (como o cardio) não há descanso entre séries: o cronômetro não faz sentido. -->
+      @if (series().length > 1) {
+        <div class="descanso" role="timer" aria-live="off">
+          <div>
+            <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
+            <p class="tempo" [class.estourou]="descansando() && descansoAtivo() >= limiteAtivo()">{{ tempo() }}</p>
+          </div>
+          <span class="selo">{{ feitas() }} de {{ series().length }} séries</span>
+        </div>
+      }
+
+      <label class="chave">
+        <input type="checkbox" role="switch" [checked]="marcarAoFinalizar()" (change)="alternarMarcarAoFinalizar()" />
+        <span class="trilho" aria-hidden="true"></span>
+        <span class="chave__texto">Marcar tudo como feito ao finalizar treino</span>
+      </label>
+
+      <div class="rodape">
+        @if (indice() > 0) {
+          <button type="button" class="btn btn--claro-escuro" (click)="anterior()">Anterior</button>
+        }
+        <button type="button" class="btn btn--destaque" (click)="proximo()">
+          {{ ultimo() ? 'Finalizar treino' : indice() > 0 ? 'Próximo' : 'Próximo exercício' }}
+          @if (!ultimo()) {
+            <app-icon name="chevron" [size]="18" [stroke]="2.5" />
+          }
+        </button>
+      </div>
+    </div>
+  } @else {
+    <section class="page">
+      <h1 class="titulo">Ficha vazia</h1>
+      <p class="apoio">Adicione exercícios antes de iniciar o treino.</p>
+      <a class="btn btn--claro" [routerLink]="['/ficha', f.id]">Montar ficha</a>
+    </section>
+  }
+} @else {
+  <section class="page">
+    <h1 class="titulo">Ficha não encontrada</h1>
+    <a class="btn btn--claro" routerLink="/fichas">Voltar para as fichas</a>
+  </section>
+}
+
+@if (resumo(); as r) {
+  <app-resumo-treino [dados]="r" (ok)="fecharResumo()" />
+}
