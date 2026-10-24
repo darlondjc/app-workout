@@ -325,6 +325,17 @@ export class PlanEditor {
         );
         subida.finished.then(() => (movido.style.zIndex = ''), () => (movido.style.zIndex = ''));
         vizinho.animate([{ transform: `translateY(${dVizinho}px)` }, { transform: 'translateY(0)' }], { duration: duracao, easing: curva });
+        // Ênfase no chevron tocado: o ícone dá um pulo curto na direção da troca e o botão acende de leve.
+        const empurra = direcao === -1 ? -4 : 4;
+        alvo?.querySelector('app-icon')?.animate(
+          [
+            { transform: 'translateY(0) scale(1)' },
+            { transform: `translateY(${empurra}px) scale(1.4)`, offset: 0.3 },
+            { transform: 'translateY(0) scale(1)' },
+          ],
+          { duration: 460, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' },
+        );
+        alvo?.animate([{ backgroundColor: 'rgba(205, 235, 59, 0.9)' }, { backgroundColor: 'rgba(205, 235, 59, 0)' }], { duration: 560, easing: 'ease-out' });
       },
       { injector: this.injector },
     );
