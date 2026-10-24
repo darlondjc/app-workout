@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.12.1",
+    "data": "2026-10-23",
+    "titulo": "Carregamento em cinza neutro",
+    "itens": [
+      "O brilho de carregamento das imagens (exercícios e fotos da timeline) deixou de ser esverdeado e agora é cinza neutro."
+    ]
+  },
+  {
     "versao": "1.12.0",
     "data": "2026-10-23",
     "titulo": "Medalhas guardadas e novas em destaque",

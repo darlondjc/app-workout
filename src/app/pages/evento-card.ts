@@ -142,7 +142,9 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
     .selo { padding: 2px 8px; border-radius: 999px; background: #f1f8cf; font-size: 12px; line-height: 1.5; }
     .selo--marco { background: var(--ink); color: var(--accent); font-weight: 700; }
     .foto { position: relative; border-radius: 12px; overflow: hidden; background: var(--soft); }
-    .foto--carregando { height: 180px; }
+    .foto--carregando { height: 180px; background: linear-gradient(100deg, var(--esqueleto) 30%, var(--esqueleto-brilho) 50%, var(--esqueleto) 70%) 0 0 / 200% 100%; animation: brilho 1.4s linear infinite; }
+    @keyframes brilho { to { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { .foto--carregando { animation: none; } }
     .foto img { display: block; width: 100%; max-height: 260px; object-fit: cover; }
     .foto__x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; display: flex; align-items: center; justify-content: center; }
     .erro-foto { margin: 0; font-size: 13px; color: #b3261e; }

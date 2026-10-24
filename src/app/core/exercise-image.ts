@@ -48,7 +48,7 @@ import { ChangeDetectionStrategy, Component, effect, input, signal } from '@angu
       overflow: hidden;
     }
     .carregando {
-      background: linear-gradient(100deg, #eef0ea 30%, #f8f9f5 50%, #eef0ea 70%) 0 0 / 200% 100%;
+      background: linear-gradient(100deg, var(--esqueleto) 30%, var(--esqueleto-brilho) 50%, var(--esqueleto) 70%) 0 0 / 200% 100%;
       animation: brilho 1.4s linear infinite;
     }
     @keyframes brilho {
