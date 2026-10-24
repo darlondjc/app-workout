@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.12.3",
+    "data": "2026-10-24",
+    "titulo": "Troca de ordem animada",
+    "itens": [
+      "Na ficha, ao mover um exercício para cima ou para baixo, os dois cartões trocam de lugar com animação: o movido sobe, cruza o outro e pousa.",
+      "O chevron tocado também ganha um destaque: dá um pulo curto na direção da troca e acende de leve."
+    ]
+  },
+  {
     "versao": "1.12.2",
     "data": "2026-10-23",
     "titulo": "Carregamento em cinza neutro",

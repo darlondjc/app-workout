@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Confirmacao } from '../core/confirmacao';
 import { ExerciseService } from '../core/exercise.service';
@@ -31,6 +31,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
           />
         </header>
 
+        <p class="sr-only" aria-live="polite">{{ anuncio() }}</p>
         <ul class="itens">
           @for (l of linhas(); track l.item.exerciseId) {
             <li class="card item">
@@ -44,10 +45,10 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
                   {{ l.ex ? ex.nome(l.ex) : l.item.exerciseId }}
                   <span class="item__ver">Ver instruções ›</span>
                 </a>
-                <button type="button" class="btn-icone btn-icone--neutro" aria-label="Mover para cima" [disabled]="l.i === 0" (click)="mover(l.i, -1)">
+                <button type="button" class="btn-icone btn-icone--neutro" data-mover="cima" aria-label="Mover para cima" [disabled]="l.i === 0" (click)="mover(l.i, -1)">
                   <app-icon name="up" [size]="20" />
                 </button>
-                <button type="button" class="btn-icone btn-icone--neutro" aria-label="Mover para baixo" [disabled]="l.i === linhas().length - 1" (click)="mover(l.i, 1)">
+                <button type="button" class="btn-icone btn-icone--neutro" data-mover="baixo" aria-label="Mover para baixo" [disabled]="l.i === linhas().length - 1" (click)="mover(l.i, 1)">
                   <app-icon name="down" [size]="20" />
                 </button>
                 <button type="button" class="btn-icone btn-icone--neutro" aria-label="Remover da ficha" aria-haspopup="dialog" (click)="remover(l.i)">
@@ -139,6 +140,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       gap: 10px;
     }
     .item {
+      position: relative;
       padding: 12px;
       display: flex;
       flex-direction: column;
@@ -255,6 +257,10 @@ export class PlanEditor {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   protected readonly nav = inject(NavegacaoService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+  /** Texto para leitores de tela quando a ordem muda. */
+  protected readonly anuncio = signal('');
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
   /** Ficha ainda vazia e não gravada: em vez de excluir, só dá para cancelar. */
@@ -276,8 +282,63 @@ export class PlanEditor {
     this.plans.editarItem(this.id(), indice, campo, Math.max(minimo, Number.isNaN(valor) ? minimo : valor));
   }
 
+  /**
+   * Troca dois exercícios de lugar com animação (técnica FLIP): mede onde cada cartão está, grava a nova ordem
+   * e, depois que a tela se reorganiza, anima cada cartão do lugar antigo até o novo. O que foi movido sobe
+   * um pouco (escala e sombra) enquanto cruza o outro, e depois pousa.
+   */
   protected mover(indice: number, direcao: -1 | 1): void {
+    const cartoes = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('li.item'));
+    const movido = cartoes[indice];
+    const vizinho = cartoes[indice + direcao];
+    const animar = !!movido && !!vizinho && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Termina qualquer animação em curso para medir as posições reais (toques em sequência).
+    if (animar) for (const c of [movido, vizinho]) c.getAnimations().forEach((a) => a.finish());
+    const antesMovido = animar ? movido.getBoundingClientRect().top : 0;
+    const antesVizinho = animar ? vizinho.getBoundingClientRect().top : 0;
+    const botao = direcao === -1 ? 'cima' : 'baixo';
+
     this.plans.moverItem(this.id(), indice, direcao);
+    const nome = this.linhas()[indice + direcao]?.ex;
+    this.anuncio.set(`${nome ? this.ex.nome(nome) : 'Exercício'} movido para a posição ${indice + direcao + 1} de ${this.linhas().length}`);
+
+    afterNextRender(
+      () => {
+        // A troca de lugar dos elementos tira o foco do botão; devolve para a mesma ação (ou a oposta, se chegou ao limite).
+        const alvo = movido?.querySelector<HTMLButtonElement>(`[data-mover="${botao}"]`);
+        const par = movido?.querySelector<HTMLButtonElement>(`[data-mover="${botao === 'cima' ? 'baixo' : 'cima'}"]`);
+        (alvo && !alvo.disabled ? alvo : par)?.focus({ preventScroll: true });
+        if (!animar) return;
+        const dMovido = antesMovido - movido.getBoundingClientRect().top;
+        const dVizinho = antesVizinho - vizinho.getBoundingClientRect().top;
+        const duracao = 420;
+        const curva = 'cubic-bezier(0.22, 0.9, 0.28, 1)';
+        // Quem foi movido passa por cima: sobe, cruza e pousa.
+        movido.style.zIndex = '2';
+        const subida = movido.animate(
+          [
+            { transform: `translateY(${dMovido}px) scale(1)`, boxShadow: '0 0 0 rgba(20,23,26,0)' },
+            { transform: `translateY(${dMovido * 0.55}px) scale(1.025)`, boxShadow: '0 14px 28px rgba(20,23,26,0.16)', offset: 0.35 },
+            { transform: 'translateY(0) scale(1)', boxShadow: '0 0 0 rgba(20,23,26,0)' },
+          ],
+          { duration: duracao, easing: curva },
+        );
+        subida.finished.then(() => (movido.style.zIndex = ''), () => (movido.style.zIndex = ''));
+        vizinho.animate([{ transform: `translateY(${dVizinho}px)` }, { transform: 'translateY(0)' }], { duration: duracao, easing: curva });
+        // Ênfase no chevron tocado: o ícone dá um pulo curto na direção da troca e o botão acende de leve.
+        const empurra = direcao === -1 ? -4 : 4;
+        alvo?.querySelector('app-icon')?.animate(
+          [
+            { transform: 'translateY(0) scale(1)' },
+            { transform: `translateY(${empurra}px) scale(1.4)`, offset: 0.3 },
+            { transform: 'translateY(0) scale(1)' },
+          ],
+          { duration: 460, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' },
+        );
+        alvo?.animate([{ backgroundColor: 'rgba(205, 235, 59, 0.9)' }, { backgroundColor: 'rgba(205, 235, 59, 0)' }], { duration: 560, easing: 'ease-out' });
+      },
+      { injector: this.injector },
+    );
   }
 
   protected remover(indice: number): void {
