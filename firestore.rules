@@ -127,6 +127,11 @@ service cloud.firestore {
         // O dono aceita ou recusa pedidos e escolhe quem pode entrar.
         || (request.auth.uid == resource.data.dono
           && campos(['membros', 'pedidos', 'acesso']))
+        // O dono troca a imagem do grupo (JPEG pequeno em base64) ou a tira.
+        || (request.auth.uid == resource.data.dono
+          && campos(['foto'])
+          && (!('foto' in request.resource.data)
+            || (request.resource.data.foto is string && request.resource.data.foto.size() <= 60000)))
         // Sair do grupo (o dono passa o posto para outro membro).
         || (request.auth.uid in resource.data.membros
           && campos(['membros', 'dono'])

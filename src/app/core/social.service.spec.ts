@@ -44,6 +44,8 @@ class ApiFalsa implements SocialBackend {
   pedirEntrada = (codigo: string, uid: string) => this.registrar(`pedir ${codigo} ${uid}`);
   responderPedido = (codigo: string, uid: string, aceitar: boolean) => this.registrar(`responder ${codigo} ${uid} ${aceitar}`);
   definirAcesso = (codigo: string, acesso: string) => this.registrar(`acesso ${codigo} ${acesso}`);
+  falhaFotoDoGrupo?: { code: string };
+  definirFotoDoGrupo = (codigo: string, foto: string | null) => (this.falhaFotoDoGrupo ? Promise.reject(this.falhaFotoDoGrupo) : this.registrar(`foto ${codigo} ${foto ?? 'nenhuma'}`));
   sairDoGrupo = (codigo: string, uid: string, novoDono?: string) => this.registrar(`sair ${codigo} ${uid} ${novoDono ?? ''}`.trim());
   ligar = (a: string, b: string, grupo: string) => this.registrar(`ligar ${chaveConexao(a, b)} ${grupo}`);
   desligar = (a: string, b: string, grupo: string) => this.registrar(`desligar ${chaveConexao(a, b)} ${grupo}`);
@@ -896,6 +898,39 @@ describe('SocialService', () => {
       await assentar();
       expect(social.timelineDe('g1').map((i) => i.criadoEm)).toEqual([1000]);
       expect(social.timelineDe('g2').map((i) => i.criadoEm)).toEqual([2000]);
+    });
+
+    it('o dono troca e tira a imagem do grupo', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.grupos?.cb([grupoDe({ id: 'g1', dono: 'eu', membros: ['eu'] })]);
+      await assentar();
+      expect(await social.definirFotoDoGrupo(social.grupos()[0], 'data:image/jpeg;base64,AAA')).toBeTrue();
+      expect(social.grupo('g1')?.foto).toBe('data:image/jpeg;base64,AAA');
+      expect(await social.definirFotoDoGrupo(social.grupo('g1')!, null)).toBeTrue();
+      expect(social.grupo('g1')?.foto).toBeNull();
+      expect(api.chamadas).toEqual(['foto g1 data:image/jpeg;base64,AAA', 'foto g1 nenhuma']);
+    });
+
+    it('quem não é dono não troca a imagem', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.conexoes?.cb([{ id: 'ana_eu', membros: ['ana', 'eu'], grupos: ['g1'] }]);
+      api.grupos?.cb([grupoDe({ id: 'g1', dono: 'ana', membros: ['ana', 'eu'] })]);
+      await assentar();
+      expect(await social.definirFotoDoGrupo(social.grupo('g1')!, 'data:image/jpeg;base64,AAA')).toBeFalse();
+      expect(api.chamadas).toEqual([]);
+    });
+
+    it('se não salvar, a imagem volta ao que era e o erro aparece', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.grupos?.cb([grupoDe({ id: 'g1', dono: 'eu', membros: ['eu'], foto: 'data:antiga' })]);
+      await assentar();
+      api.falhaFotoDoGrupo = { code: 'permission-denied' };
+      expect(await social.definirFotoDoGrupo(social.grupo('g1')!, 'data:nova')).toBeFalse();
+      expect(social.grupo('g1')?.foto).toBe('data:antiga');
+      expect(social.erro()).toContain('Sem permissão');
     });
 
     it('o dono responde pedidos e muda quem pode participar', async () => {

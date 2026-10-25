@@ -34,6 +34,8 @@ export interface Grupo {
   acesso: AcessoGrupo;
   /** Quem pediu para entrar e espera o dono aceitar. */
   pedidos: string[];
+  /** Imagem do grupo, escolhida pelo dono (JPEG pequeno em data URL). */
+  foto?: string | null;
   criadoEm: number;
 }
 
@@ -123,6 +125,8 @@ export interface SocialBackend {
   /** O dono aceita (`aceitar`) ou recusa um pedido; quem pediu também pode cancelar o próprio. */
   responderPedido(codigo: string, uid: string, aceitar: boolean): Promise<void>;
   definirAcesso(codigo: string, acesso: AcessoGrupo): Promise<void>;
+  /** Troca a imagem do grupo; `null` volta à inicial do nome. */
+  definirFotoDoGrupo(codigo: string, foto: string | null): Promise<void>;
   /** Sai do grupo; se era o dono e há mais gente, `novoDono` assume. Sem ninguém, o grupo é apagado. */
   sairDoGrupo(codigo: string, uid: string, novoDono?: string): Promise<void>;
   ouvirConexoes(uid: string, cb: (c: Conexao[]) => void, erro: (e: unknown) => void): Cancelar;

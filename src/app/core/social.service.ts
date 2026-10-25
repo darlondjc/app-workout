@@ -517,6 +517,21 @@ export class SocialService {
     }
   }
 
+  /** O dono troca a imagem do grupo (ou a tira, com `null`). Devolve se deu certo. */
+  async definirFotoDoGrupo(g: Grupo, foto: string | null): Promise<boolean> {
+    if (!this.api || g.dono !== this.uid) return false;
+    const antes = g.foto ?? null;
+    this.grupos.update((l) => l.map((x) => (x.id === g.id ? { ...x, foto } : x)));
+    try {
+      await this.api.definirFotoDoGrupo(g.id, foto);
+      return true;
+    } catch (e) {
+      this.grupos.update((l) => l.map((x) => (x.id === g.id ? { ...x, foto: antes } : x)));
+      this.falhou(e, 'trocar a imagem do grupo');
+      return false;
+    }
+  }
+
   /** Sai do grupo. Quem era dono passa o posto ao próximo membro; o último a sair apaga o grupo. */
   async sairDoGrupo(g: Grupo): Promise<boolean> {
     const api = this.api;

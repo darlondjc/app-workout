@@ -118,6 +118,7 @@ describe('Group — rolagem infinita da timeline', () => {
     montar(40);
     expect(el().querySelector('h1')?.textContent).toContain('Trabalho');
     expect(el().querySelectorAll('[role="listitem"]').length).toBe(2);
+    expect(el().querySelector('.mais')?.getAttribute('aria-label')).toBe('Convidar pessoas');
     expect(cartoes()).toBe(10);
     expect(el().querySelector('.fim-lista')).not.toBeNull();
   });

@@ -84,6 +84,10 @@ export class FirebaseSocial implements SocialBackend {
     return this.fs.updateDoc(this.grupoRef(codigo), { acesso });
   }
 
+  definirFotoDoGrupo(codigo: string, foto: string | null): Promise<void> {
+    return this.fs.updateDoc(this.grupoRef(codigo), { foto: foto ?? this.fs.deleteField() });
+  }
+
   async sairDoGrupo(codigo: string, uid: string, novoDono?: string): Promise<void> {
     const { arrayRemove } = this.fs;
     const g = await this.lerGrupo(codigo);

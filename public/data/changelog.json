@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.17.0",
+    "data": "2026-10-25",
+    "titulo": "Imagem do grupo e faixa de membros",
+    "itens": [
+      "O ícone no canto superior direito do grupo agora é a imagem dele. O dono toca nela para trocar ou remover; os outros membros só a veem.",
+      "O botão de convidar ficou à direita da lista de membros, sempre à vista.",
+      "Com 5 ou mais pessoas, a lista de membros mostra um pedaço da próxima, indicando que dá para rolar.",
+      "A imagem do grupo também aparece no card da aba Social. Importante: publique o firestore.rules novo no Console do Firebase."
+    ]
+  },
+  {
     "versao": "1.16.1",
     "data": "2026-10-25",
     "titulo": "Aviso de gente nova nos grupos",

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
+import { AvatarGrupo } from '../core/avatar-grupo';
 import { BarraTopo } from '../core/barra-topo';
 import { CloudService } from '../core/cloud.service';
 import { Icon } from '../core/icon';
@@ -11,7 +12,7 @@ import { Carregando } from '../core/spinner';
 /** Aba Social: os grupos de que a pessoa faz parte. A timeline e o convite ficam na tela de cada grupo. */
 @Component({
   selector: 'app-social',
-  imports: [RouterLink, Avatar, BarraTopo, Icon, Carregando],
+  imports: [RouterLink, Avatar, AvatarGrupo, BarraTopo, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -71,7 +72,7 @@ import { Carregando } from '../core/spinner';
         @for (g of social.gruposOrdenados(); track g.id) {
           <a class="gc card" [routerLink]="['/grupo', g.id]" [attr.aria-label]="'Abrir ' + g.nome">
             <div class="gc__topo">
-              <span class="gc__marca" aria-hidden="true">{{ inicial(g.nome) }}</span>
+              <app-avatar-grupo [nome]="g.nome" [foto]="g.foto" [tamanho]="48" />
               <div class="gc__titulo">
                 <strong class="gc__nome">{{ g.nome }}</strong>
                 <span class="gc__meta">
@@ -123,7 +124,6 @@ import { Carregando } from '../core/spinner';
     .gc { display: flex; flex-direction: column; gap: 14px; padding: 16px; color: inherit; text-decoration: none; border: 1px solid var(--soft); box-shadow: 0 1px 2px rgb(20 23 26 / 5%), 0 6px 16px -10px rgb(20 23 26 / 18%); }
     .gc:active { transform: scale(0.99); }
     .gc__topo { display: flex; align-items: center; gap: 14px; }
-    .gc__marca { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--ink); color: var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 22px; font-weight: 700; }
     .gc__titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
     .gc__nome { font-family: var(--font-display); font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gc__meta { font-size: 13px; color: var(--muted); }
@@ -150,10 +150,6 @@ export class Social {
   protected readonly criando = signal(false);
   protected readonly salvando = signal(false);
   protected readonly limiteNome = TAMANHO_NOME_GRUPO;
-
-  protected inicial(nome: string): string {
-    return nome.trim().charAt(0).toLocaleUpperCase('pt-BR') || '?';
-  }
 
   /** Resumo do treino mais recente de alguém do grupo, para o rodapé do card. */
   protected ultima(grupoId: string): string {
