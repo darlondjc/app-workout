@@ -7,7 +7,7 @@ import { CloudService } from '../core/cloud.service';
 import { Evento } from '../core/social';
 import { SocialService } from '../core/social.service';
 import { EventoCard } from './evento-card';
-import { Social } from './social';
+import { Group } from './group';
 
 @Component({ selector: 'app-evento-card', template: '<div class="cartao-falso" style="height: 300px">{{ evento().id }}</div>', changeDetection: ChangeDetectionStrategy.OnPush })
 class CartaoFalso {
@@ -39,9 +39,9 @@ class ObservadorFalso {
   }
 }
 
-describe('Social — rolagem infinita da timeline', () => {
+describe('Group — rolagem infinita da timeline', () => {
   const observadorReal = window.IntersectionObserver;
-  let fixture: ComponentFixture<Social>;
+  let fixture: ComponentFixture<Group>;
   let todos: ReturnType<typeof signal<{ tipo: 'evento'; chave: string; criadoEm: number; evento: Evento }[]>>;
   let pagina: ReturnType<typeof signal<number>>;
   let temMais: ReturnType<typeof computed<boolean>>;
@@ -57,15 +57,13 @@ describe('Social — rolagem infinita da timeline', () => {
 
   function montar(qtd: number): void {
     todos.set(Array.from({ length: qtd }, (_, i) => item(i)));
-    fixture = TestBed.createComponent(Social);
+    fixture = TestBed.createComponent(Group);
+    fixture.componentRef.setInput('id', 'g1');
     // A tela rola dentro de uma caixa curta, como o celular: só o começo da lista cabe nela.
     const caixa = document.createElement('div');
     caixa.style.cssText = 'height: 600px; overflow: auto; width: 360px';
     caixa.appendChild(el());
     document.body.appendChild(caixa);
-    fixture.detectChanges();
-    // A aba escolhida é guardada fora do componente (sobra de outros testes): garante a Timeline.
-    (el().querySelector('[role="tab"]') as HTMLButtonElement).click();
     fixture.detectChanges();
   }
 
@@ -89,17 +87,17 @@ describe('Social — rolagem infinita da timeline', () => {
           useValue: {
             ativo: signal(true),
             erro: signal(''),
+            gruposCarregados: signal(true),
+            eu: signal({ uid: 'eu', nome: 'Eu', foto: null }),
+            grupo: () => ({ id: 'g1', nome: 'Trabalho', dono: 'eu', membros: ['eu', 'ana'], acesso: 'aberto', pedidos: [], criadoEm: 1 }),
+            membrosDe: () => [{ uid: 'eu', nome: 'Eu', foto: null }, { uid: 'ana', nome: 'Ana', foto: null }],
             timeline: todos,
-            timelineVisivel: visivel,
-            temMais,
+            timelineVisivelDe: () => visivel(),
+            temMaisDe: () => temMais(),
             carregarMais: () => {
               pedidos++;
               if (temMais()) pagina.update((p) => p + 1);
             },
-            amigos: signal([]),
-            amigosPorAtividade: signal([]),
-            meuUsuario: signal({ uid: 'eu', nome: 'Eu', email: '', foto: null }),
-            convitesRecebidos: signal([]),
             marcarTimelineVista: () => undefined,
             nomeDe: (_u: string, n: string) => n,
             fotoDe: (_u: string, f: string | null) => f,
@@ -107,7 +105,7 @@ describe('Social — rolagem infinita da timeline', () => {
         },
       ],
     });
-    TestBed.overrideComponent(Social, { remove: { imports: [EventoCard] }, add: { imports: [CartaoFalso] } });
+    TestBed.overrideComponent(Group, { remove: { imports: [EventoCard] }, add: { imports: [CartaoFalso] } });
   });
 
   afterEach(() => {
@@ -115,8 +113,10 @@ describe('Social — rolagem infinita da timeline', () => {
     el()?.parentElement?.remove();
   });
 
-  it('começa com a primeira página, com o "carregando" no fim', () => {
+  it('mostra o nome do grupo e os membros, e começa com a primeira página, com o "carregando" no fim', () => {
     montar(40);
+    expect(el().querySelector('h1')?.textContent).toContain('Trabalho');
+    expect(el().querySelectorAll('[role="listitem"]').length).toBe(2);
     expect(cartoes()).toBe(10);
     expect(el().querySelector('.fim-lista')).not.toBeNull();
   });

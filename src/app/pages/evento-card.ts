@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
 import { Confirmacao } from '../core/confirmacao';
 import { ExercicioDialogo } from '../core/exercicio-dialogo';
@@ -16,12 +17,14 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
 /** Treino de alguém na timeline, com curtidas e comentários. */
 @Component({
   selector: 'app-evento-card',
-  imports: [Avatar, Confirmacao, ExercicioDialogo, FotoBotao, Icon, SessaoDetalhe, Dialogo],
+  imports: [RouterLink, Avatar, Confirmacao, ExercicioDialogo, FotoBotao, Icon, SessaoDetalhe, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
       <header class="topo">
-        <app-avatar [usuario]="{ uid: evento().autor, nome: social.nomeDe(evento().autor, evento().autorNome), email: '', foto: social.fotoDe(evento().autor, evento().autorFoto) }" [tamanho]="32" />
+        <a class="foto-autor" [routerLink]="minha() ? '/perfil' : ['/membro', evento().autor]" [attr.aria-label]="minha() ? 'Ver meu perfil' : 'Ver estatísticas de ' + social.nomeDe(evento().autor, evento().autorNome)">
+          <app-avatar [usuario]="{ uid: evento().autor, nome: social.nomeDe(evento().autor, evento().autorNome), email: '', foto: social.fotoDe(evento().autor, evento().autorFoto) }" [tamanho]="32" />
+        </a>
         <div class="quem">
           <p class="linha-nome"><strong>{{ minha() ? 'Você' : social.nomeDe(evento().autor, evento().autorNome) }}</strong> <span class="apoio">· {{ quando() }}</span></p>
           <p class="ficha">{{ evento().fichaNome }}</p>
@@ -130,6 +133,7 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
     }
   `,
   styles: `
+    .foto-autor { display: flex; flex: none; border-radius: 50%; }
     .card { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
     .topo { display: flex; align-items: center; gap: 10px; }
     .quem { display: flex; flex-direction: column; min-width: 0; }

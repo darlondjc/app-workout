@@ -8,7 +8,7 @@ import { ToastService } from './toast.service';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Ajustes: registra o peso do dia (ou de um dia anterior) e mostra o histórico, com opção de apagar. */
+/** Perfil: registra o peso do dia (ou de um dia anterior) e mostra o histórico, com opção de apagar. */
 @Component({
   selector: 'app-peso-registro',
   imports: [Icon],

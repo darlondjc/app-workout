@@ -1,12 +1,10 @@
 import { Cancelar } from './sync';
 
-/** Dados públicos de quem usa o app (visíveis para quem tem a pessoa como amiga ou o código). */
+/** Dados públicos de quem usa o app (visíveis para quem está em algum grupo com a pessoa). */
 export interface Perfil {
   uid: string;
   nome: string;
   foto: string | null;
-  /** Código para ser adicionado por amigos. */
-  codigo?: string;
   metaSemanal?: number;
   /** A foto foi escolhida no app (e não veio da conta Google); o login não a troca mais. */
   fotoPropria?: boolean;
@@ -20,14 +18,36 @@ export function fotoParaItens(p: Perfil): string | null {
   return p.fotoPropria ? null : p.foto;
 }
 
-export interface Amizade {
+export type AcessoGrupo = 'aberto' | 'aprovado';
+
+/** Quantas vagas aparecem na tela de convite (só visual: o grupo não tem limite). */
+export const VAGAS_GRUPO = 6;
+
+/** Grupo de treino. O id é o código do convite (8 letras e números). */
+export interface Grupo {
   id: string;
+  nome: string;
+  dono: string;
   membros: string[];
-  /** Quem enviou o convite. */
-  de: string;
-  status: 'pendente' | 'aceita';
+  /** `aberto`: quem tem o link entra na hora. `aprovado`: quem tem o link pede para entrar e o dono aceita. */
+  acesso: AcessoGrupo;
+  /** Quem pediu para entrar e espera o dono aceitar. */
+  pedidos: string[];
   criadoEm: number;
 }
+
+/**
+ * Ligação entre duas pessoas que estão juntas em pelo menos um grupo. É ela que dá a uma pessoa o direito de
+ * ler os treinos da outra (as regras do Firestore não conseguem procurar "algum grupo em comum").
+ */
+export interface Conexao {
+  id: string;
+  membros: string[];
+  /** Grupos que as duas pessoas têm em comum. */
+  grupos: string[];
+}
+
+export const TAMANHO_NOME_GRUPO = 40;
 
 /** Treino concluído, publicado na timeline dos amigos. */
 export interface Evento {
@@ -89,13 +109,24 @@ export const TAMANHO_COMENTARIO = 280;
 export interface SocialBackend {
   lerPerfil(uid: string): Promise<Perfil | null>;
   gravarPerfil(perfil: Perfil): Promise<void>;
-  /** Tenta reservar o código; falso se já pertence a outra pessoa. */
-  reservarCodigo(uid: string, codigo: string): Promise<boolean>;
-  uidDoCodigo(codigo: string): Promise<string | null>;
-  ouvirAmizades(uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): Cancelar;
-  pedirAmizade(amizade: Amizade): Promise<void>;
-  aceitarAmizade(id: string): Promise<void>;
-  removerAmizade(id: string): Promise<void>;
+  /** Grupos de que a pessoa faz parte. */
+  ouvirGrupos(uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): Cancelar;
+  /** Qualquer pessoa logada que tenha o código consegue ver o grupo (nome e membros) antes de entrar. */
+  lerGrupo(codigo: string): Promise<Grupo | null>;
+  /** Cria o grupo; falso se o código já pertence a outro. */
+  criarGrupo(grupo: Grupo): Promise<boolean>;
+  entrarNoGrupo(codigo: string, uid: string): Promise<void>;
+  pedirEntrada(codigo: string, uid: string): Promise<void>;
+  /** O dono aceita (`aceitar`) ou recusa um pedido; quem pediu também pode cancelar o próprio. */
+  responderPedido(codigo: string, uid: string, aceitar: boolean): Promise<void>;
+  definirAcesso(codigo: string, acesso: AcessoGrupo): Promise<void>;
+  /** Sai do grupo; se era o dono e há mais gente, `novoDono` assume. Sem ninguém, o grupo é apagado. */
+  sairDoGrupo(codigo: string, uid: string, novoDono?: string): Promise<void>;
+  ouvirConexoes(uid: string, cb: (c: Conexao[]) => void, erro: (e: unknown) => void): Cancelar;
+  /** Garante que a ligação entre as duas pessoas inclui o grupo. */
+  ligar(a: string, b: string, grupo: string): Promise<void>;
+  /** Tira o grupo da ligação; sem grupos em comum, ela some. */
+  desligar(a: string, b: string, grupo: string): Promise<void>;
   ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void, limite?: number): Cancelar;
   publicarEvento(evento: Evento): Promise<void>;
   /** Foto do treino, como data URL JPEG já reduzida, guardada à parte do card. */
@@ -113,8 +144,8 @@ export interface SocialBackend {
   apagarComentario(dono: string, eventoId: string, comentarioId: string): Promise<void>;
 }
 
-/** Identificador da amizade: igual para os dois lados, em qualquer ordem. */
-export function chaveAmizade(a: string, b: string): string {
+/** Identificador da ligação: igual para os dois lados, em qualquer ordem. */
+export function chaveConexao(a: string, b: string): string {
   return a < b ? `${a}_${b}` : `${b}_${a}`;
 }
 
@@ -126,6 +157,17 @@ export function gerarCodigo(aleatorio: (n: number) => number = (n) => Math.floor
 
 export function normalizarCodigo(texto: string): string {
   return texto.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/** Link de convite: abre o app direto na entrada do grupo (`base` é o endereço do app, com a barra final). */
+export function linkDoGrupo(base: string, codigo: string): string {
+  return `${base.replace(/\/?$/, '/')}convite/${codigo}`;
+}
+
+/** Itens da timeline de um grupo: só o que é dos membros dele. */
+export function timelineDoGrupo(itens: ItemTimeline[], membros: string[]): ItemTimeline[] {
+  const m = new Set(membros);
+  return itens.filter((i) => m.has(i.tipo === 'evento' ? i.evento.autor : i.atividade.autor));
 }
 
 /**

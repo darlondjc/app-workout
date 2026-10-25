@@ -1,4 +1,4 @@
-import { Atividade, Evento, chaveAmizade, gerarCodigo, idEvento, marcoDoTreino, montarTimeline, nomeComMaiuscula, normalizarCodigo, tempoRelativo } from './social';
+import { Atividade, Evento, linkDoGrupo, timelineDoGrupo, chaveConexao, gerarCodigo, idEvento, marcoDoTreino, montarTimeline, nomeComMaiuscula, normalizarCodigo, tempoRelativo } from './social';
 
 function evento(autor: string, id: string, criadoEm: number): Evento {
   return { id, autor, autorNome: autor, autorFoto: null, tipo: 'treino', criadoEm, sessaoId: id, data: '2026-10-20', fichaNome: 'A', exercicios: 3, volume: 1000, recordes: [] };
@@ -9,12 +9,12 @@ function atividade(id: string, criadoEm: number): Atividade {
 }
 
 describe('social', () => {
-  it('chaveAmizade é igual para os dois lados', () => {
-    expect(chaveAmizade('b', 'a')).toBe('a_b');
-    expect(chaveAmizade('a', 'b')).toBe('a_b');
+  it('chaveConexao é igual para os dois lados', () => {
+    expect(chaveConexao('b', 'a')).toBe('a_b');
+    expect(chaveConexao('a', 'b')).toBe('a_b');
   });
 
-  describe('códigos de amigo', () => {
+  describe('códigos de convite', () => {
     it('tem 8 caracteres do alfabeto sem O, 0, I e 1', () => {
       for (let i = 0; i < 300; i++) expect(gerarCodigo()).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ2-9]{8}$/);
     });
@@ -56,6 +56,20 @@ describe('social', () => {
       const eventos = Array.from({ length: 10 }, (_, i) => evento('eu', `e${i}`, i));
       expect(montarTimeline(eventos, [], 4).length).toBe(4);
       expect(montarTimeline(eventos, [], 4)[0].criadoEm).toBe(9);
+    });
+  });
+
+  describe('links e timeline de grupo', () => {
+    it('o link leva ao convite, com ou sem barra no fim do endereço', () => {
+      expect(linkDoGrupo('https://x.app/app-workout/', 'ABCD2345')).toBe('https://x.app/app-workout/convite/ABCD2345');
+      expect(linkDoGrupo('https://x.app/app-workout', 'ABCD2345')).toBe('https://x.app/app-workout/convite/ABCD2345');
+    });
+
+    it('a timeline do grupo só tem o que é dos membros', () => {
+      const ev = (autor: string, t: number): Evento => ({ id: `e${t}`, autor, autorNome: autor, autorFoto: null, tipo: 'treino', criadoEm: t, sessaoId: 's', data: '2026-10-22', fichaNome: 'A', exercicios: 1, volume: 1, recordes: [] });
+      const ativ: Atividade = { id: 'a', autor: 'bia', autorNome: 'Bia', autorFoto: null, tipo: 'curtida', eventoId: 'x', criadoEm: 3 };
+      const itens = montarTimeline([ev('ana', 1), ev('caio', 2)], [ativ]);
+      expect(timelineDoGrupo(itens, ['eu', 'ana', 'bia']).map((i) => i.criadoEm)).toEqual([3, 1]);
     });
   });
 

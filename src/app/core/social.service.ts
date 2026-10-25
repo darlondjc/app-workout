@@ -5,20 +5,25 @@ import { Sessao } from './models';
 import { resumoAtividade } from './atividade';
 import { PlanService } from './plan.service';
 import {
-  Amizade,
+  AcessoGrupo,
   Atividade,
   Comentario,
+  Conexao,
   Evento,
+  Grupo,
+  ItemTimeline,
   Perfil,
   fotoParaItens,
   SocialBackend,
-  chaveAmizade,
+  TAMANHO_NOME_GRUPO,
+  chaveConexao,
   gerarCodigo,
   idEvento,
   marcoDoTreino,
   montarTimeline,
   nomeComMaiuscula,
   normalizarCodigo,
+  timelineDoGrupo,
 } from './social';
 import { recordesDaSessao, volumeSessao } from './stats';
 import { Cancelar, NuvemBackend } from './sync';
@@ -28,18 +33,23 @@ const CHAVE_PUBLICADOS = 'app-workout:publicados:v1';
 const CHAVE_VISTO = 'app-workout:social-visto:v1';
 /** Treinos mais antigos que isto não vão para a timeline (evita despejar o histórico ao entrar). */
 const JANELA_PUBLICACAO_MS = 3 * 24 * 3600 * 1000;
-/** Quantos treinos de cada amigo são lidos para as estatísticas (os mais recentes). */
-export const LIMITE_SESSOES_AMIGO = 400;
+/** Quantos treinos de cada colega de grupo são lidos para as estatísticas (os mais recentes). */
+export const LIMITE_SESSOES_MEMBRO = 400;
 
 /** Quantos itens da timeline aparecem de cada vez; ao chegar ao fim da tela entram mais. */
 export const PAGINA_TIMELINE = 10;
-/** Quanto cada amigo (treinos) e a caixa de reações (curtidas e comentários) são lidos, e quanto cresce a leitura a cada página. */
+/** Quanto cada pessoa (treinos) e a caixa de reações (curtidas e comentários) são lidos, e quanto cresce a leitura a cada página. */
 const BUSCA_EVENTOS = 15;
 const BUSCA_ATIVIDADES = 30;
 
-export interface Pessoa {
+/** O que acontece quando alguém usa um link de convite. */
+export type ResultadoEntrada =
+  | { estado: 'entrou' | 'ja-membro' | 'pedido-enviado' | 'pedido-pendente'; grupo: Grupo }
+  | { estado: 'inexistente' | 'erro'; mensagem: string };
+
+export interface PedidoDeEntrada {
+  grupo: Grupo;
   perfil: Perfil;
-  amizade: Amizade;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,7 +60,11 @@ export class SocialService {
 
   readonly eu = signal<Perfil | null>(null);
   readonly erro = signal('');
-  readonly amizades = signal<Amizade[]>([]);
+  readonly grupos = signal<Grupo[]>([]);
+  private readonly conexoes = signal<Conexao[]>([]);
+  /** Falso até a primeira resposta da nuvem com os grupos da pessoa. */
+  readonly gruposCarregados = signal(false);
+  readonly conexoesCarregadas = signal(false);
   private readonly perfis = signal<Record<string, Perfil>>({});
   private readonly eventosPor = signal<Record<string, Evento[]>>({});
   private readonly atividades = signal<Atividade[]>([]);
@@ -65,29 +79,32 @@ export class SocialService {
   private ouvintesSessoes = new Map<string, Cancelar>();
   private buscando = new Set<string>();
   private publicados = new Set<string>(lerPublicados());
+  private ligando = new Set<string>();
 
-  private pessoa(a: Amizade): Pessoa {
-    const outro = a.membros.find((m) => m !== this.uid) ?? '';
-    return { amizade: a, perfil: this.perfis()[outro] ?? { uid: outro, nome: 'Amigo', foto: null } };
+  /** Quem está em algum grupo comigo (as pessoas cujos treinos eu posso ler). */
+  private readonly colegas = computed(() => new Set(this.conexoes().flatMap((c) => c.membros).filter((m) => m !== this.uid)));
+
+  /** Grupos em ordem alfabética. */
+  readonly gruposOrdenados = computed(() => [...this.grupos()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
+
+  grupo(id: string): Grupo | undefined {
+    return this.grupos().find((g) => g.id === id);
   }
 
-  readonly amigos = computed(() =>
-    this.amizades()
-      .filter((a) => a.status === 'aceita')
-      .map((a) => this.pessoa(a))
-      .sort((a, b) => a.perfil.nome.localeCompare(b.perfil.nome, 'pt-BR')),
-  );
-  /**
-   * Amigos pela atividade mais recente (treino feito ou curtida/comentário em um treino meu): quem fez algo há
-   * pouco vem primeiro. Quem ainda não fez nada fica no fim, em ordem alfabética.
-   */
-  readonly amigosPorAtividade = computed(() => {
-    const ultima = new Map<string, number>();
-    const marcar = (uid: string, t: number) => ultima.set(uid, Math.max(ultima.get(uid) ?? 0, t));
-    for (const [uid, lista] of Object.entries(this.eventosPor())) for (const e of lista) marcar(uid, e.criadoEm);
-    for (const a of this.atividades()) marcar(a.autor, a.criadoEm);
-    return [...this.amigos()].sort((a, b) => (ultima.get(b.perfil.uid) ?? 0) - (ultima.get(a.perfil.uid) ?? 0));
-  });
+  /** Membros de um grupo, eu primeiro e os demais em ordem alfabética. */
+  membrosDe(g: Grupo): Perfil[] {
+    const outros = g.membros
+      .filter((m) => m !== this.uid)
+      .map((m) => this.perfilDe(m) ?? { uid: m, nome: 'Membro', foto: null })
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    const eu = this.eu();
+    return eu && g.membros.includes(eu.uid) ? [eu, ...outros] : outros;
+  }
+
+  /** A pessoa pode ver treinos e estatísticas de `uid`: é ela mesma ou está em algum grupo com ela. */
+  podeVer(uid: string): boolean {
+    return uid === this.uid || this.colegas().has(uid);
+  }
 
   /** Minha conta com a foto que vale (a escolhida no app, se houver). */
   readonly meuUsuario = computed(() => {
@@ -96,8 +113,12 @@ export class SocialService {
     return u && eu?.fotoPropria ? { ...u, foto: eu.foto } : u;
   });
 
-  readonly convitesRecebidos = computed(() => this.amizades().filter((a) => a.status === 'pendente' && a.de !== this.uid).map((a) => this.pessoa(a)));
-  readonly convitesEnviados = computed(() => this.amizades().filter((a) => a.status === 'pendente' && a.de === this.uid).map((a) => this.pessoa(a)));
+  /** Pedidos de entrada nos grupos que eu criei e que pedem aprovação. */
+  readonly pedidosRecebidos = computed<PedidoDeEntrada[]>(() =>
+    this.grupos()
+      .filter((g) => g.dono === this.uid)
+      .flatMap((g) => (g.pedidos ?? []).map((uid) => ({ grupo: g, perfil: this.perfilDe(uid) ?? { uid, nome: 'Alguém', foto: null } }))),
+  );
   readonly ativo = computed(() => this.eu() !== null);
 
   /** Tudo o que já foi lido da nuvem, do mais novo para o mais antigo. */
@@ -107,8 +128,21 @@ export class SocialService {
   private readonly limiteEventos = signal(BUSCA_EVENTOS);
   private readonly limiteAtividades = signal(BUSCA_ATIVIDADES);
 
-  /** O que a tela mostra agora: as primeiras páginas da timeline. */
-  readonly timelineVisivel = computed(() => this.timeline().slice(0, this.paginas() * PAGINA_TIMELINE));
+  /** A timeline de um grupo: só treinos (e reações) das pessoas dele. */
+  timelineDe(grupoId: string): ItemTimeline[] {
+    const g = this.grupo(grupoId);
+    return g ? timelineDoGrupo(this.timeline(), g.membros) : [];
+  }
+
+  /** O que a tela mostra agora de um grupo: as primeiras páginas da timeline dele. */
+  timelineVisivelDe(grupoId: string): ItemTimeline[] {
+    return this.timelineDe(grupoId).slice(0, this.paginas() * PAGINA_TIMELINE);
+  }
+
+  /** Ainda há o que mostrar neste grupo: itens já lidos fora da tela ou mais na nuvem. */
+  temMaisDe(grupoId: string): boolean {
+    return this.timelineVisivelDe(grupoId).length < this.timelineDe(grupoId).length || this.nuvemTemMais();
+  }
 
   /** Leitura que veio cheia (no limite) pode ter mais para trás; vazia ou parcial é o fim. */
   private readonly nuvemTemMais = computed(
@@ -117,14 +151,11 @@ export class SocialService {
       this.atividades().length >= this.limiteAtividades(),
   );
 
-  /** Ainda há o que mostrar: itens já lidos fora da tela ou mais na nuvem. */
-  readonly temMais = computed(() => this.timelineVisivel().length < this.timeline().length || this.nuvemTemMais());
-
-  /** Chegou ao fim da tela: mostra mais uma página e, se já mostrou tudo o que foi lido, lê mais da nuvem. */
-  carregarMais(): void {
-    if (!this.temMais()) return;
+  /** Chegou ao fim da tela de um grupo: mostra mais uma página e, se já mostrou tudo o que foi lido, lê mais da nuvem. */
+  carregarMais(grupoId: string): void {
+    if (!this.temMaisDe(grupoId)) return;
     this.paginas.update((p) => p + 1);
-    if (this.paginas() * PAGINA_TIMELINE > this.timeline().length && this.nuvemTemMais()) this.ampliarLeitura();
+    if (this.paginas() * PAGINA_TIMELINE > this.timelineDe(grupoId).length && this.nuvemTemMais()) this.ampliarLeitura();
   }
 
   private ampliarLeitura(): void {
@@ -141,7 +172,7 @@ export class SocialService {
   /** `criadoEm` da novidade mais recente que a pessoa já viu na timeline (neste aparelho). */
   private readonly vistoAte = signal(0);
 
-  /** Quantas novidades de outras pessoas (treinos de amigos, curtidas, comentários) chegaram depois da última vez que a timeline foi vista. */
+  /** Quantas novidades de outras pessoas (treinos de colegas de grupo, curtidas, comentários) chegaram depois da última vez que a timeline foi vista. */
   readonly novidades = computed(() => {
     const visto = this.vistoAte();
     const eu = this.eu()?.uid;
@@ -149,8 +180,8 @@ export class SocialService {
     return this.timeline().filter((i) => i.criadoEm > visto && (i.tipo === 'evento' ? i.evento.autor : i.atividade.autor) !== eu).length;
   });
 
-  /** O que o selo da aba Social mostra: novidades da timeline mais convites de amizade esperando resposta. */
-  readonly avisosDaAba = computed(() => this.novidades() + this.convitesRecebidos().length);
+  /** O que o selo da aba Social mostra: novidades dos grupos mais pedidos de entrada esperando resposta. */
+  readonly avisosDaAba = computed(() => this.novidades() + this.pedidosRecebidos().length);
 
   /** A pessoa está olhando a timeline: tudo o que há nela passa a ser visto. */
   marcarTimelineVista(): void {
@@ -172,13 +203,18 @@ export class SocialService {
       untracked(() => void this.publicarNovos());
     });
     effect(() => {
-      const ids = new Set(this.amigos().map((p) => p.perfil.uid));
+      const ids = new Set(this.colegas());
       ids.add(this.uid);
       untracked(() => this.ajustarEventos(ids));
     });
+    effect(() => {
+      const grupos = this.grupos();
+      const conexoes = this.conexoes();
+      untracked(() => this.conectarMembros(grupos, conexoes));
+    });
   }
 
-  // --- Perfil e código ---------------------------------------------------------------------
+  // --- Perfil ------------------------------------------------------------------------------
 
   private async iniciar(uid: string, api: SocialBackend, nuvem: NuvemBackend): Promise<void> {
     this.encerrar();
@@ -189,25 +225,20 @@ export class SocialService {
     const u = this.cloud.usuario();
     try {
       const existente = await api.lerPerfil(uid);
-      let codigo = existente?.codigo;
-      for (let i = 0; !codigo && i < 6; i++) {
-        const tentativa = gerarCodigo();
-        if (await api.reservarCodigo(uid, tentativa)) codigo = tentativa;
-      }
       const perfil: Perfil = {
         uid,
         nome: u?.nome || u?.email || existente?.nome || 'Você',
         // Foto escolhida no app vale mais que a da conta Google, que só entra enquanto não houver uma.
         foto: existente?.fotoPropria ? existente.foto : (u?.foto ?? existente?.foto ?? null),
         fotoPropria: existente?.fotoPropria ?? false,
-        codigo,
         metaSemanal: existente?.metaSemanal,
       };
       await api.gravarPerfil(perfil);
       if (this.uid !== uid) return; // saiu da conta enquanto carregava
       this.eu.set(perfil);
       this.parar.push(
-        api.ouvirAmizades(uid, (l) => this.aoAmizades(l), (e) => this.falhou(e, 'ouvir amizades')),
+        api.ouvirGrupos(uid, (l) => this.aoGrupos(l), (e) => this.falhou(e, 'ouvir grupos')),
+        api.ouvirConexoes(uid, (l) => { this.conexoes.set(l); this.conexoesCarregadas.set(true); }, (e) => this.falhou(e, 'ouvir ligações entre membros')),
       );
       this.ouvirAtividadesProprias();
     } catch (e) {
@@ -239,7 +270,11 @@ export class SocialService {
     this.uid = '';
     this.vistoAte.set(0);
     this.eu.set(null);
-    this.amizades.set([]);
+    this.grupos.set([]);
+    this.conexoes.set([]);
+    this.gruposCarregados.set(false);
+    this.conexoesCarregadas.set(false);
+    this.ligando.clear();
     this.perfis.set({});
     this.eventosPor.set({});
     this.atividades.set([]);
@@ -260,7 +295,7 @@ export class SocialService {
     );
   }
 
-  /** Salva a meta semanal no perfil, para os amigos verem a barra de progresso certa. */
+  /** Salva a meta semanal no perfil, para os colegas de grupo verem a barra de progresso certa. */
   async publicarMeta(meta: number): Promise<void> {
     const eu = this.eu();
     if (!eu || !this.api) return;
@@ -291,12 +326,36 @@ export class SocialService {
     this.eu.set(novo);
   }
 
-  // --- Amizades ----------------------------------------------------------------------------
+  // --- Grupos ------------------------------------------------------------------------------
 
-  private aoAmizades(lista: Amizade[]): void {
-    this.amizades.set(lista);
-    // Quem vem de uma amizade tenta de novo se a busca falhar: a próxima atualização da lista repete.
-    for (const m of new Set(lista.flatMap((a) => a.membros))) this.garantirPerfil(m, true);
+  private aoGrupos(lista: Grupo[]): void {
+    this.grupos.set(lista);
+    this.gruposCarregados.set(true);
+    // Quem vem de um grupo tenta de novo se a busca falhar: a próxima atualização da lista repete.
+    for (const m of new Set(lista.flatMap((g) => [...g.membros, ...(g.pedidos ?? [])]))) this.garantirPerfil(m, true);
+  }
+
+  /**
+   * Quem entra num grupo (ou já estava nele quando alguém chega) liga a si mesma a cada outro membro.
+   * É a ligação que dá o direito de ler os treinos um do outro.
+   */
+  private conectarMembros(grupos: Grupo[], conexoes: Conexao[]): void {
+    const api = this.api;
+    if (!api || !this.uid) return;
+    const existentes = new Map(conexoes.map((c) => [c.id, c.grupos ?? []]));
+    for (const g of grupos) {
+      for (const m of g.membros) {
+        if (m === this.uid) continue;
+        const id = chaveConexao(this.uid, m);
+        const chave = `${id}:${g.id}`;
+        if (existentes.get(id)?.includes(g.id) || this.ligando.has(chave)) continue;
+        this.ligando.add(chave);
+        api.ligar(this.uid, m, g.id).catch((e: unknown) => {
+          this.ligando.delete(chave);
+          this.falhou(e, 'ligar você aos membros do grupo');
+        });
+      }
+    }
   }
 
   /** Busca o perfil de uma pessoa uma vez por sessão. Com `repetir`, uma falha libera uma nova tentativa. */
@@ -314,7 +373,7 @@ export class SocialService {
     );
   }
 
-  /** Atualiza o perfil de um amigo (nome, foto, meta) a partir da nuvem. */
+  /** Atualiza o perfil de outra pessoa (nome, foto, meta) a partir da nuvem. */
   async atualizarPerfil(uid: string): Promise<void> {
     const p = await this.api?.lerPerfil(uid);
     if (p) this.perfis.update((x) => ({ ...x, [uid]: p }));
@@ -342,47 +401,99 @@ export class SocialService {
     return p ? p.foto : gravada;
   }
 
-  async adicionarPorCodigo(texto: string): Promise<{ ok: boolean; mensagem: string }> {
+  /** Cria um grupo com a pessoa como dona e único membro. Devolve o grupo, ou `null` se não deu. */
+  async criarGrupo(nome: string, acesso: AcessoGrupo = 'aberto'): Promise<Grupo | null> {
     const eu = this.eu();
-    if (!eu || !this.api) return { ok: false, mensagem: 'Entre na sua conta para adicionar amigos.' };
-    const codigo = normalizarCodigo(texto);
-    if (codigo.length !== 8) return { ok: false, mensagem: 'O código tem 8 letras e números.' };
-    if (codigo === eu.codigo) return { ok: false, mensagem: 'Esse é o seu próprio código.' };
+    const limpo = nome.trim().slice(0, TAMANHO_NOME_GRUPO);
+    if (!eu || !this.api || !limpo) return null;
     try {
-      const uid = await this.api.uidDoCodigo(codigo);
-      if (!uid) return { ok: false, mensagem: 'Não encontramos ninguém com esse código.' };
-      const id = chaveAmizade(this.uid, uid);
-      const existente = this.amizades().find((a) => a.id === id);
-      const perfil = (await this.api.lerPerfil(uid)) ?? { uid, nome: 'Amigo', foto: null };
-      this.perfis.update((x) => ({ ...x, [uid]: perfil }));
-      if (existente?.status === 'aceita') return { ok: false, mensagem: `Você e ${perfil.nome} já são amigos.` };
-      if (existente && existente.de === this.uid) return { ok: false, mensagem: `O convite para ${perfil.nome} já foi enviado.` };
-      if (existente) {
-        await this.api.aceitarAmizade(id);
-        return { ok: true, mensagem: `${perfil.nome} já tinha convidado você. Agora vocês são amigos!` };
+      for (let i = 0; i < 6; i++) {
+        const grupo: Grupo = { id: gerarCodigo(), nome: limpo, dono: eu.uid, membros: [eu.uid], acesso, pedidos: [], criadoEm: Date.now() };
+        if (await this.api.criarGrupo(grupo)) {
+          this.grupos.update((l) => (l.some((g) => g.id === grupo.id) ? l : [...l, grupo]));
+          return grupo;
+        }
       }
-      await this.api.pedirAmizade({ id, membros: [this.uid, uid].sort(), de: this.uid, status: 'pendente', criadoEm: Date.now() });
-      return { ok: true, mensagem: `Convite enviado para ${perfil.nome}. Falta a pessoa aceitar.` };
+      this.erro.set('Não foi possível criar o grupo agora. Tente de novo.');
     } catch (e) {
-      this.falhou(e, 'enviar convite');
-      return { ok: false, mensagem: this.erro() };
+      this.falhou(e, 'criar grupo');
+    }
+    return null;
+  }
+
+  /** O que a pessoa vê ao abrir um convite, antes de decidir entrar. */
+  async previaDoGrupo(codigo: string): Promise<Grupo | null> {
+    if (!this.api) return null;
+    const c = normalizarCodigo(codigo);
+    if (c.length !== 8) return null;
+    try {
+      const g = await this.api.lerGrupo(c);
+      if (g) for (const m of g.membros) this.garantirPerfil(m);
+      return g;
+    } catch (e) {
+      this.falhou(e, 'abrir o convite');
+      return null;
     }
   }
 
-  async aceitar(a: Amizade): Promise<void> {
+  /** Usa um convite: entra na hora se o grupo é aberto; senão pede para entrar. */
+  async entrarPorCodigo(codigo: string): Promise<ResultadoEntrada> {
+    const eu = this.eu();
+    const api = this.api;
+    if (!eu || !api) return { estado: 'erro', mensagem: 'Entre na sua conta para participar de grupos.' };
+    const c = normalizarCodigo(codigo);
     try {
-      await this.api?.aceitarAmizade(a.id);
+      const g = c.length === 8 ? await api.lerGrupo(c) : null;
+      if (!g) return { estado: 'inexistente', mensagem: 'Não encontramos esse grupo. Confira o link com quem convidou.' };
+      if (g.membros.includes(eu.uid)) return { estado: 'ja-membro', grupo: g };
+      if (g.acesso === 'aberto') {
+        await api.entrarNoGrupo(g.id, eu.uid);
+        const novo = { ...g, membros: [...g.membros, eu.uid] };
+        this.grupos.update((l) => (l.some((x) => x.id === g.id) ? l : [...l, novo]));
+        return { estado: 'entrou', grupo: novo };
+      }
+      if ((g.pedidos ?? []).includes(eu.uid)) return { estado: 'pedido-pendente', grupo: g };
+      await api.pedirEntrada(g.id, eu.uid);
+      return { estado: 'pedido-enviado', grupo: g };
     } catch (e) {
-      this.falhou(e, 'aceitar convite');
+      this.falhou(e, 'entrar no grupo');
+      return { estado: 'erro', mensagem: this.erro() };
     }
   }
 
-  /** Recusa um convite, cancela um enviado ou desfaz a amizade. */
-  async remover(a: Amizade): Promise<void> {
+  /** O dono aceita ou recusa o pedido de entrada de alguém. */
+  async responderPedido(g: Grupo, uid: string, aceitar: boolean): Promise<void> {
     try {
-      await this.api?.removerAmizade(a.id);
+      await this.api?.responderPedido(g.id, uid, aceitar);
     } catch (e) {
-      this.falhou(e, 'remover amizade');
+      this.falhou(e, aceitar ? 'aceitar pedido' : 'recusar pedido');
+    }
+  }
+
+  async definirAcesso(g: Grupo, acesso: AcessoGrupo): Promise<void> {
+    this.grupos.update((l) => l.map((x) => (x.id === g.id ? { ...x, acesso } : x)));
+    try {
+      await this.api?.definirAcesso(g.id, acesso);
+    } catch (e) {
+      this.grupos.update((l) => l.map((x) => (x.id === g.id ? { ...x, acesso: g.acesso } : x)));
+      this.falhou(e, 'mudar quem pode participar');
+    }
+  }
+
+  /** Sai do grupo. Quem era dono passa o posto ao próximo membro; o último a sair apaga o grupo. */
+  async sairDoGrupo(g: Grupo): Promise<boolean> {
+    const api = this.api;
+    if (!api || !this.uid) return false;
+    try {
+      const outros = g.membros.filter((m) => m !== this.uid);
+      // Primeiro some a ligação (enquanto ainda sou membro); depois saio do grupo.
+      await Promise.all(outros.map((m) => api.desligar(this.uid, m, g.id)));
+      await api.sairDoGrupo(g.id, this.uid, g.dono === this.uid ? outros[0] : undefined);
+      this.grupos.update((l) => l.filter((x) => x.id !== g.id));
+      return true;
+    } catch (e) {
+      this.falhou(e, 'sair do grupo');
+      return false;
     }
   }
 
@@ -395,7 +506,7 @@ export class SocialService {
       if (!uid || this.ouvintesEventos.has(uid)) continue;
       this.ouvirEventosDe(uid);
     }
-    // Quem deixou de ser amigo sai da timeline e das estatísticas: para de ouvir os dois.
+    // Quem deixou de dividir um grupo comigo sai da timeline e das estatísticas: para de ouvir os dois.
     const sobras = new Set([...this.ouvintesEventos.keys(), ...this.ouvintesSessoes.keys()]);
     for (const uid of sobras) {
       if (!ids.has(uid)) this.soltar(uid);
@@ -423,15 +534,15 @@ export class SocialService {
   }
 
   /**
-   * Erro ao ouvir uma pessoa. Se for um amigo, "sem permissão" quase sempre quer dizer que a amizade
-   * acabou (a lista de amizades ainda não chegou); isso não é problema do app e não vira aviso na tela.
+   * Erro ao ouvir uma pessoa. Se for outra pessoa, "sem permissão" quase sempre quer dizer que vocês não
+   * dividem mais um grupo (a lista de ligações ainda não chegou); isso não é problema do app e não vira aviso na tela.
    */
   private aoErroDe(uid: string, e: unknown): void {
     if (uid !== this.uid && (e as { code?: string }).code === 'permission-denied') {
       this.soltar(uid);
       return;
     }
-    this.falhou(e, uid === this.uid ? 'ler seus treinos' : 'ler treinos de um amigo');
+    this.falhou(e, uid === this.uid ? 'ler seus treinos' : 'ler treinos de um membro');
   }
 
   /** Publica na timeline os treinos concluídos há pouco que ainda não foram publicados. */
@@ -493,7 +604,7 @@ export class SocialService {
   /** Fotos já pedidas (ou recém-enviadas) nesta sessão, para um card não buscar a mesma foto duas vezes. */
   private readonly fotos = new Map<string, Promise<string | null>>();
 
-  /** A foto de um treino (seu ou de um amigo); `null` se não houver ou não puder ser lida agora. */
+  /** A foto de um treino (seu ou de um membro); `null` se não houver ou não puder ser lida agora. */
   /** Por que a última leitura de uma foto falhou (para o card dizer na tela, já que no celular não há console). */
   readonly motivosFoto = new Map<string, string>();
 
@@ -504,7 +615,7 @@ export class SocialService {
     let pedido = this.fotos.get(chave);
     if (!pedido) {
       pedido = api.lerFoto(uid, sessaoId).catch((e: unknown) => {
-        // Foto que não carrega (sem regra publicada, sem rede) não é motivo para largar o amigo nem para avisar: o card só fica sem ela.
+        // Foto que não carrega (sem regra publicada, sem rede) não é motivo para largar a pessoa nem para avisar: o card só fica sem ela.
         console.warn('[social] foto indisponível', e);
         const codigo = (e as { code?: string }).code;
         this.motivosFoto.set(chave, codigo === 'permission-denied' ? 'sem permissão para ler a foto (publique as regras do Firestore)' : `erro ao ler a foto${codigo ? ` (${codigo})` : ''}`);
@@ -585,14 +696,14 @@ export class SocialService {
     }
   }
 
-  // --- Estatísticas de amigos --------------------------------------------------------------
+  // --- Estatísticas de outros membros --------------------------------------------------------------
 
-  /** Treinos concluídos de um amigo (começa a acompanhar na primeira chamada). */
+  /** Treinos concluídos de um colega de grupo (começa a acompanhar na primeira chamada). */
   sessoesDe(uid: string): Sessao[] {
     if (uid && uid !== this.uid && this.nuvem && !this.ouvintesSessoes.has(uid)) {
       this.ouvintesSessoes.set(
         uid,
-        this.nuvem.ouvirSessoes(uid, (l) => this.sessoesPor.update((x) => ({ ...x, [uid]: l })), (e) => this.aoErroDe(uid, e), LIMITE_SESSOES_AMIGO),
+        this.nuvem.ouvirSessoes(uid, (l) => this.sessoesPor.update((x) => ({ ...x, [uid]: l })), (e) => this.aoErroDe(uid, e), LIMITE_SESSOES_MEMBRO),
       );
     }
     return this.sessoesPor()[uid] ?? [];

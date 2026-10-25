@@ -29,13 +29,13 @@
         </span>
         Social
       </a>
-      <a routerLink="/ajustes" routerLinkActive="ativa">
+      <a routerLink="/perfil" routerLinkActive="ativa">
         @if (nuvem.usuario(); as u) {
           <app-avatar [usuario]="u" [tamanho]="24" />
         } @else {
           <app-icon name="settings" />
         }
-        Ajustes
+        Perfil
       </a>
     </nav>
   }
@@ -45,7 +45,7 @@
       <button type="button" class="atualizacao__botao" (click)="update.atualizar()">
         <app-icon name="refresh" [size]="18" [stroke]="2.4" /> Atualizar
       </button>
-      <button type="button" class="atualizacao__fechar" aria-label="Agora não. Atualize depois em Ajustes" (click)="update.dispensar()">
+      <button type="button" class="atualizacao__fechar" aria-label="Agora não. Atualize depois no Perfil" (click)="update.dispensar()">
         <app-icon name="close" [size]="16" [stroke]="2.4" />
       </button>
     </div>

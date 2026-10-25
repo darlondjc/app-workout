@@ -7,7 +7,7 @@ import { Icon } from '../core/icon';
 import { Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
-import { LIMITE_SESSOES_AMIGO, SocialService } from '../core/social.service';
+import { LIMITE_SESSOES_MEMBRO, SocialService } from '../core/social.service';
 import { CHAVE_META, lerMeta, metaPadrao } from '../core/meta';
 import { PesoGrafico } from '../core/peso-grafico';
 import { calcularResumo, dataISO, gerarInsights, volumeSessao } from '../core/stats';
@@ -274,7 +274,7 @@ export class Progress {
   );
   protected readonly resumo = computed(() => calcularResumo(this.historico(), this.hoje, this.meta()));
   /** Do amigo só se leem os treinos mais recentes: com o limite atingido, o total deixa de ser o total. */
-  protected readonly totalParcial = computed(() => !this.editavel() && this.historico().length >= LIMITE_SESSOES_AMIGO);
+  protected readonly totalParcial = computed(() => !this.editavel() && this.historico().length >= LIMITE_SESSOES_MEMBRO);
   private readonly mensagens = computed(() => gerarInsights(this.resumo(), this.hoje, this.nome()));
   /** Mensagens que a própria pessoa dispensou; uma mensagem nova (texto diferente) aparece de novo. */
   private readonly dispensadas = signal<string[]>(lerDispensadas());

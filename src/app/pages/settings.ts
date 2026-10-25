@@ -6,18 +6,20 @@ import { Dialogo } from '../core/dialogo';
 import { FotoBotao } from '../core/foto-botao';
 import { Icon } from '../core/icon';
 import { PesoRegistro } from '../core/peso-registro';
+import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
+import { Progress } from './progress';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro],
+  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, Progress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <header class="cabeca">
-        <h1 class="titulo">Ajustes</h1>
+        <h1 class="titulo">Perfil</h1>
         @if (nuvem.usuario()) {
           <button type="button" class="sair" aria-label="Sair da conta" (click)="confirmando.set(true)">
             <app-icon name="logout" [size]="22" [stroke]="2.2" />
@@ -70,6 +72,8 @@ import { UpdateService } from '../core/update.service';
           </button>
         }
       </article>
+
+      <app-progress [historico]="plans.historico()" />
 
       <app-peso-registro />
 
@@ -395,6 +399,7 @@ export class Settings {
   protected readonly log = inject(ChangelogService);
   protected readonly nuvem = inject(CloudService);
   protected readonly social = inject(SocialService);
+  protected readonly plans = inject(PlanService);
   protected readonly confirmando = signal(false);
   protected readonly fotoAberta = signal(false);
   protected readonly anteriores = computed(() => this.log.lista().slice(1));

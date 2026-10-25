@@ -4,8 +4,8 @@ import { CloudService } from './cloud.service';
 import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
 import { PlanService } from './plan.service';
-import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend, fotoParaItens } from './social';
-import { LIMITE_SESSOES_AMIGO, PAGINA_TIMELINE, SocialService } from './social.service';
+import { Atividade, Comentario, Conexao, Evento, Grupo, Perfil, SocialBackend, chaveConexao, fotoParaItens } from './social';
+import { LIMITE_SESSOES_MEMBRO, PAGINA_TIMELINE, SocialService } from './social.service';
 import { NuvemBackend } from './sync';
 
 interface Ouvinte<T> {
@@ -21,7 +21,8 @@ function ouvinte<T>(cb: (d: T) => void, erro: (e: unknown) => void, limite?: num
 
 /** Backend social de mentira: guarda cada ouvinte aberto e deixa o teste disparar dados e erros. */
 class ApiFalsa implements SocialBackend {
-  amizades?: Ouvinte<Amizade[]>;
+  grupos?: Ouvinte<Grupo[]>;
+  conexoes?: Ouvinte<Conexao[]>;
   eventos = new Map<string, Ouvinte<Evento[]>>();
   perfis: Record<string, Perfil> = {};
 
@@ -31,11 +32,24 @@ class ApiFalsa implements SocialBackend {
     this.gravados.push(p);
     return Promise.resolve();
   };
-  reservarCodigo = () => Promise.resolve(true);
-  uidDoCodigo = () => Promise.resolve(null);
-  pedirAmizade = () => Promise.resolve();
-  aceitarAmizade = () => Promise.resolve();
-  removerAmizade = () => Promise.resolve();
+  gruposNaNuvem: Record<string, Grupo> = {};
+  lerGrupo = (codigo: string) => Promise.resolve(this.gruposNaNuvem[codigo] ?? null);
+  criarGrupo = (g: Grupo) => {
+    this.gruposNaNuvem[g.id] = g;
+    return Promise.resolve(true);
+  };
+  chamadas: string[] = [];
+  entrarNoGrupo = (codigo: string, uid: string) => this.registrar(`entrar ${codigo} ${uid}`);
+  pedirEntrada = (codigo: string, uid: string) => this.registrar(`pedir ${codigo} ${uid}`);
+  responderPedido = (codigo: string, uid: string, aceitar: boolean) => this.registrar(`responder ${codigo} ${uid} ${aceitar}`);
+  definirAcesso = (codigo: string, acesso: string) => this.registrar(`acesso ${codigo} ${acesso}`);
+  sairDoGrupo = (codigo: string, uid: string, novoDono?: string) => this.registrar(`sair ${codigo} ${uid} ${novoDono ?? ''}`.trim());
+  ligar = (a: string, b: string, grupo: string) => this.registrar(`ligar ${chaveConexao(a, b)} ${grupo}`);
+  desligar = (a: string, b: string, grupo: string) => this.registrar(`desligar ${chaveConexao(a, b)} ${grupo}`);
+  private registrar(chamada: string): Promise<void> {
+    this.chamadas.push(chamada);
+    return Promise.resolve();
+  }
   publicados: Evento[] = [];
   publicarEvento = (e: Evento) => {
     this.publicados.push(e);
@@ -77,10 +91,23 @@ class ApiFalsa implements SocialBackend {
     return () => undefined;
   };
 
-  ouvirAmizades(_uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): () => void {
+  ouvirGrupos(_uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): () => void {
     const o = ouvinte(cb, erro);
-    this.amizades = o;
+    this.grupos = o;
     return () => (o.cancelado = true);
+  }
+
+  ouvirConexoes(_uid: string, cb: (c: Conexao[]) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.conexoes = o;
+    return () => (o.cancelado = true);
+  }
+
+  /** Atalho dos testes: um grupo `g1` com a pessoa e quem estiver na lista, e a ligação com cada um. */
+  emitirColegas(...outros: string[]): void {
+    const g: Grupo = { id: 'g1', nome: 'Grupo', dono: 'eu', membros: ['eu', ...outros], acesso: 'aberto', pedidos: [], criadoEm: 1 };
+    this.grupos?.cb(outros.length ? [g] : []);
+    this.conexoes?.cb(outros.map((o) => ({ id: chaveConexao('eu', o), membros: ['eu', o].sort(), grupos: ['g1'] })));
   }
 
   ouvirCurtidas(dono: string, eventoId: string, cb: (u: string[]) => void, erro: (e: unknown) => void): () => void {
@@ -132,14 +159,6 @@ const evento = (autor: string, criadoEm: number): Evento => ({
   recordes: [],
 });
 
-const amizade = (outro: string, status: Amizade['status'] = 'aceita'): Amizade => ({
-  id: `eu_${outro}`,
-  membros: ['eu', outro],
-  de: 'eu',
-  status,
-  criadoEm: 1,
-});
-
 describe('SocialService', () => {
   let marcadas: { id: string; tem: boolean }[];
   let api: ApiFalsa;
@@ -155,11 +174,11 @@ describe('SocialService', () => {
     }
   }
 
-  /** Entra na conta e recebe a lista de amizades. */
-  async function entrarComAmigos(...amigos: Amizade[]): Promise<void> {
+  /** Entra na conta e recebe um grupo com estas pessoas. */
+  async function entrarComAmigos(...outros: string[]): Promise<void> {
     cloud.social.set({ uid: 'eu', api, nuvem });
     await assentar();
-    api.amizades?.cb(amigos);
+    api.emitirColegas(...outros);
     await assentar();
   }
 
@@ -182,44 +201,32 @@ describe('SocialService', () => {
     social = TestBed.inject(SocialService);
   });
 
-  it('ao entrar, cria o perfil e passa a ouvir as amizades', async () => {
+  it('ao entrar, cria o perfil e passa a ouvir os grupos', async () => {
     cloud.social.set({ uid: 'eu', api, nuvem });
     await assentar();
     expect(social.eu()?.uid).toBe('eu');
-    expect(social.eu()?.codigo).toMatch(/^[A-Z2-9]{8}$/);
-    expect(api.amizades).toBeDefined();
+    expect(api.grupos).toBeDefined();
+    expect(api.conexoes).toBeDefined();
   });
 
-  it('acompanha os treinos publicados de cada amigo e os próprios', async () => {
-    await entrarComAmigos(amizade('ana'));
+  it('acompanha os treinos publicados de cada pessoa do grupo e os próprios', async () => {
+    await entrarComAmigos('ana');
     expect([...api.eventos.keys()].sort()).toEqual(['ana', 'eu']);
-    expect(social.amigos().map((p) => p.perfil.nome)).toEqual(['Ana']);
+    expect(social.membrosDe(social.grupos()[0]).map((p) => p.nome)).toEqual(['Eu', 'Ana']);
   });
 
-  it('convite pendente ainda não dá acesso: ninguém é ouvido', async () => {
-    await entrarComAmigos(amizade('ana', 'pendente'));
+  it('quem não está em nenhum grupo comigo não é ouvido', async () => {
+    await entrarComAmigos();
     expect([...api.eventos.keys()]).toEqual(['eu']);
-    expect(social.amigos().length).toBe(0);
-    expect(social.convitesEnviados().length).toBe(1);
+    expect(social.grupos().length).toBe(0);
+    expect(social.podeVer('ana')).toBeFalse();
   });
 
-  describe('ordem dos amigos', () => {
-    it('quem teve atividade mais recente vem primeiro; sem atividade, em ordem alfabética no fim', async () => {
-      await entrarComAmigos(amizade('ana'), amizade('bia'), amizade('caio'));
-      expect(social.amigosPorAtividade().map((p) => p.perfil.nome)).toEqual(['Ana', 'Bia', 'Caio']);
-      api.eventos.get('bia')!.cb([evento('bia', 1000)]);
-      api.eventos.get('caio')!.cb([evento('caio', 5000), evento('caio', 200)]);
-      await assentar();
-      expect(social.amigosPorAtividade().map((p) => p.perfil.nome)).toEqual(['Caio', 'Bia', 'Ana']);
-    });
-
-    it('curtida ou comentário de um amigo em um treino meu também conta', async () => {
-      await entrarComAmigos(amizade('ana'), amizade('bia'));
-      api.eventos.get('bia')!.cb([evento('bia', 1000)]);
-      api.atividadesCb?.([{ id: 'a', autor: 'ana', autorNome: 'Ana', autorFoto: null, tipo: 'curtida', eventoId: 'x', criadoEm: 9000 }]);
-      await assentar();
-      expect(social.amigosPorAtividade().map((p) => p.perfil.nome)).toEqual(['Ana', 'Bia']);
-    });
+  it('só quem divide um grupo comigo pode ter os treinos vistos', async () => {
+    await entrarComAmigos('ana');
+    expect(social.podeVer('ana')).toBeTrue();
+    expect(social.podeVer('eu')).toBeTrue();
+    expect(social.podeVer('bia')).toBeFalse();
   });
 
   describe('foto do perfil', () => {
@@ -275,15 +282,15 @@ describe('SocialService', () => {
     });
   });
 
-  describe('estatísticas de amigos', () => {
+  describe('estatísticas de outros membros', () => {
     it('lê só os treinos mais recentes do amigo', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       social.sessoesDe('ana');
-      expect(nuvem.sessoes.get('ana')?.limite).toBe(LIMITE_SESSOES_AMIGO);
+      expect(nuvem.sessoes.get('ana')?.limite).toBe(LIMITE_SESSOES_MEMBRO);
     });
 
     it('abre uma única leitura por amigo, mesmo consultando várias vezes', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       const abrir = spyOn(nuvem, 'ouvirSessoes').and.callThrough();
       social.sessoesDe('ana');
       social.sessoesDe('ana');
@@ -291,20 +298,20 @@ describe('SocialService', () => {
     });
 
     it('os próprios treinos não passam por aqui', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       social.sessoesDe('eu');
       expect(nuvem.sessoes.has('eu')).toBeFalse();
     });
   });
 
-  describe('quando a amizade acaba', () => {
-    it('para de ouvir os treinos publicados e o histórico do ex-amigo', async () => {
-      await entrarComAmigos(amizade('ana'));
+  describe('quando deixam de dividir um grupo', () => {
+    it('para de ouvir os treinos publicados e o histórico do ex-colega', async () => {
+      await entrarComAmigos('ana');
       social.sessoesDe('ana');
       nuvem.sessoes.get('ana')?.cb([{ id: 's1', data: '2026-10-20', fichaId: 'f1' }]);
       expect(social.sessoesCarregadas('ana')).toBeTrue();
 
-      api.amizades?.cb([]);
+      api.emitirColegas();
       await assentar();
 
       expect(api.eventos.get('ana')?.cancelado).toBeTrue();
@@ -314,11 +321,11 @@ describe('SocialService', () => {
     });
 
     it('se voltarem a ser amigos, volta a ouvir', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       social.sessoesDe('ana');
-      api.amizades?.cb([]);
+      api.emitirColegas();
       await assentar();
-      api.amizades?.cb([amizade('ana')]);
+      api.emitirColegas('ana');
       await assentar();
       social.sessoesDe('ana');
       expect(api.eventos.get('ana')?.cancelado).toBeFalse();
@@ -326,7 +333,7 @@ describe('SocialService', () => {
     });
 
     it('"sem permissão" de um amigo que nos tirou da lista não vira aviso na tela', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       social.sessoesDe('ana');
 
       api.eventos.get('ana')?.erro({ code: 'permission-denied' });
@@ -340,7 +347,7 @@ describe('SocialService', () => {
 
   describe('erros', () => {
     it('o erro diz em que operação falhou, para dar para diagnosticar pelo celular', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.gravarFoto = () => Promise.reject({ code: 'permission-denied' });
       await social.salvarFoto('s1', 'data:image/jpeg;base64,AAAA');
       expect(social.erro()).toContain('ao gravar foto do treino');
@@ -348,20 +355,20 @@ describe('SocialService', () => {
     });
 
     it('"sem permissão" nos próprios dados pede para publicar as regras do Firestore', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('eu')?.erro({ code: 'permission-denied' });
       expect(social.erro()).toContain('Publique as regras');
     });
 
     it('outro erro ao ouvir um amigo continua avisando', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('ana')?.erro({ code: 'unavailable' });
       expect(social.erro()).toContain('Não foi possível falar com o servidor');
     });
 
     describe('curtidas e comentários de um treino', () => {
       it('"sem permissão" nas reações de um treino seu pede para publicar as regras', async () => {
-        await entrarComAmigos(amizade('ana'));
+        await entrarComAmigos('ana');
         social.ouvirCurtidas('eu', 'e1', () => undefined);
         social.ouvirComentarios('eu', 'e1', () => undefined);
         api.curtidas.get('eu/e1')?.erro({ code: 'permission-denied' });
@@ -369,7 +376,7 @@ describe('SocialService', () => {
       });
 
       it('o erro ao ler os comentários também aparece (não vira "sem comentários")', async () => {
-        await entrarComAmigos(amizade('ana'));
+        await entrarComAmigos('ana');
         const recebeu = jasmine.createSpy('recebeu');
         social.ouvirComentarios('ana', 'e1', recebeu);
         api.comentarios.get('ana/e1')?.erro({ code: 'unavailable' });
@@ -377,8 +384,8 @@ describe('SocialService', () => {
         expect(recebeu).not.toHaveBeenCalled();
       });
 
-      it('"sem permissão" nas reações de um ex-amigo não vira aviso e solta a pessoa', async () => {
-        await entrarComAmigos(amizade('ana'));
+      it('"sem permissão" nas reações de um ex-colega não vira aviso e solta a pessoa', async () => {
+        await entrarComAmigos('ana');
         social.ouvirCurtidas('ana', 'e1', () => undefined);
         api.curtidas.get('ana/e1')?.erro({ code: 'permission-denied' });
         expect(social.erro()).toBe('');
@@ -396,14 +403,14 @@ describe('SocialService', () => {
   describe('nome e foto atuais', () => {
     it('prefere o perfil atual ao nome gravado no treino', async () => {
       api.perfis['ana'] = { uid: 'ana', nome: 'Ana Nova', foto: 'nova.png' };
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       expect(social.nomeDe('ana', 'Ana Antiga')).toBe('Ana Nova');
       expect(social.fotoDe('ana', 'velha.png')).toBe('nova.png');
     });
 
     it('quem tirou a foto aparece sem foto, não com a antiga', async () => {
       api.perfis['ana'] = { uid: 'ana', nome: 'Ana', foto: null };
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       expect(social.fotoDe('ana', 'velha.png')).toBeNull();
     });
 
@@ -414,9 +421,9 @@ describe('SocialService', () => {
       expect(ler).not.toHaveBeenCalled();
     });
 
-    it('de quem não é amigo, usa o gravado e busca o perfil em segundo plano', async () => {
+    it('de quem não é do grupo, usa o gravado e busca o perfil em segundo plano', async () => {
       api.perfis['bia'] = { uid: 'bia', nome: 'Bia Atual', foto: null };
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       const ler = spyOn(api, 'lerPerfil').and.callThrough();
 
       expect(social.nomeDe('bia', 'Bia Gravada')).toBe('Bia Gravada');
@@ -447,16 +454,16 @@ describe('SocialService', () => {
     it('amigo cujo perfil falhou ao carregar é tentado de novo na próxima atualização da lista', async () => {
       await entrarComAmigos();
       let falhar = true;
-      spyOn(api, 'lerPerfil').and.callFake((uid: string) => (falhar ? Promise.reject(new Error('sem rede')) : Promise.resolve(api.perfis[uid] ?? null)));
+      const ler = spyOn(api, 'lerPerfil').and.callFake((uid: string) => (falhar ? Promise.reject(new Error('sem rede')) : Promise.resolve(api.perfis[uid] ?? null)));
 
-      api.amizades?.cb([amizade('ana')]);
+      api.emitirColegas('ana');
       await assentar();
-      expect(social.amigos()[0].perfil.nome).toBe('Amigo');
+      expect(ler).toHaveBeenCalledTimes(1);
 
       falhar = false;
-      api.amizades?.cb([amizade('ana')]);
+      api.emitirColegas('ana');
       await assentar();
-      expect(social.amigos()[0].perfil.nome).toBe('Ana');
+      expect(social.perfilDe('ana')?.nome).toBe('Ana');
     });
 
     it('sem conta, devolve o gravado e não busca nada', () => {
@@ -468,24 +475,24 @@ describe('SocialService', () => {
   });
 
   it('ao sair da conta, para tudo e limpa os dados', async () => {
-    await entrarComAmigos(amizade('ana'));
+    await entrarComAmigos('ana');
     social.sessoesDe('ana');
 
     cloud.social.set(null);
     await assentar();
 
-    expect(api.amizades?.cancelado).toBeTrue();
+    expect(api.grupos?.cancelado).toBeTrue();
     expect(api.eventos.get('ana')?.cancelado).toBeTrue();
     expect(api.eventos.get('eu')?.cancelado).toBeTrue();
     expect(nuvem.sessoes.get('ana')?.cancelado).toBeTrue();
     expect(social.eu()).toBeNull();
-    expect(social.amigos()).toEqual([]);
+    expect(social.grupos()).toEqual([]);
   });
   describe('novidades na timeline', () => {
     const futuro = () => Date.now() + 60_000;
 
     it('um treino novo de amigo vira novidade e some quando a timeline é vista', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       expect(social.novidades()).toBe(0);
       api.eventos.get('ana')?.cb([evento('ana', futuro())]);
       await assentar();
@@ -495,42 +502,50 @@ describe('SocialService', () => {
     });
 
     it('o que já existia antes da primeira entrada não conta como novidade', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('ana')?.cb([evento('ana', 1000)]);
       await assentar();
       expect(social.novidades()).toBe(0);
     });
 
-    it('convites de amizade recebidos entram no aviso da aba e saem quando respondidos', async () => {
-      await entrarComAmigos({ ...amizade('bia', 'pendente'), id: 'bia_eu', de: 'bia' });
+    it('pedidos de entrada nos meus grupos entram no aviso da aba e saem quando respondidos', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      const g: Grupo = { id: 'g1', nome: 'Grupo', dono: 'eu', membros: ['eu'], acesso: 'aprovado', pedidos: ['bia'], criadoEm: 1 };
+      api.grupos?.cb([g]);
+      await assentar();
       expect(social.novidades()).toBe(0);
+      expect(social.pedidosRecebidos().map((p) => p.perfil.uid)).toEqual(['bia']);
       expect(social.avisosDaAba()).toBe(1);
-      api.amizades?.cb([]);
+      api.grupos?.cb([{ ...g, pedidos: [] }]);
       await assentar();
       expect(social.avisosDaAba()).toBe(0);
     });
 
-    it('convite que eu enviei não conta como aviso', async () => {
-      await entrarComAmigos(amizade('bia', 'pendente'));
+    it('pedidos em grupos de outra pessoa não contam como aviso', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.grupos?.cb([{ id: 'g2', nome: 'Outro', dono: 'ana', membros: ['ana', 'eu'], acesso: 'aprovado', pedidos: ['bia'], criadoEm: 1 }]);
+      await assentar();
       expect(social.avisosDaAba()).toBe(0);
     });
 
     it('os próprios treinos não contam', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('eu')?.cb([evento('eu', futuro())]);
       await assentar();
       expect(social.novidades()).toBe(0);
     });
 
     it('curtidas e comentários de amigos também contam', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.atividadesCb?.([{ id: 'a1', autor: 'ana', autorNome: 'Ana', autorFoto: null, tipo: 'curtida', eventoId: 'e1', criadoEm: futuro() }]);
       await assentar();
       expect(social.novidades()).toBe(1);
     });
 
     it('guarda até onde foi visto, por conta, para não avisar de novo ao reabrir o app', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       const t = futuro();
       api.eventos.get('ana')?.cb([evento('ana', t)]);
       await assentar();
@@ -542,39 +557,39 @@ describe('SocialService', () => {
     const lote = (autor: string, n: number, de = 1000) => Array.from({ length: n }, (_, i) => evento(autor, de + i));
 
     it('mostra só a primeira página e libera mais ao chegar ao fim', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('ana')?.cb(lote('ana', 15));
       await assentar();
       expect(social.timeline().length).toBe(15);
-      expect(social.timelineVisivel().length).toBe(PAGINA_TIMELINE);
-      expect(social.timelineVisivel()[0].criadoEm).toBe(1014); // do mais novo para o mais antigo
-      expect(social.temMais()).toBeTrue();
+      expect(social.timelineVisivelDe('g1').length).toBe(PAGINA_TIMELINE);
+      expect(social.timelineVisivelDe('g1')[0].criadoEm).toBe(1014); // do mais novo para o mais antigo
+      expect(social.temMaisDe('g1')).toBeTrue();
 
-      social.carregarMais();
-      expect(social.timelineVisivel().length).toBe(15);
+      social.carregarMais('g1');
+      expect(social.timelineVisivelDe('g1').length).toBe(15);
     });
 
     it('já lido e escondido não abre nova leitura na nuvem', async () => {
-      await entrarComAmigos(amizade('ana'), amizade('bia'));
+      await entrarComAmigos('ana', 'bia');
       api.eventos.get('ana')?.cb(lote('ana', 14));
       api.eventos.get('bia')?.cb(lote('bia', 14, 2000)); // 28 lidos, nenhuma leitura cheia
       await assentar();
-      expect(social.timelineVisivel().length).toBe(PAGINA_TIMELINE);
+      expect(social.timelineVisivelDe('g1').length).toBe(PAGINA_TIMELINE);
       const aberto = api.eventos.get('ana');
-      social.carregarMais(); // 20 de 28: já está lido
-      expect(social.timelineVisivel().length).toBe(20);
+      social.carregarMais('g1'); // 20 de 28: já está lido
+      expect(social.timelineVisivelDe('g1').length).toBe(20);
       expect(api.eventos.get('ana')).toBe(aberto);
       expect(aberto?.cancelado).toBeFalse();
     });
 
     it('leitura que veio cheia pede mais à nuvem quando a tela alcança o fim', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       const primeiro = api.eventos.get('ana')!;
       expect(primeiro.limite).toBe(15);
       primeiro.cb(lote('ana', 15)); // veio no limite: pode haver mais
       await assentar();
-      social.carregarMais(); // mostra 15 (tudo o que foi lido)
-      social.carregarMais(); // quer 20, só há 15 -> abre leitura maior
+      social.carregarMais('g1'); // mostra 15 (tudo o que foi lido)
+      social.carregarMais('g1'); // quer 20, só há 15 -> abre leitura maior
       const segundo = api.eventos.get('ana')!;
       expect(primeiro.cancelado).toBeTrue();
       expect(segundo).not.toBe(primeiro);
@@ -585,30 +600,30 @@ describe('SocialService', () => {
     });
 
     it('leitura parcial é o fim: some o "tem mais" e nada novo é pedido', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('ana')?.cb(lote('ana', 12));
       await assentar();
-      social.carregarMais();
-      expect(social.timelineVisivel().length).toBe(12);
-      expect(social.temMais()).toBeFalse();
+      social.carregarMais('g1');
+      expect(social.timelineVisivelDe('g1').length).toBe(12);
+      expect(social.temMaisDe('g1')).toBeFalse();
       const aberto = api.eventos.get('ana');
-      social.carregarMais();
+      social.carregarMais('g1');
       expect(api.eventos.get('ana')).toBe(aberto);
     });
 
     it('novos itens depois da leitura ampliada entram na lista', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('ana')?.cb(lote('ana', 15));
       await assentar();
-      social.carregarMais();
-      social.carregarMais();
+      social.carregarMais('g1');
+      social.carregarMais('g1');
       api.eventos.get('ana')?.cb(lote('ana', 22)); // agora a nuvem devolveu 22 (< 30): fim
       await assentar();
       expect(social.timeline().length).toBe(22);
-      expect(social.temMais()).toBeTrue(); // ainda há 2 fora da tela (20 de 22)
-      social.carregarMais();
-      expect(social.timelineVisivel().length).toBe(22);
-      expect(social.temMais()).toBeFalse();
+      expect(social.temMaisDe('g1')).toBeTrue(); // ainda há 2 fora da tela (20 de 22)
+      social.carregarMais('g1');
+      expect(social.timelineVisivelDe('g1').length).toBe(22);
+      expect(social.temMaisDe('g1')).toBeFalse();
     });
   });
   describe('foto do treino', () => {
@@ -623,7 +638,7 @@ describe('SocialService', () => {
     });
 
     it('ler a mesma foto duas vezes busca uma só', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.fotos.set('ana/sx', 'data:image/jpeg;base64,BBB');
       const [a, b] = await Promise.all([social.lerFoto('ana', 'sx'), social.lerFoto('ana', 'sx')]);
       expect(a).toBe('data:image/jpeg;base64,BBB');
@@ -632,7 +647,7 @@ describe('SocialService', () => {
     });
 
     it('treino sem foto devolve null, e uma falha de leitura não fica guardada', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       expect(await social.lerFoto('ana', 'nada')).toBeNull();
       api.falhaFoto = { code: 'unavailable' };
       expect(await social.lerFoto('ana', 'sy')).toBeNull();
@@ -643,13 +658,13 @@ describe('SocialService', () => {
 
     it('foto que não pode ser lida (ex.: regra ainda não publicada) não derruba o amigo nem mostra erro', async () => {
       spyOn(console, 'warn');
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       api.eventos.get('ana')?.cb([evento('ana', 7)]);
       await assentar();
       api.falhaFoto = { code: 'permission-denied' };
       expect(await social.lerFoto('ana', 'sz')).toBeNull();
       await assentar();
-      expect(social.amigos().length).toBe(1);
+      expect(social.podeVer('ana')).toBeTrue();
       expect(api.eventos.get('ana')?.cancelado).toBeFalse();
       expect(social.erro()).toBe('');
     });
@@ -682,7 +697,7 @@ describe('SocialService', () => {
     });
 
     it('não mexe na foto do treino de um amigo', async () => {
-      await entrarComAmigos(amizade('ana'));
+      await entrarComAmigos('ana');
       expect(await social.definirFoto({ ...evento('ana', 6), sessaoId: 'sa' }, 'data:image/jpeg;base64,EEE')).toBeFalse();
       expect(api.fotos.size).toBe(0);
     });
@@ -704,6 +719,107 @@ describe('SocialService', () => {
       const publicado = api.publicados.find((e) => e.sessaoId === 'sg');
       expect(publicado).toBeDefined();
       expect(publicado?.temFoto).toBeUndefined();
+    });
+  });
+  describe('grupos', () => {
+    const grupoDe = (campos: Partial<Grupo> = {}): Grupo => ({ id: 'ABCD2345', nome: 'Trabalho', dono: 'ana', membros: ['ana'], acesso: 'aberto', pedidos: [], criadoEm: 1, ...campos });
+
+    it('criar grupo grava com a pessoa como dona e única membro', async () => {
+      await entrarComAmigos();
+      const g = await social.criarGrupo('  Grupo do Trabalho ');
+      expect(g?.nome).toBe('Grupo do Trabalho');
+      expect(g?.dono).toBe('eu');
+      expect(g?.membros).toEqual(['eu']);
+      expect(g?.id).toMatch(/^[A-Z2-9]{8}$/);
+      expect(api.gruposNaNuvem[g!.id]).toBeDefined();
+      expect(social.grupo(g!.id)).toBeDefined();
+    });
+
+    it('não cria grupo sem nome', async () => {
+      await entrarComAmigos();
+      expect(await social.criarGrupo('   ')).toBeNull();
+    });
+
+    it('link de grupo aberto: entra na hora', async () => {
+      api.gruposNaNuvem['ABCD2345'] = grupoDe();
+      await entrarComAmigos();
+      const r = await social.entrarPorCodigo('abcd-2345');
+      expect(r.estado).toBe('entrou');
+      expect(api.chamadas).toContain('entrar ABCD2345 eu');
+    });
+
+    it('link de grupo com aprovação: pede para entrar uma única vez', async () => {
+      api.gruposNaNuvem['ABCD2345'] = grupoDe({ acesso: 'aprovado' });
+      await entrarComAmigos();
+      expect((await social.entrarPorCodigo('ABCD2345')).estado).toBe('pedido-enviado');
+      expect(api.chamadas).toContain('pedir ABCD2345 eu');
+      api.gruposNaNuvem['ABCD2345'] = grupoDe({ acesso: 'aprovado', pedidos: ['eu'] });
+      expect((await social.entrarPorCodigo('ABCD2345')).estado).toBe('pedido-pendente');
+      expect(api.chamadas.filter((c) => c.startsWith('pedir'))).toEqual(['pedir ABCD2345 eu']);
+    });
+
+    it('quem já é membro não entra de novo', async () => {
+      api.gruposNaNuvem['ABCD2345'] = grupoDe({ membros: ['ana', 'eu'] });
+      await entrarComAmigos();
+      expect((await social.entrarPorCodigo('ABCD2345')).estado).toBe('ja-membro');
+      expect(api.chamadas).toEqual([]);
+    });
+
+    it('código que não existe ou está incompleto', async () => {
+      await entrarComAmigos();
+      expect((await social.entrarPorCodigo('ZZZZ9999')).estado).toBe('inexistente');
+      expect((await social.entrarPorCodigo('ABC')).estado).toBe('inexistente');
+    });
+
+    it('liga a pessoa a cada membro do grupo que ainda não tem ligação', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.conexoes?.cb([{ id: 'ana_eu', membros: ['ana', 'eu'], grupos: ['g1'] }]);
+      api.grupos?.cb([grupoDe({ id: 'g1', membros: ['ana', 'bia', 'eu'] })]);
+      await assentar();
+      expect(api.chamadas).toEqual(['ligar bia_eu g1']);
+    });
+
+    it('sair do grupo desliga dos outros membros antes e passa o posto de dono', async () => {
+      await entrarComAmigos('ana', 'bia');
+      const g = social.grupos()[0];
+      expect(await social.sairDoGrupo(g)).toBeTrue();
+      expect(api.chamadas).toEqual(['desligar ana_eu g1', 'desligar bia_eu g1', 'sair g1 eu ana']);
+      expect(social.grupos()).toEqual([]);
+    });
+
+    it('quem não é dono sai sem trocar o dono', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.conexoes?.cb([{ id: 'ana_eu', membros: ['ana', 'eu'], grupos: ['g1'] }]);
+      api.grupos?.cb([grupoDe({ id: 'g1', membros: ['ana', 'eu'] })]);
+      await assentar();
+      await social.sairDoGrupo(social.grupos()[0]);
+      expect(api.chamadas).toContain('sair g1 eu');
+    });
+
+    it('a timeline de um grupo só tem treinos de quem está nele', async () => {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.grupos?.cb([grupoDe({ id: 'g1', dono: 'eu', membros: ['ana', 'eu'] }), grupoDe({ id: 'g2', dono: 'eu', membros: ['bia', 'eu'] })]);
+      api.conexoes?.cb([
+        { id: 'ana_eu', membros: ['ana', 'eu'], grupos: ['g1'] },
+        { id: 'bia_eu', membros: ['bia', 'eu'], grupos: ['g2'] },
+      ]);
+      await assentar();
+      api.eventos.get('ana')?.cb([evento('ana', 1000)]);
+      api.eventos.get('bia')?.cb([evento('bia', 2000)]);
+      await assentar();
+      expect(social.timelineDe('g1').map((i) => i.criadoEm)).toEqual([1000]);
+      expect(social.timelineDe('g2').map((i) => i.criadoEm)).toEqual([2000]);
+    });
+
+    it('o dono responde pedidos e muda quem pode participar', async () => {
+      await entrarComAmigos();
+      const g = grupoDe({ dono: 'eu', membros: ['eu'], acesso: 'aprovado', pedidos: ['bia'] });
+      await social.responderPedido(g, 'bia', true);
+      await social.definirAcesso(g, 'aberto');
+      expect(api.chamadas).toEqual(['responder ABCD2345 bia true', 'acesso ABCD2345 aberto']);
     });
   });
 });

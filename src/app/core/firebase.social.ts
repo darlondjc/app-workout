@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase/firestore';
-import { Amizade, Atividade, Comentario, Evento, Perfil, SocialBackend, TAMANHO_COMENTARIO, fotoParaItens, nomeComMaiuscula } from './social';
+import { AcessoGrupo, Atividade, Comentario, Conexao, Evento, Grupo, Perfil, SocialBackend, TAMANHO_COMENTARIO, chaveConexao, fotoParaItens, nomeComMaiuscula } from './social';
 import { Cancelar } from './sync';
 
 type Fs = typeof import('firebase/firestore');
@@ -38,9 +38,28 @@ export class FirebaseSocial implements SocialBackend {
     return this.fs.setDoc(this.fs.doc(this.db, 'perfis', uid), limpo({ ...dados, atualizadoEm: Date.now() }), { merge: true });
   }
 
-  async reservarCodigo(uid: string, codigo: string): Promise<boolean> {
+  ouvirGrupos(uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): Cancelar {
+    const { query, collection, where, onSnapshot } = this.fs;
+    return onSnapshot(
+      query(collection(this.db, 'grupos'), where('membros', 'array-contains', uid)),
+      (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Grupo), id: d.id }))),
+      erro,
+    );
+  }
+
+  private grupoRef(codigo: string) {
+    return this.fs.doc(this.db, 'grupos', codigo);
+  }
+
+  async lerGrupo(codigo: string): Promise<Grupo | null> {
+    const snap = await this.fs.getDoc(this.grupoRef(codigo));
+    return snap.exists() ? { ...(snap.data() as Grupo), id: snap.id } : null;
+  }
+
+  async criarGrupo(g: Grupo): Promise<boolean> {
+    const { id, ...dados } = g;
     try {
-      await this.fs.setDoc(this.fs.doc(this.db, 'codigos', codigo), { uid });
+      await this.fs.setDoc(this.grupoRef(id), limpo(dados));
       return true;
     } catch (e) {
       if ((e as { code?: string }).code === 'permission-denied') return false; // já existe: as regras não deixam sobrescrever
@@ -48,31 +67,56 @@ export class FirebaseSocial implements SocialBackend {
     }
   }
 
-  async uidDoCodigo(codigo: string): Promise<string | null> {
-    const snap = await this.fs.getDoc(this.fs.doc(this.db, 'codigos', codigo));
-    return snap.exists() ? ((snap.data() as { uid: string }).uid ?? null) : null;
+  entrarNoGrupo(codigo: string, uid: string): Promise<void> {
+    return this.fs.updateDoc(this.grupoRef(codigo), { membros: this.fs.arrayUnion(uid) });
   }
 
-  ouvirAmizades(uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): Cancelar {
+  pedirEntrada(codigo: string, uid: string): Promise<void> {
+    return this.fs.updateDoc(this.grupoRef(codigo), { pedidos: this.fs.arrayUnion(uid) });
+  }
+
+  responderPedido(codigo: string, uid: string, aceitar: boolean): Promise<void> {
+    const { arrayUnion, arrayRemove } = this.fs;
+    return this.fs.updateDoc(this.grupoRef(codigo), aceitar ? { membros: arrayUnion(uid), pedidos: arrayRemove(uid) } : { pedidos: arrayRemove(uid) });
+  }
+
+  definirAcesso(codigo: string, acesso: AcessoGrupo): Promise<void> {
+    return this.fs.updateDoc(this.grupoRef(codigo), { acesso });
+  }
+
+  async sairDoGrupo(codigo: string, uid: string, novoDono?: string): Promise<void> {
+    const { arrayRemove } = this.fs;
+    const g = await this.lerGrupo(codigo);
+    if (g && g.membros.length === 1 && g.membros[0] === uid) {
+      await this.fs.deleteDoc(this.grupoRef(codigo));
+      return;
+    }
+    await this.fs.updateDoc(this.grupoRef(codigo), { membros: arrayRemove(uid), ...(novoDono ? { dono: novoDono } : {}) });
+  }
+
+  ouvirConexoes(uid: string, cb: (c: Conexao[]) => void, erro: (e: unknown) => void): Cancelar {
     const { query, collection, where, onSnapshot } = this.fs;
     return onSnapshot(
-      query(collection(this.db, 'amizades'), where('membros', 'array-contains', uid)),
-      (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Amizade), id: d.id }))),
+      query(collection(this.db, 'conexoes'), where('membros', 'array-contains', uid)),
+      (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Conexao), id: d.id }))),
       erro,
     );
   }
 
-  pedirAmizade(a: Amizade): Promise<void> {
-    const { id, ...dados } = a;
-    return this.fs.setDoc(this.fs.doc(this.db, 'amizades', id), limpo(dados));
+  async ligar(a: string, b: string, grupo: string): Promise<void> {
+    const ref = this.fs.doc(this.db, 'conexoes', chaveConexao(a, b));
+    const snap = await this.fs.getDoc(ref);
+    if (!snap.exists()) await this.fs.setDoc(ref, { membros: [a, b].sort(), grupos: [grupo] });
+    else if (!((snap.data() as Conexao).grupos ?? []).includes(grupo)) await this.fs.updateDoc(ref, { grupos: this.fs.arrayUnion(grupo) });
   }
 
-  aceitarAmizade(id: string): Promise<void> {
-    return this.fs.updateDoc(this.fs.doc(this.db, 'amizades', id), { status: 'aceita' });
-  }
-
-  removerAmizade(id: string): Promise<void> {
-    return this.fs.deleteDoc(this.fs.doc(this.db, 'amizades', id));
+  async desligar(a: string, b: string, grupo: string): Promise<void> {
+    const ref = this.fs.doc(this.db, 'conexoes', chaveConexao(a, b));
+    const snap = await this.fs.getDoc(ref);
+    if (!snap.exists()) return;
+    const resto = ((snap.data() as Conexao).grupos ?? []).filter((g) => g !== grupo);
+    if (resto.length) await this.fs.updateDoc(ref, { grupos: resto });
+    else await this.fs.deleteDoc(ref);
   }
 
   ouvirEventos(uid: string, cb: (e: Evento[]) => void, erro: (e: unknown) => void, limite = 15): Cancelar {

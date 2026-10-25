@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CloudService } from '../core/cloud.service';
 import { Carregando } from '../core/spinner';
 
@@ -107,8 +107,32 @@ export class Login {
 
   constructor() {
     void this.nuvem.iniciar();
+    // Guarda para onde a pessoa queria ir (ex.: um convite): o login por redirecionamento recarrega o app e perde o endereço.
+    const pedido = inject(ActivatedRoute).snapshot.queryParamMap.get('voltar');
+    if (pedido && pedido.startsWith('/') && !pedido.startsWith('//')) guardarDestino(pedido);
     effect(() => {
-      if (this.nuvem.usuario()) void this.router.navigateByUrl('/', { replaceUrl: true });
+      if (this.nuvem.usuario()) void this.router.navigateByUrl(lerDestino() ?? '/', { replaceUrl: true });
     });
+  }
+}
+
+const CHAVE_DESTINO = 'app-workout:voltar';
+
+function guardarDestino(url: string): void {
+  try {
+    sessionStorage.setItem(CHAVE_DESTINO, url);
+  } catch {
+    // sem armazenamento: o destino vale só até recarregar
+  }
+}
+
+/** Destino guardado antes do login, uma vez só. */
+function lerDestino(): string | null {
+  try {
+    const url = sessionStorage.getItem(CHAVE_DESTINO);
+    sessionStorage.removeItem(CHAVE_DESTINO);
+    return url;
+  } catch {
+    return null;
   }
 }

@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ExerciseService } from '../core/exercise.service';
@@ -56,6 +57,7 @@ describe('EventoCard: ver treino', () => {
     definirFoto = jasmine.createSpy('definirFoto').and.resolveTo(true);
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         {
           provide: SocialService,
           useValue: {

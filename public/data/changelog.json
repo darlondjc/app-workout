@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.15.0",
+    "data": "2026-10-25",
+    "titulo": "Grupos no lugar de amigos",
+    "itens": [
+      "A aba Social agora lista seus grupos. Cada grupo tem só a timeline de quem está nele; toque no ícone de uma pessoa para ver as estatísticas dela.",
+      "Convide por link, compartilhando ou mostrando o QR code. O grupo pode ser aberto (quem tem o link entra) ou aprovado (o dono aceita cada pedido).",
+      "Você pode estar em vários grupos. As suas estatísticas ficam no Perfil, que é o antigo Ajustes.",
+      "Adicionar amigos por código foi removido. Importante: publique o firestore.rules novo no Console do Firebase."
+    ]
+  },
+  {
     "versao": "1.14.1",
     "data": "2026-10-24",
     "titulo": "Tela de treino mais compacta",

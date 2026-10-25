@@ -173,7 +173,7 @@ export class CloudService {
     try {
       localStorage.setItem(CHAVE_CONTA, '1');
     } catch {
-      // sem armazenamento: o login só será retomado ao abrir Ajustes
+      // sem armazenamento: o login só será retomado ao abrir o Perfil
     }
   }
 

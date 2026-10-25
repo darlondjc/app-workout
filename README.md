@@ -5,14 +5,14 @@ PWA em Angular para montar fichas de treino. A biblioteca tem 876 exercícios co
 ## O que já faz
 
 - **Início**: treino do dia (rodízio entre as fichas) com os grupos musculares de cada ficha e semana com os treinos concluídos. Depois de treinar, mostra o resumo do treino de hoje e o próximo treino. Tem também a meta da semana e o quadro de medalhas (as 6 melhores; o resto em Ver todas). Veja [Medalhas](#medalhas).
-- **Peso**: em Ajustes se registra o peso do dia; em Social › Estatísticas, o gráfico de evolução por semana, mês ou ano. Os registros sincronizam com a conta, junto com as fichas.
+- **Peso**: no Perfil se registra o peso do dia e aparece o gráfico de evolução por semana, mês ou ano. Os registros sincronizam com a conta, junto com as fichas.
 - **Biblioteca**: busca por nome em português ou inglês, filtro por grupo muscular, equipamento e nível.
 - **Exercício**: foto alternando entre as duas posições, músculos, equipamento e instruções.
 - **Fichas**: criar, renomear, reordenar, remover exercícios e definir séries, repetições, carga e descanso; cada ficha mostra os grupos musculares trabalhados, e um botão de play flutuante inicia o treino.
 - **Atividade**: o botão + da Início registra uma atividade fora da ficha (corrida, caminhada, esporte…) com duração, distância e esforço opcionais e foto opcional. Ela vale como o treino do dia (semana, meta, medalhas de treinos e cardio e timeline), mas não avança o rodízio das fichas.
 - **Treino**: marcar séries feitas (reps e carga editadas valem para as séries seguintes), cronômetro de descanso progressivo (vermelho no descanso da ficha), pausar ou cancelar pelo X, tempo entre séries e registro do treino concluído.
 
-As fichas e o histórico ficam no `localStorage` do aparelho e funcionam sem conta. Para treinar sem internet, o app pré-carrega as imagens dos exercícios das suas fichas (`core/precarga.service.ts`) e mostra uma faixa de "sem conexão"; o que for feito offline sincroniza quando a conexão volta. Com o login do Google (opcional), são sincronizados pelo Firestore, e dá para adicionar amigos; veja [Conta, backup e sincronização](#conta-backup-e-sincronização-firebase) e [Amigos e timeline](#amigos-e-timeline).
+As fichas e o histórico ficam no `localStorage` do aparelho e funcionam sem conta. Para treinar sem internet, o app pré-carrega as imagens dos exercícios das suas fichas (`core/precarga.service.ts`) e mostra uma faixa de "sem conexão"; o que for feito offline sincroniza quando a conexão volta. Com o login do Google (opcional), são sincronizados pelo Firestore, e dá para participar de grupos com amigos; veja [Conta, backup e sincronização](#conta-backup-e-sincronização-firebase) e [Grupos e timeline](#grupos-e-timeline).
 
 ## Como rodar
 
@@ -61,9 +61,9 @@ Em **Fichas → Sugerir ficha** você informa objetivo, experiência, dias por s
 
 ## Atualizações e histórico de mudanças
 
-Quando você publica uma versão nova, o app instalado a baixa em segundo plano e mostra um botão suspenso **Atualizar** no canto superior direito (some durante o treino). O **×** ao lado dispensa o aviso; a atualização continua disponível em **Ajustes**, que também tem "Verificar atualizações" e o histórico do que mudou. O app procura versão nova ao abrir, ao voltar para a tela e a cada 30 minutos.
+Quando você publica uma versão nova, o app instalado a baixa em segundo plano e mostra um botão suspenso **Atualizar** no canto superior direito (some durante o treino). O **×** ao lado dispensa o aviso; a atualização continua disponível no **Perfil**, que também tem "Verificar atualizações" e o histórico do que mudou. O app procura versão nova ao abrir, ao voltar para a tela e a cada 30 minutos.
 
-Para lançar uma versão: acrescente uma entrada **no topo** de `public/data/changelog.json` (`versao`, `data`, `titulo`, `itens`) e publique. O script `tools/sincronizar_appdata.mjs` (roda sozinho antes de `npm run build`) copia a entrada mais recente para o `appData` do `ngsw-config.json`; é daí que o aviso tira o texto "o que há de novo" antes de o app ser atualizado. A versão exibida em Ajustes é a primeira entrada do changelog.
+Para lançar uma versão: acrescente uma entrada **no topo** de `public/data/changelog.json` (`versao`, `data`, `titulo`, `itens`) e publique. O script `tools/sincronizar_appdata.mjs` (roda sozinho antes de `npm run build`) copia a entrada mais recente para o `appData` do `ngsw-config.json`; é daí que o aviso tira o texto "o que há de novo" antes de o app ser atualizado. A versão exibida no Perfil é a primeira entrada do changelog.
 
 ## Ícone e abertura
 
@@ -92,9 +92,9 @@ Os testes ficam ao lado do código, em `src/app/core/*.spec.ts`, e rodam com Kar
 
 - `sync.spec.ts`: o `Sincronizador` (primeiro contato, eco da própria gravação, conflito entre aparelhos, envio e reenvio de sessões), com uma nuvem e um armazenamento falsos.
 - `stats.spec.ts`: semanas, sequências, recordes, volume e as mensagens de incentivo.
-- `social.spec.ts`: código de amigo, ids, timeline, marcos e tempo relativo.
+- `social.spec.ts`: código e link de convite, ids, timeline, marcos e tempo relativo.
 - `firebase.social.spec.ts`: o que `FirebaseSocial` grava e consulta (avisos de curtida com id fixo, comentários, limite de leitura das sessões), com um Firestore falso.
-- `social.service.spec.ts`: o `SocialService` (quem é ouvido, o que acontece quando uma amizade acaba, quais erros aparecem na tela, nome e foto atuais de quem fez cada treino ou comentário).
+- `social.service.spec.ts`: o `SocialService` (quem é ouvido, grupos (criar, entrar por link, pedir entrada, sair), o que acontece quando deixam de dividir um grupo, quais erros aparecem na tela, nome e foto atuais de quem fez cada treino ou comentário).
 
 Ainda não há testes das telas (componentes) nem das regras do Firestore; as regras precisam ser testadas no emulador do Firebase.
 
@@ -104,7 +104,7 @@ O workflow `.github/workflows/pages.yml` roda o lint, os testes e o build em tod
 
 ## Conta, backup e sincronização (Firebase)
 
-Em **Ajustes → Conta e backup** a pessoa entra com o Google. A partir daí fichas, ficha ativa, treino em andamento e histórico (com carga e repetições de cada série) são enviados para o Firestore e voltam sozinhos em outro aparelho ou após reinstalar. Sem login, tudo continua funcionando só no aparelho.
+No **Perfil → Conta** a pessoa entra com o Google. A partir daí fichas, ficha ativa, treino em andamento e histórico (com carga e repetições de cada série) são enviados para o Firestore e voltam sozinhos em outro aparelho ou após reinstalar. Sem login, tudo continua funcionando só no aparelho.
 
 Como funciona (`src/app/core/sync.ts`): o app lê e grava primeiro no aparelho, então funciona sem internet; o Firestore guarda as gravações pendentes e envia quando a conexão volta. No primeiro login os dados do aparelho e os da conta são unidos (nada se perde). Depois, vale a última gravação nas fichas e a união nas sessões concluídas. Ao sair da conta, os dados saem do aparelho e permanecem na nuvem.
 
@@ -122,24 +122,25 @@ No iPhone, o login dentro do app instalado (tela inicial) pode ser bloqueado pel
 
 ## Progresso
 
-Dentro da aba **Social → Estatísticas**, o **Progresso** mostra um calendário mensal com os dias treinados (toque em um dia para ver o treino), a meta semanal (ajustável; por padrão é o número de fichas), a sequência de semanas cumprindo a meta, a carga total do mês, o gráfico das últimas 8 semanas e os recordes de carga do último treino. As mensagens de motivação são regras simples sobre esses números (retomada após dias parados, meta batida, sequência, comparação com o mês passado, dia favorito). Os cálculos ficam em `src/app/core/stats.ts`, sem dependências. A meta fica salva só no aparelho.
+No **Perfil** (e, para os outros membros, na tela de estatísticas de cada um), o **Progresso** mostra um calendário mensal com os dias treinados (toque em um dia para ver o treino), a meta semanal (ajustável; por padrão é o número de fichas), a sequência de semanas cumprindo a meta, a carga total do mês, o gráfico das últimas 8 semanas e os recordes de carga do último treino. As mensagens de motivação são regras simples sobre esses números (retomada após dias parados, meta batida, sequência, comparação com o mês passado, dia favorito). Os cálculos ficam em `src/app/core/stats.ts`, sem dependências. A meta fica salva só no aparelho.
 
-## Amigos e timeline
+## Grupos e timeline
 
-A aba **Social** tem a **Timeline** (treinos concluídos seus e dos amigos, com curtidas e comentários; curtidas e comentários que você recebe aparecem como avisos; um selo no ícone da aba mostra quantas novidades chegaram desde a última vez que você a viu) e as **Estatísticas**, com a mesma tela de Progresso e um seletor no topo para alternar entre você e cada amigo. Em **Amigos** (ícone no canto da aba Social) você vê seu código de 8 caracteres, adiciona alguém pelo código dele e aceita ou recusa convites.
+A aba **Social** lista os **grupos** de que você faz parte e permite criar um novo. Dentro de um grupo (`pages/group.ts`) há só a **timeline** de quem está nele (treinos concluídos com curtidas e comentários; curtidas e comentários que você recebe aparecem como avisos; um selo no ícone da aba mostra as novidades desde a última visita e os pedidos de entrada esperando você). Tocar no ícone de uma pessoa (no topo do grupo ou no card do treino) abre as **estatísticas** dela (`pages/member-stats.ts`, a mesma tela de Progresso, só leitura). As suas ficam no **Perfil** (antiga aba Ajustes), junto com a conta, o peso e a versão do app.
 
-- Um convite só vira amizade quando a outra pessoa aceita. Depois disso, cada um vê o histórico de treinos (calendário, cargas, recordes), os treinos publicados e pode curtir e comentar. Fichas, treino em andamento e demais dados continuam privados. Desfazer a amizade corta o acesso dos dois lados.
-- Ao concluir um treino, ele é publicado na timeline (só treinos recentes são publicados; o histórico antigo não é despejado de uma vez).
-- Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `codigos/{codigo}`, `amizades/{id}` e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`), `atividades` e `fotos`. As regras estão em `firestore.rules`.
+- **Convite** (`pages/group-invite.ts`, ícone de adicionar pessoa no grupo): compartilhar, copiar o link, mostrar o QR code (`qrcode-generator`) e escolher quem pode participar. **Aberto**: quem abre o link entra na hora. **Aprovado**: quem abre o link pede para entrar e o dono do grupo aceita ou recusa. O link é `<endereço do app>/convite/<código>` (`pages/join.ts`); sem login, a pessoa entra com o Google e volta ao convite.
+- Quem está em um grupo vê o histórico de treinos (calendário, cargas, recordes) e os treinos publicados dos outros membros, e pode curtir e comentar. Fichas, treino em andamento e demais dados continuam privados. Sair do grupo corta o acesso dos dois lados (se não sobrar nenhum grupo em comum). Quem sai sendo dono passa o posto ao próximo membro; o último a sair apaga o grupo.
+- Ao concluir um treino, ele é publicado na timeline (só treinos recentes são publicados; o histórico antigo não é despejado de uma vez). Uma pessoa pode estar em vários grupos.
+- Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `grupos/{codigo}` (nome, dono, membros, acesso, pedidos; o id é o código do convite), `conexoes/{id}` (as duas pessoas e os grupos que têm em comum; é o que as regras usam para liberar a leitura) e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`), `atividades` e `fotos`. Cada pessoa cria as próprias conexões com os outros membros ao entrar no grupo (`SocialService.conectarMembros`). As regras estão em `firestore.rules`. O modelo de amigos individuais (`amizades`, `codigos`) foi removido; amizades antigas deixam de valer.
 
 **Fichas com vários treinos:** uma ficha é um conjunto de treinos (A, B, C…), um por dia. No modelo de dados cada treino continua sendo um item de `fichas` (`Ficha`), e os que pertencem à mesma ficha levam `conjunto: { id, nome }`; sem isso é uma ficha de um treino só, como eram todas antes, então não há migração. **Fichas → Criar ficha personalizada** (`pages/custom-plan.ts`, lógica em `core/ficha-personalizada.ts`) monta os treinos pelos grupos e pelo cardio de cada dia, sem repetir exercício entre os dias; **Sugerir ficha** cria o mesmo formato. Na lista só a ficha atual (a ativa) começa aberta. O treino aleatório do dia, ao ser aceito, entra na ficha atual (`PlanService.adicionarTreino`).
 
-**Foto de perfil:** em Ajustes dá para escolher uma foto (recorte quadrado de 192 px, até 30 KB), guardada no próprio perfil (`perfis/{uid}`, com `fotoPropria: true`) e que o login com Google não troca. Treinos e comentários não carregam essa foto; quem lê busca a atual pelo perfil.
+**Foto de perfil:** no Perfil dá para escolher uma foto (recorte quadrado de 192 px, até 30 KB), guardada no próprio perfil (`perfis/{uid}`, com `fotoPropria: true`) e que o login com Google não troca. Treinos e comentários não carregam essa foto; quem lê busca a atual pelo perfil.
 
 **Foto do treino:** ao concluir um treino (com a conta social ativa) o app oferece uma foto opcional, que também pode ser colocada nas primeiras 24 horas depois do treino, ou removida, no card do próprio treino na timeline. Sem usar o Firebase Storage (que exige o plano Blaze), a foto é reduzida no aparelho (`core/foto.ts`: JPEG de até 900 px e cerca de 100 KB, no máximo 250 KB) e guardada em `usuarios/{uid}/fotos/{sessaoId}` como texto base64; o card e a sessão só levam o aviso `temFoto`, e a foto é lida quando o card aparece. As regras de `fotos` exigem publicar o `firestore.rules` novo (abaixo); sem elas a foto não é enviada e a tela mostra "Sem permissão". Antes de concluir, a foto fica num quadro 4:3 (`core/enquadrar-foto.ts`) onde dá para arrastar e dar zoom; `recortarFoto` recorta o trecho enquadrado e reduz ao limite.
 
 **Tela e orientação:** o app bloqueia o zoom por pinça (meta viewport, `touch-action` e os eventos de gesto do iOS; campos com 16 px para o iOS não aproximar ao focar) e fica em retrato: `screen.orientation.lock` onde o navegador permite e, no iOS, um aviso em CSS quando o celular está deitado. O cronômetro de descanso é do treino, não do exercício.
 
-**Importante:** depois de atualizar o app, publique as regras novas: Console do Firebase → Firestore Database → aba **Regras** → cole o conteúdo de `firestore.rules` → **Publicar**. Sem isso os amigos e a timeline mostram "Sem permissão". A 1.8.1 mudou as regras de `atividades` (quem curtiu pode atualizar o próprio aviso), então publique de novo mesmo que já tenha publicado as da 1.8.0. Sem as regras novas o app continua funcionando, mas curtir de novo um treino que você já curtiu não atualiza o aviso do dono.
+**Importante:** depois de atualizar o app, publique as regras novas: Console do Firebase → Firestore Database → aba **Regras** → cole o conteúdo de `firestore.rules` → **Publicar**. Sem isso os grupos e a timeline mostram "Sem permissão". A 1.8.1 mudou as regras de `atividades` (quem curtiu pode atualizar o próprio aviso), então publique de novo mesmo que já tenha publicado as da 1.8.0. Sem as regras novas o app continua funcionando, mas curtir de novo um treino que você já curtiu não atualiza o aviso do dono.
 
-Limites desta versão: a timeline carrega de 10 em 10 conforme a rolagem, lendo da nuvem de 15 em 15 treinos por pessoa a cada vez; as estatísticas de um amigo usam os 400 treinos mais recentes dele (os seus são lidos por inteiro, porque a sincronização entre aparelhos precisa do histórico completo); não há notificações push; os nomes e as fotos vêm do Google no momento do login.
+Limites desta versão: a timeline carrega de 10 em 10 conforme a rolagem, lendo da nuvem de 15 em 15 treinos por pessoa a cada vez; as estatísticas de outro membro usam os 400 treinos mais recentes dele (os seus são lidos por inteiro, porque a sincronização entre aparelhos precisa do histórico completo); não há notificações push; os nomes e as fotos vêm do Google no momento do login.

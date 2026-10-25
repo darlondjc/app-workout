@@ -51,10 +51,10 @@ const PERIODOS: { valor: PeriodoPeso; rotulo: string; sufixo: string }[] = [
             <p class="apoio nota">Cada ponto é a média do mês.</p>
           }
         } @else {
-          <p class="apoio">Nenhum registro {{ nomePeriodo() }}. Registre o peso em Ajustes.</p>
+          <p class="apoio">Nenhum registro {{ nomePeriodo() }}. Registre o peso em Perfil.</p>
         }
       } @else {
-        <p class="apoio">Registre o seu peso em Ajustes para acompanhar a evolução aqui.</p>
+        <p class="apoio">Registre o seu peso em Perfil para acompanhar a evolução aqui.</p>
         <button type="button" class="btn btn--claro" (click)="irParaAjustes()">Registrar peso</button>
       }
     </article>
@@ -126,7 +126,7 @@ export class PesoGrafico {
   });
 
   protected irParaAjustes(): void {
-    void this.injector.get(Router).navigateByUrl('/ajustes');
+    void this.injector.get(Router).navigateByUrl('/perfil');
   }
 
   protected nomePeriodo(): string {

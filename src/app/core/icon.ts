@@ -28,7 +28,11 @@ export type IconName =
   | 'copy'
   | 'share'
   | 'user-add'
-  | 'feed';
+  | 'feed'
+  | 'link'
+  | 'qr'
+  | 'send'
+  | 'user-check';
 
 @Component({
   selector: 'app-icon',
@@ -142,6 +146,25 @@ export type IconName =
           <circle cx="10" cy="8" r="3.2" />
           <path d="M3.5 19.5c0-3.4 2.9-6 6.5-6 1.6 0 3 .5 4.1 1.4" />
           <path d="M18 12.5v6M15 15.5h6" />
+        }
+        @case ('link') {
+          <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+          <path d="M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1" />
+        }
+        @case ('qr') {
+          <rect x="4" y="4" width="6" height="6" rx="1" />
+          <rect x="14" y="4" width="6" height="6" rx="1" />
+          <rect x="4" y="14" width="6" height="6" rx="1" />
+          <path d="M14 14h2v2h-2zM18 14h2M14 18h2M18 18h2v2" />
+        }
+        @case ('send') {
+          <path d="M21 3L3 10.5l7 3 3 7z" />
+          <path d="M10 13.5L21 3" />
+        }
+        @case ('user-check') {
+          <circle cx="9" cy="8" r="3.5" />
+          <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+          <path d="M16 11l2 2 4-4" />
         }
         @case ('feed') {
           <circle cx="5.5" cy="6.5" r="1.3" />

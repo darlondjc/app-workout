@@ -96,7 +96,7 @@ export class UpdateService {
     document.location.reload();
   }
 
-  /** Fecha o botão suspenso; a atualização continua disponível em Ajustes. */
+  /** Fecha o botão suspenso; a atualização continua disponível no Perfil. */
   dispensar(): void {
     const v = this.pronta()?.versao;
     if (!v) return;
