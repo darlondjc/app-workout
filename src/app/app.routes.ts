@@ -87,7 +87,18 @@ export const routes: Routes = [
     title: 'Estatísticas · App Workout',
     loadComponent: () => import('./pages/member-stats').then((m) => m.MemberStats),
   },
-  { path: 'amigos', redirectTo: 'social' },
+  {
+    path: 'amigos',
+    canActivate: [logado],
+    title: 'Amigos mais chegados · App Workout',
+    loadComponent: () => import('./pages/friends').then((m) => m.Friends),
+  },
+  {
+    path: 'amigo/:codigo',
+    canActivate: [logado],
+    title: 'Amigo · App Workout',
+    loadComponent: () => import('./pages/friend-join').then((m) => m.FriendJoin),
+  },
   { path: 'progresso', redirectTo: 'estatisticas' },
   { path: 'ajustes', redirectTo: 'perfil' },
   {

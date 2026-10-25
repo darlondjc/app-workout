@@ -1,7 +1,8 @@
 rules_version = '2';
 
-// Cada pessoa lê e grava os próprios dados. Quem está em um grupo com ela (veja `conexoes`) só lê o histórico
-// de treinos e os treinos publicados na timeline, e pode curtir e comentar neles.
+// Cada pessoa lê e grava os próprios dados. Quem está em um grupo com ela (veja `conexoes`) ou é seu amigo mais
+// chegado (veja `amizades`) só lê o histórico de treinos e os treinos publicados na timeline, e pode curtir e
+// comentar neles. Só os amigos mais chegados leem o que a pessoa escolhe compartilhar (`compartilhado`).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -19,8 +20,23 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/conexoes/$(chave(a, b)));
     }
 
-    function euOuColega(dono) {
-      return logado() && (request.auth.uid == dono || colegas(request.auth.uid, dono));
+    // Amizade aceita entre as duas pessoas (os "amigos mais chegados").
+    function amigos(a, b) {
+      return exists(/databases/$(database)/documents/amizades/$(chave(a, b)))
+        && get(/databases/$(database)/documents/amizades/$(chave(a, b))).data.status == 'aceita';
+    }
+
+    // Quem pode ver os treinos de `b`: colega de grupo ou amigo mais chegado.
+    function contatos(a, b) {
+      return colegas(a, b) || amigos(a, b);
+    }
+
+    function euOuContato(dono) {
+      return logado() && (request.auth.uid == dono || contatos(request.auth.uid, dono));
+    }
+
+    function euOuAmigo(dono) {
+      return logado() && (request.auth.uid == dono || amigos(request.auth.uid, dono));
     }
 
     function textoValido(t) {
@@ -34,24 +50,24 @@ service cloud.firestore {
       // Histórico de treinos: o dono grava; colegas leem (calendário e estatísticas).
       match /sessoes/{sessaoId} {
         allow write: if logado() && request.auth.uid == uid;
-        allow read: if euOuColega(uid);
+        allow read: if euOuContato(uid);
       }
 
       // Treinos publicados na timeline.
       match /eventos/{eventoId} {
-        allow read: if euOuColega(uid);
+        allow read: if euOuContato(uid);
         allow create, update: if logado() && request.auth.uid == uid && request.resource.data.autor == request.auth.uid;
         allow delete: if logado() && request.auth.uid == uid;
 
         match /curtidas/{quem} {
-          allow read: if euOuColega(uid);
-          allow create: if euOuColega(uid) && quem == request.auth.uid;
+          allow read: if euOuContato(uid);
+          allow create: if euOuContato(uid) && quem == request.auth.uid;
           allow delete: if logado() && quem == request.auth.uid;
         }
 
         match /comentarios/{comentarioId} {
-          allow read: if euOuColega(uid);
-          allow create: if euOuColega(uid)
+          allow read: if euOuContato(uid);
+          allow create: if euOuContato(uid)
             && request.resource.data.autor == request.auth.uid
             && textoValido(request.resource.data.texto);
           // Quem escreveu apaga o próprio comentário; o dono do treino apaga qualquer um.
@@ -61,11 +77,18 @@ service cloud.firestore {
 
       // Foto do treino (JPEG reduzido, em base64), guardada à parte do card para a timeline só baixá-la quando preciso.
       match /fotos/{sessaoId} {
-        allow read: if euOuColega(uid);
+        allow read: if euOuContato(uid);
         allow create, update: if logado() && request.auth.uid == uid
           && request.resource.data.dados is string
           && request.resource.data.dados.size() <= 400000;
         allow delete: if logado() && request.auth.uid == uid;
+      }
+
+      // O que a pessoa escolhe mostrar só aos amigos mais chegados (ex.: o gráfico de peso). Apagar o documento
+      // corta o acesso.
+      match /compartilhado/{item} {
+        allow read: if euOuAmigo(uid);
+        allow write: if logado() && request.auth.uid == uid;
       }
 
       // Reações recebidas (curtidas e comentários): só o dono lê; colegas deixam o aviso.
@@ -73,14 +96,14 @@ service cloud.firestore {
         allow read, delete: if logado() && request.auth.uid == uid;
         allow create: if logado()
           && request.resource.data.autor == request.auth.uid
-          && colegas(request.auth.uid, uid)
+          && contatos(request.auth.uid, uid)
           && (!('texto' in request.resource.data) || textoValido(request.resource.data.texto));
         // O aviso de curtida tem id fixo por pessoa e treino: curtir de novo o sobrescreve.
         // Só quem o criou o atualiza.
         allow update: if logado()
           && resource.data.autor == request.auth.uid
           && request.resource.data.autor == request.auth.uid
-          && colegas(request.auth.uid, uid)
+          && contatos(request.auth.uid, uid)
           && (!('texto' in request.resource.data) || textoValido(request.resource.data.texto));
       }
     }
@@ -89,6 +112,34 @@ service cloud.firestore {
     match /perfis/{uid} {
       allow get: if logado();
       allow create, update: if logado() && request.auth.uid == uid;
+    }
+
+    // Código pessoal -> identificador. Só consulta pontual (get), sem listar, e nunca sobrescreve.
+    match /codigos/{codigo} {
+      allow get: if logado();
+      allow create: if logado() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid']);
+    }
+
+    // Pedidos e amizades. O identificador é sempre `chave(uidA, uidB)`.
+    match /amizades/{amizadeId} {
+      allow read: if logado() && request.auth.uid in resource.data.membros;
+      allow create: if logado()
+        && request.resource.data.de == request.auth.uid
+        && request.resource.data.status == 'pendente'
+        && request.resource.data.membros.size() == 2
+        && request.resource.data.membros[0] != request.resource.data.membros[1]
+        && request.auth.uid in request.resource.data.membros
+        && amizadeId == chave(request.resource.data.membros[0], request.resource.data.membros[1]);
+      // Só quem recebeu o pedido aceita.
+      allow update: if logado()
+        && request.auth.uid in resource.data.membros
+        && request.auth.uid != resource.data.de
+        && resource.data.status == 'pendente'
+        && request.resource.data.status == 'aceita'
+        && request.resource.data.membros == resource.data.membros
+        && request.resource.data.de == resource.data.de;
+      allow delete: if logado() && request.auth.uid in resource.data.membros;
     }
 
     // Grupos. O id é o código do convite: quem o tem consegue ver o grupo (get), mas ninguém lista os grupos dos outros.

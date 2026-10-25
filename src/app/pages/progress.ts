@@ -4,7 +4,7 @@ import { Dialogo } from '../core/dialogo';
 import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
-import { Sessao } from '../core/models';
+import { RegistroPeso, Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { LIMITE_SESSOES_MEMBRO, SocialService } from '../core/social.service';
@@ -160,6 +160,8 @@ function lerDispensadas(): string[] {
 
       @if (editavel()) {
         <app-peso-grafico />
+      } @else if (pesos(); as p) {
+        <app-peso-grafico [registros]="p" [somenteLeitura]="true" />
       }
 
       @if (recordes().length) {
@@ -232,6 +234,8 @@ export class Progress {
   readonly historico = input.required<Sessao[]>();
   /** Só a própria pessoa muda a meta. */
   readonly editavel = input(true);
+  /** Peso que um amigo compartilha; sem ele (ou sem ser amigo), o gráfico de peso não aparece nas estatísticas dos outros. */
+  readonly pesos = input<RegistroPeso[] | null>(null);
   /** Preenchido ao ver um amigo: as mensagens falam dele. */
   readonly nome = input<string | undefined>(undefined);
   /** Meta publicada pelo amigo. */

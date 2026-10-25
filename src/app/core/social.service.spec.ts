@@ -2,10 +2,10 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { CloudService } from './cloud.service';
 import { ExerciseService } from './exercise.service';
-import { Sessao } from './models';
+import { RegistroPeso, Sessao } from './models';
 import { MedalhasService } from './medalhas.service';
 import { PlanService } from './plan.service';
-import { Atividade, Comentario, Conexao, Evento, Grupo, Perfil, SocialBackend, chaveConexao, fotoParaItens } from './social';
+import { Amizade, Atividade, Comentario, Conexao, Evento, Grupo, Perfil, SocialBackend, chaveConexao, fotoParaItens } from './social';
 import { LIMITE_SESSOES_MEMBRO, PAGINA_TIMELINE, SocialService } from './social.service';
 import { NuvemBackend } from './sync';
 
@@ -22,6 +22,29 @@ function ouvinte<T>(cb: (d: T) => void, erro: (e: unknown) => void, limite?: num
 
 /** Backend social de mentira: guarda cada ouvinte aberto e deixa o teste disparar dados e erros. */
 class ApiFalsa implements SocialBackend {
+  amizades?: Ouvinte<Amizade[]>;
+  pesos = new Map<string, Ouvinte<RegistroPeso[] | null>>();
+  reservarCodigo = () => Promise.resolve(true);
+  codigosNaNuvem: Record<string, string> = {};
+  uidDoCodigo = (codigo: string) => Promise.resolve(this.codigosNaNuvem[codigo] ?? null);
+  pedirAmizade = (a: Amizade) => this.registrar(`pedir-amizade ${a.id} de ${a.de}`);
+  aceitarAmizade = (id: string) => this.registrar(`aceitar-amizade ${id}`);
+  removerAmizade = (id: string) => this.registrar(`remover-amizade ${id}`);
+  pesoPublicado: (RegistroPeso[] | null)[] = [];
+  publicarPeso = (_uid: string, r: RegistroPeso[] | null) => {
+    this.pesoPublicado.push(r);
+    return Promise.resolve();
+  };
+  ouvirPeso(uid: string, cb: (r: RegistroPeso[] | null) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.pesos.set(uid, o);
+    return () => (o.cancelado = true);
+  }
+  ouvirAmizades(_uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.amizades = o;
+    return () => (o.cancelado = true);
+  }
   grupos?: Ouvinte<Grupo[]>;
   conexoes?: Ouvinte<Conexao[]>;
   eventos = new Map<string, Ouvinte<Evento[]>>();
@@ -727,6 +750,114 @@ describe('SocialService', () => {
       expect(publicado?.temFoto).toBeUndefined();
     });
   });
+  describe('amigos mais chegados', () => {
+    const amizade = (outro: string, status: Amizade['status'] = 'aceita', de = 'eu'): Amizade => ({ id: chaveConexao('eu', outro), membros: ['eu', outro].sort(), de, status, criadoEm: 1 });
+
+    async function comAmizades(...lista: Amizade[]): Promise<void> {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.amizades?.cb(lista);
+      await assentar();
+    }
+
+    it('amigo aceito (mesmo fora de grupo) é ouvido, lido e aparece na lista', async () => {
+      await comAmizades(amizade('ana'));
+      expect(social.ehAmigo('ana')).toBeTrue();
+      expect(social.podeVer('ana')).toBeTrue();
+      expect(api.eventos.has('ana')).toBeTrue();
+      expect(social.amigos().map((p) => p.nome)).toEqual(['Ana']);
+    });
+
+    it('pedido pendente ainda não dá acesso, e o recebido entra no aviso da aba', async () => {
+      await comAmizades(amizade('ana', 'pendente', 'ana'), amizade('bia', 'pendente', 'eu'));
+      expect(social.ehAmigo('ana')).toBeFalse();
+      expect(api.eventos.has('ana')).toBeFalse();
+      expect(social.pedidosDeAmizade().map((p) => p.perfil.uid)).toEqual(['ana']);
+      expect(social.pedidosEnviados().map((p) => p.perfil.uid)).toEqual(['bia']);
+      expect(social.avisosDaAba()).toBe(1);
+    });
+
+    it('pedir amizade a quem não tem pedido grava um pedido pendente', async () => {
+      await comAmizades();
+      const r = await social.pedirAmizade('ana');
+      expect(r.estado).toBe('pedido-enviado');
+      expect(api.chamadas).toContain('pedir-amizade ana_eu de eu');
+    });
+
+    it('se a pessoa já tinha pedido, pedir aceita; se já são amigos ou já pedi, só avisa', async () => {
+      await comAmizades(amizade('ana', 'pendente', 'ana'), amizade('bia'), amizade('caio', 'pendente', 'eu'));
+      expect((await social.pedirAmizade('ana')).estado).toBe('aceito');
+      expect(api.chamadas).toContain('aceitar-amizade ana_eu');
+      expect((await social.pedirAmizade('bia')).estado).toBe('ja-amigos');
+      expect((await social.pedirAmizade('caio')).estado).toBe('pedido-pendente');
+      expect(api.chamadas.filter((c) => c.startsWith('pedir-amizade'))).toEqual([]);
+    });
+
+    it('pelo código: acha a pessoa, recusa o próprio código e código desconhecido', async () => {
+      api.perfis['eu'] = { uid: 'eu', nome: 'Eu', foto: null, codigo: 'MEUCODIG' };
+      api.codigosNaNuvem['ANACODIG'] = 'ana';
+      await comAmizades();
+      expect((await social.pedirAmizadePorCodigo('anacodig')).estado).toBe('pedido-enviado');
+      expect((await social.pedirAmizadePorCodigo('MEUCODIG')).estado).toBe('proprio');
+      expect((await social.pedirAmizadePorCodigo('ZZZZZZZZ')).estado).toBe('inexistente');
+      expect((await social.pedirAmizadePorCodigo('abc')).estado).toBe('inexistente');
+    });
+
+    it('a timeline de uma pessoa só tem os treinos dela', async () => {
+      await comAmizades(amizade('ana'), amizade('bia'));
+      api.eventos.get('ana')?.cb([evento('ana', 1000)]);
+      api.eventos.get('bia')?.cb([evento('bia', 2000)]);
+      await assentar();
+      expect(social.timelineDePessoa('ana').map((i) => i.criadoEm)).toEqual([1000]);
+      expect(social.timelineVisivelDePessoa('bia').map((i) => i.criadoEm)).toEqual([2000]);
+    });
+
+    it('desfazer a amizade para de ouvir a pessoa', async () => {
+      await comAmizades(amizade('ana'));
+      api.amizades?.cb([]);
+      await assentar();
+      expect(api.eventos.get('ana')?.cancelado).toBeTrue();
+      expect(social.ehAmigo('ana')).toBeFalse();
+    });
+
+    describe('peso compartilhado', () => {
+      it('só amigos têm o peso lido; quem não compartilha vem como null', async () => {
+        await comAmizades(amizade('ana'));
+        expect(social.pesoDe('bia')).toBeUndefined();
+        expect(api.pesos.has('bia')).toBeFalse();
+
+        expect(social.pesoDe('ana')).toBeUndefined();
+        api.pesos.get('ana')?.cb([{ data: '2026-10-20', kg: 80, em: 1 }]);
+        expect(social.pesoDe('ana')).toEqual([{ data: '2026-10-20', kg: 80, em: 1 }]);
+        api.pesos.get('ana')?.cb(null);
+        expect(social.pesoDe('ana')).toBeNull();
+      });
+
+      it('"sem permissão" ao ler o peso não vira aviso: é como se ele não compartilhasse', async () => {
+        await comAmizades(amizade('ana'));
+        social.pesoDe('ana');
+        api.pesos.get('ana')?.erro({ code: 'permission-denied' });
+        expect(social.pesoDe('ana')).toBeNull();
+        expect(social.erro()).toBe('');
+      });
+
+      it('ligar o compartilhamento publica o peso; desligar apaga', async () => {
+        await comAmizades();
+        expect(api.pesoPublicado).toEqual([]);
+        await social.compartilharPeso(true);
+        await assentar();
+        expect(social.eu()?.compartilhaPeso).toBeTrue();
+        expect(api.gravados.at(-1)?.compartilhaPeso).toBeTrue();
+        expect(api.pesoPublicado.length).toBe(1);
+        expect(api.pesoPublicado[0]).toEqual([]);
+
+        await social.compartilharPeso(false);
+        expect(social.eu()?.compartilhaPeso).toBeFalse();
+        expect(api.pesoPublicado.at(-1)).toBeNull();
+      });
+    });
+  });
+
   describe('gente nova nos grupos', () => {
     const grupo = (membros: string[], id = 'g1'): Grupo => ({ id, nome: 'Grupo', dono: 'eu', membros, acesso: 'aberto', pedidos: [], criadoEm: 1 });
 

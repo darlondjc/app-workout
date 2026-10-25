@@ -1,4 +1,5 @@
 import { MedalhaDoTreino } from './medalhas';
+import { RegistroPeso } from './models';
 import { Cancelar } from './sync';
 
 /** Dados públicos de quem usa o app (visíveis para quem está em algum grupo com a pessoa). */
@@ -6,7 +7,11 @@ export interface Perfil {
   uid: string;
   nome: string;
   foto: string | null;
+  /** Código pessoal para ser adicionado como amigo mais chegado (link `/amigo/<código>`). */
+  codigo?: string;
   metaSemanal?: number;
+  /** A pessoa deixa os amigos mais chegados verem o gráfico de peso (ver `compartilhado/peso`). */
+  compartilhaPeso?: boolean;
   /** A foto foi escolhida no app (e não veio da conta Google); o login não a troca mais. */
   fotoPropria?: boolean;
 }
@@ -17,6 +22,16 @@ export interface Perfil {
  */
 export function fotoParaItens(p: Perfil): string | null {
   return p.fotoPropria ? null : p.foto;
+}
+
+/** Amizade entre duas pessoas ("amigos mais chegados"): vale quando a outra aceita. Vai além dos grupos. */
+export interface Amizade {
+  id: string;
+  membros: string[];
+  /** Quem enviou o pedido. */
+  de: string;
+  status: 'pendente' | 'aceita';
+  criadoEm: number;
 }
 
 export type AcessoGrupo = 'aberto' | 'aprovado';
@@ -114,6 +129,17 @@ export const TAMANHO_COMENTARIO = 280;
 export interface SocialBackend {
   lerPerfil(uid: string): Promise<Perfil | null>;
   gravarPerfil(perfil: Perfil): Promise<void>;
+  /** Tenta reservar o código pessoal; falso se já pertence a outra pessoa. */
+  reservarCodigo(uid: string, codigo: string): Promise<boolean>;
+  uidDoCodigo(codigo: string): Promise<string | null>;
+  ouvirAmizades(uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): Cancelar;
+  pedirAmizade(amizade: Amizade): Promise<void>;
+  aceitarAmizade(id: string): Promise<void>;
+  removerAmizade(id: string): Promise<void>;
+  /** Gráfico de peso que a pessoa deixa os amigos verem; `null` para parar de compartilhar. */
+  publicarPeso(uid: string, registros: RegistroPeso[] | null): Promise<void>;
+  /** Peso compartilhado por um amigo; `null` se ele não compartilha. */
+  ouvirPeso(uid: string, cb: (r: RegistroPeso[] | null) => void, erro: (e: unknown) => void): Cancelar;
   /** Grupos de que a pessoa faz parte. */
   ouvirGrupos(uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): Cancelar;
   /** Qualquer pessoa logada que tenha o código consegue ver o grupo (nome e membros) antes de entrar. */
@@ -166,9 +192,19 @@ export function normalizarCodigo(texto: string): string {
   return texto.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+/** Link para ser adicionado como amigo: abre o app direto no pedido (`base` é o endereço do app). */
+export function linkDoAmigo(base: string, codigo: string): string {
+  return `${base.replace(/\/?$/, '/')}amigo/${codigo}`;
+}
+
 /** Link de convite: abre o app direto na entrada do grupo (`base` é o endereço do app, com a barra final). */
 export function linkDoGrupo(base: string, codigo: string): string {
   return `${base.replace(/\/?$/, '/')}convite/${codigo}`;
+}
+
+/** Itens da timeline de uma pessoa. */
+export function timelineDaPessoa(itens: ItemTimeline[], uid: string): ItemTimeline[] {
+  return itens.filter((i) => i.tipo === 'evento' && i.evento.autor === uid);
 }
 
 /** Itens da timeline de um grupo: só o que é dos membros dele. */

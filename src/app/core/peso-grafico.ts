@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, Injector, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { dataCurta, formatarKg } from './data-texto';
+import { RegistroPeso } from './models';
 import { PesoService } from './peso.service';
 import { PeriodoPeso, serieDePeso } from './peso';
 
@@ -29,7 +30,7 @@ const PERIODOS: { valor: PeriodoPeso; rotulo: string; sufixo: string }[] = [
         </div>
       </div>
 
-      @if (peso.atual(); as a) {
+      @if (atual(); as a) {
         <p class="grande">{{ kg(a.kg) }} <small>kg · {{ data(a.data) }}</small></p>
         @if (grafico().pontos.length > 0) {
           <p class="apoio variacao" [class.variacao--vazia]="grafico().variacao === null">{{ textoVariacao() }}</p>
@@ -51,8 +52,10 @@ const PERIODOS: { valor: PeriodoPeso; rotulo: string; sufixo: string }[] = [
             <p class="apoio nota">Cada ponto é a média do mês.</p>
           }
         } @else {
-          <p class="apoio">Nenhum registro {{ nomePeriodo() }}. Registre o peso em Perfil.</p>
+          <p class="apoio">Nenhum registro {{ nomePeriodo() }}.{{ somenteLeitura() ? '' : ' Registre o peso em Perfil.' }}</p>
         }
+      } @else if (somenteLeitura()) {
+        <p class="apoio">Ainda não há registros de peso.</p>
       } @else {
         <p class="apoio">Registre o seu peso em Perfil para acompanhar a evolução aqui.</p>
         <button type="button" class="btn btn--claro" (click)="irParaAjustes()">Registrar peso</button>
@@ -79,7 +82,13 @@ const PERIODOS: { valor: PeriodoPeso; rotulo: string; sufixo: string }[] = [
   `,
 })
 export class PesoGrafico {
-  protected readonly peso = inject(PesoService);
+  private readonly peso = inject(PesoService);
+  /** Registros de outra pessoa (amigo que compartilha o peso); sem isto, mostra os da própria pessoa. */
+  readonly registros = input<RegistroPeso[] | null>(null);
+  /** Sem o botão de registrar peso (o gráfico é de outra pessoa). */
+  readonly somenteLeitura = input(false);
+  private readonly lista = computed(() => this.registros() ?? this.peso.registros());
+  protected readonly atual = computed(() => this.lista().at(-1) ?? null);
   /** O roteador só é pedido no clique: o gráfico também aparece em telas montadas sem rotas. */
   private readonly injector = inject(Injector);
   protected readonly periodos = PERIODOS;
@@ -90,7 +99,7 @@ export class PesoGrafico {
   private readonly hoje = new Date();
 
   protected readonly grafico = computed(() => {
-    const s = serieDePeso(this.peso.registros(), this.periodo(), this.hoje);
+    const s = serieDePeso(this.lista(), this.periodo(), this.hoje);
     const folga = s.maximo - s.minimo < 0.5 ? 1 : (s.maximo - s.minimo) * 0.2;
     const min = s.minimo - folga;
     const max = s.maximo + folga;

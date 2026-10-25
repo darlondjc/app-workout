@@ -1,12 +1,14 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CloudService } from './cloud.service';
 import { ExerciseService } from './exercise.service';
-import { Sessao } from './models';
+import { RegistroPeso, Sessao } from './models';
 import { resumoAtividade } from './atividade';
 import { MedalhasService } from './medalhas.service';
+import { PesoService } from './peso.service';
 import { PlanService } from './plan.service';
 import {
   AcessoGrupo,
+  Amizade,
   Atividade,
   Comentario,
   Conexao,
@@ -19,6 +21,7 @@ import {
   TAMANHO_NOME_GRUPO,
   chaveConexao,
   gerarCodigo,
+  timelineDaPessoa,
   idEvento,
   marcoDoTreino,
   montarTimeline,
@@ -50,6 +53,11 @@ export type ResultadoEntrada =
   | { estado: 'entrou' | 'ja-membro' | 'pedido-enviado' | 'pedido-pendente'; grupo: Grupo }
   | { estado: 'inexistente' | 'erro'; mensagem: string };
 
+/** Resultado de pedir amizade a alguém. */
+export type ResultadoAmizade =
+  | { estado: 'pedido-enviado' | 'pedido-pendente' | 'ja-amigos' | 'aceito'; perfil: Perfil }
+  | { estado: 'inexistente' | 'proprio' | 'erro'; mensagem: string };
+
 export interface PedidoDeEntrada {
   grupo: Grupo;
   perfil: Perfil;
@@ -61,18 +69,23 @@ export class SocialService {
   private readonly plans = inject(PlanService);
   private readonly ex = inject(ExerciseService);
   private readonly medalhas = inject(MedalhasService);
+  private readonly peso = inject(PesoService);
 
   readonly eu = signal<Perfil | null>(null);
   readonly erro = signal('');
   readonly grupos = signal<Grupo[]>([]);
+  readonly amizades = signal<Amizade[]>([]);
   private readonly conexoes = signal<Conexao[]>([]);
   /** Falso até a primeira resposta da nuvem com os grupos da pessoa. */
   readonly gruposCarregados = signal(false);
   readonly conexoesCarregadas = signal(false);
+  readonly amizadesCarregadas = signal(false);
   private readonly perfis = signal<Record<string, Perfil>>({});
   private readonly eventosPor = signal<Record<string, Evento[]>>({});
   private readonly atividades = signal<Atividade[]>([]);
   private readonly sessoesPor = signal<Record<string, Sessao[]>>({});
+  /** Peso que cada amigo compartilha; `null` = ele não compartilha. */
+  private readonly pesosPor = signal<Record<string, RegistroPeso[] | null>>({});
 
   private api?: SocialBackend;
   private nuvem?: NuvemBackend;
@@ -81,12 +94,46 @@ export class SocialService {
   private ouvintesEventos = new Map<string, Cancelar>();
   private ouvinteAtividades?: Cancelar;
   private ouvintesSessoes = new Map<string, Cancelar>();
+  private ouvintesPeso = new Map<string, Cancelar>();
   private buscando = new Set<string>();
   private publicados = new Set<string>(lerPublicados());
   private ligando = new Set<string>();
 
-  /** Quem está em algum grupo comigo (as pessoas cujos treinos eu posso ler). */
-  private readonly colegas = computed(() => new Set(this.conexoes().flatMap((c) => c.membros).filter((m) => m !== this.uid)));
+  /** Amigos mais chegados (pedido aceito), pelo nome. */
+  readonly amigos = computed(() =>
+    this.amizades()
+      .filter((a) => a.status === 'aceita')
+      .map((a) => this.perfilDeAmizade(a))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+  );
+  /** Pedidos de amizade que outras pessoas me fizeram e esperam resposta. */
+  readonly pedidosDeAmizade = computed(() => this.amizades().filter((a) => a.status === 'pendente' && a.de !== this.uid).map((a) => ({ amizade: a, perfil: this.perfilDeAmizade(a) })));
+  /** Pedidos que eu fiz e ainda não foram aceitos. */
+  readonly pedidosEnviados = computed(() => this.amizades().filter((a) => a.status === 'pendente' && a.de === this.uid).map((a) => ({ amizade: a, perfil: this.perfilDeAmizade(a) })));
+
+  private perfilDeAmizade(a: Amizade): Perfil {
+    const outro = a.membros.find((m) => m !== this.uid) ?? '';
+    return this.perfis()[outro] ?? { uid: outro, nome: 'Amigo', foto: null };
+  }
+
+  /** A amizade com `uid` (em qualquer estado), se existir. */
+  amizadeCom(uid: string): Amizade | undefined {
+    const id = chaveConexao(this.uid, uid);
+    return this.amizades().find((a) => a.id === id);
+  }
+
+  ehAmigo(uid: string): boolean {
+    return this.amizadeCom(uid)?.status === 'aceita';
+  }
+
+  /** Quem está em algum grupo comigo ou é amigo mais chegado (as pessoas cujos treinos eu posso ler). */
+  private readonly colegas = computed(
+    () =>
+      new Set([
+        ...this.conexoes().flatMap((c) => c.membros),
+        ...this.amizades().filter((a) => a.status === 'aceita').flatMap((a) => a.membros),
+      ].filter((m) => m !== this.uid)),
+  );
 
   /** Grupos em ordem alfabética. */
   readonly gruposOrdenados = computed(() => [...this.grupos()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
@@ -155,6 +202,25 @@ export class SocialService {
       this.atividades().length >= this.limiteAtividades(),
   );
 
+  /** A timeline de uma pessoa (um amigo, por exemplo): só os treinos dela. */
+  timelineDePessoa(uid: string): ItemTimeline[] {
+    return timelineDaPessoa(this.timeline(), uid);
+  }
+
+  timelineVisivelDePessoa(uid: string): ItemTimeline[] {
+    return this.timelineDePessoa(uid).slice(0, this.paginas() * PAGINA_TIMELINE);
+  }
+
+  temMaisDePessoa(uid: string): boolean {
+    return this.timelineVisivelDePessoa(uid).length < this.timelineDePessoa(uid).length || this.nuvemTemMais();
+  }
+
+  carregarMaisDePessoa(uid: string): void {
+    if (!this.temMaisDePessoa(uid)) return;
+    this.paginas.update((p) => p + 1);
+    if (this.paginas() * PAGINA_TIMELINE > this.timelineDePessoa(uid).length && this.nuvemTemMais()) this.ampliarLeitura();
+  }
+
   /** Chegou ao fim da tela de um grupo: mostra mais uma página e, se já mostrou tudo o que foi lido, lê mais da nuvem. */
   carregarMais(grupoId: string): void {
     if (!this.temMaisDe(grupoId)) return;
@@ -210,8 +276,8 @@ export class SocialService {
     gravarMembrosVistos(this.uid, v);
   }
 
-  /** O que o selo da aba Social mostra: novidades dos grupos, pedidos de entrada esperando resposta e gente nova nos grupos. */
-  readonly avisosDaAba = computed(() => this.novidades() + this.pedidosRecebidos().length + this.novosMembros());
+  /** O que o selo da aba Social mostra: novidades, pedidos de entrada e de amizade esperando resposta e gente nova nos grupos. */
+  readonly avisosDaAba = computed(() => this.novidades() + this.pedidosRecebidos().length + this.novosMembros() + this.pedidosDeAmizade().length);
 
   /** A pessoa está olhando a timeline: tudo o que há nela passa a ser visto. */
   marcarTimelineVista(): void {
@@ -238,6 +304,12 @@ export class SocialService {
       ids.add(this.uid);
       untracked(() => this.ajustarEventos(ids));
     });
+    // Com o compartilhamento ligado, o peso vai para os amigos (e vai de novo a cada registro novo).
+    effect(() => {
+      const compartilha = this.eu()?.compartilhaPeso === true;
+      const registros = this.peso.registros();
+      if (compartilha) untracked(() => void this.publicarPeso(registros));
+    });
     effect(() => {
       const grupos = this.grupos();
       const conexoes = this.conexoes();
@@ -257,19 +329,27 @@ export class SocialService {
     const u = this.cloud.usuario();
     try {
       const existente = await api.lerPerfil(uid);
+      let codigo = existente?.codigo;
+      for (let i = 0; !codigo && i < 6; i++) {
+        const tentativa = gerarCodigo();
+        if (await api.reservarCodigo(uid, tentativa)) codigo = tentativa;
+      }
       const perfil: Perfil = {
         uid,
         nome: u?.nome || u?.email || existente?.nome || 'Você',
         // Foto escolhida no app vale mais que a da conta Google, que só entra enquanto não houver uma.
         foto: existente?.fotoPropria ? existente.foto : (u?.foto ?? existente?.foto ?? null),
         fotoPropria: existente?.fotoPropria ?? false,
+        codigo,
         metaSemanal: existente?.metaSemanal,
+        compartilhaPeso: existente?.compartilhaPeso ?? false,
       };
       await api.gravarPerfil(perfil);
       if (this.uid !== uid) return; // saiu da conta enquanto carregava
       this.eu.set(perfil);
       this.parar.push(
         api.ouvirGrupos(uid, (l) => this.aoGrupos(l), (e) => this.falhou(e, 'ouvir grupos')),
+        api.ouvirAmizades(uid, (l) => this.aoAmizades(l), (e) => this.falhou(e, 'ouvir amigos')),
         api.ouvirConexoes(uid, (l) => { this.conexoes.set(l); this.conexoesCarregadas.set(true); }, (e) => this.falhou(e, 'ouvir ligações entre membros')),
       );
       this.ouvirAtividadesProprias();
@@ -293,6 +373,8 @@ export class SocialService {
     this.parar.forEach((c) => c());
     this.ouvintesEventos.forEach((c) => c());
     this.ouvintesSessoes.forEach((c) => c());
+    this.ouvintesPeso.forEach((c) => c());
+    this.ouvintesPeso.clear();
     this.parar = [];
     this.ouvintesEventos.clear();
     this.ouvintesSessoes.clear();
@@ -304,9 +386,12 @@ export class SocialService {
     this.membrosVistos.set({});
     this.eu.set(null);
     this.grupos.set([]);
+    this.amizades.set([]);
+    this.pesosPor.set({});
     this.conexoes.set([]);
     this.gruposCarregados.set(false);
     this.conexoesCarregadas.set(false);
+    this.amizadesCarregadas.set(false);
     this.ligando.clear();
     this.perfis.set({});
     this.eventosPor.set({});
@@ -357,6 +442,134 @@ export class SocialService {
     const novo = { ...eu, ...campos };
     await this.api.gravarPerfil(novo);
     this.eu.set(novo);
+  }
+
+  // --- Amigos mais chegados -----------------------------------------------------------------
+
+  private aoAmizades(lista: Amizade[]): void {
+    this.amizades.set(lista);
+    this.amizadesCarregadas.set(true);
+    // Quem vem de uma amizade tenta de novo se a busca falhar: a próxima atualização da lista repete.
+    for (const m of new Set(lista.flatMap((a) => a.membros))) this.garantirPerfil(m, true);
+  }
+
+  /** Quem é a pessoa por trás de um código de amigo (para mostrar antes de pedir amizade). */
+  async previaPorCodigo(texto: string): Promise<Perfil | null> {
+    const api = this.api;
+    const codigo = normalizarCodigo(texto);
+    if (!api || codigo.length !== 8) return null;
+    try {
+      const uid = await api.uidDoCodigo(codigo);
+      if (!uid) return null;
+      const perfil = (await api.lerPerfil(uid)) ?? { uid, nome: 'Amigo', foto: null };
+      this.perfis.update((x) => ({ ...x, [uid]: perfil }));
+      return perfil;
+    } catch (e) {
+      this.falhou(e, 'procurar pelo código');
+      return null;
+    }
+  }
+
+  /** Pede amizade pelo código pessoal (de um link ou digitado). */
+  async pedirAmizadePorCodigo(texto: string): Promise<ResultadoAmizade> {
+    const eu = this.eu();
+    if (!eu || !this.api) return { estado: 'erro', mensagem: 'Entre na sua conta para adicionar amigos.' };
+    const codigo = normalizarCodigo(texto);
+    if (codigo.length !== 8) return { estado: 'inexistente', mensagem: 'O código tem 8 letras e números.' };
+    if (codigo === eu.codigo) return { estado: 'proprio', mensagem: 'Esse é o seu próprio código.' };
+    const perfil = await this.previaPorCodigo(codigo);
+    if (!perfil) return { estado: 'inexistente', mensagem: this.erro() || 'Não encontramos ninguém com esse código.' };
+    return this.pedirAmizade(perfil.uid);
+  }
+
+  /**
+   * Pede amizade a alguém (de um grupo ou de fora). Se a pessoa já tinha me pedido, aceita; se já são amigos
+   * ou o pedido já foi enviado, só avisa.
+   */
+  async pedirAmizade(uid: string): Promise<ResultadoAmizade> {
+    const eu = this.eu();
+    const api = this.api;
+    if (!eu || !api) return { estado: 'erro', mensagem: 'Entre na sua conta para adicionar amigos.' };
+    if (uid === eu.uid) return { estado: 'proprio', mensagem: 'Você não pode adicionar a si mesmo.' };
+    try {
+      const perfil = (await api.lerPerfil(uid)) ?? { uid, nome: 'Amigo', foto: null };
+      this.perfis.update((x) => ({ ...x, [uid]: perfil }));
+      const existente = this.amizadeCom(uid);
+      if (existente?.status === 'aceita') return { estado: 'ja-amigos', perfil };
+      if (existente && existente.de === eu.uid) return { estado: 'pedido-pendente', perfil };
+      if (existente) {
+        await api.aceitarAmizade(existente.id);
+        return { estado: 'aceito', perfil };
+      }
+      await api.pedirAmizade({ id: chaveConexao(eu.uid, uid), membros: [eu.uid, uid].sort(), de: eu.uid, status: 'pendente', criadoEm: Date.now() });
+      return { estado: 'pedido-enviado', perfil };
+    } catch (e) {
+      this.falhou(e, 'enviar pedido de amizade');
+      return { estado: 'erro', mensagem: this.erro() };
+    }
+  }
+
+  async aceitarAmizade(a: Amizade): Promise<void> {
+    try {
+      await this.api?.aceitarAmizade(a.id);
+    } catch (e) {
+      this.falhou(e, 'aceitar amizade');
+    }
+  }
+
+  /** Recusa um pedido, cancela um enviado ou desfaz a amizade. */
+  async removerAmizade(a: Amizade): Promise<void> {
+    try {
+      await this.api?.removerAmizade(a.id);
+    } catch (e) {
+      this.falhou(e, 'remover amizade');
+    }
+  }
+
+  // --- Peso compartilhado ------------------------------------------------------------------
+
+  /** Liga ou desliga o compartilhamento do gráfico de peso com os amigos mais chegados. */
+  async compartilharPeso(compartilha: boolean): Promise<void> {
+    const eu = this.eu();
+    if (!eu || !this.api) return;
+    const novo = { ...eu, compartilhaPeso: compartilha };
+    this.eu.set(novo);
+    try {
+      await this.api.gravarPerfil(novo);
+      // Desligar apaga o que estava compartilhado; ligar publica pelo efeito acima.
+      if (!compartilha) await this.api.publicarPeso(eu.uid, null);
+    } catch (e) {
+      this.eu.set(eu);
+      this.falhou(e, 'mudar o compartilhamento do peso');
+    }
+  }
+
+  private async publicarPeso(registros: RegistroPeso[] | null): Promise<void> {
+    const api = this.api;
+    if (!api || !this.uid || !this.eu()) return;
+    try {
+      await api.publicarPeso(this.uid, registros);
+    } catch (e) {
+      this.falhou(e, 'compartilhar o peso');
+    }
+  }
+
+  /**
+   * Peso que um amigo compartilha (começa a acompanhar na primeira chamada). `null` se ele não compartilha
+   * ou se você não é amigo dele; `undefined` enquanto a primeira resposta não chega.
+   */
+  pesoDe(uid: string): RegistroPeso[] | null | undefined {
+    if (uid && uid !== this.uid && this.api && this.ehAmigo(uid) && !this.ouvintesPeso.has(uid)) {
+      this.ouvintesPeso.set(
+        uid,
+        this.api.ouvirPeso(
+          uid,
+          (r) => this.pesosPor.update((x) => ({ ...x, [uid]: r })),
+          (e) => ((e as { code?: string }).code === 'permission-denied' ? this.pesosPor.update((x) => ({ ...x, [uid]: null })) : this.falhou(e, 'ler o peso de um amigo')),
+        ),
+      );
+    }
+    return this.pesosPor()[uid];
   }
 
   // --- Grupos ------------------------------------------------------------------------------
@@ -580,9 +793,12 @@ export class SocialService {
     this.ouvintesEventos.delete(uid);
     this.ouvintesSessoes.get(uid)?.();
     this.ouvintesSessoes.delete(uid);
+    this.ouvintesPeso.get(uid)?.();
+    this.ouvintesPeso.delete(uid);
     const sem = <T>(x: Record<string, T>) => Object.fromEntries(Object.entries(x).filter(([k]) => k !== uid));
     this.eventosPor.update(sem);
     this.sessoesPor.update(sem);
+    this.pesosPor.update(sem);
   }
 
   /**

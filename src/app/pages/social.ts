@@ -9,26 +9,19 @@ import { TAMANHO_NOME_GRUPO, tempoRelativo } from '../core/social';
 import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
 
-/** Aba Social: os grupos de que a pessoa faz parte. A timeline e o convite ficam na tela de cada grupo. */
+/** Aba Social: os grupos de que a pessoa faz parte e os amigos mais chegados. A timeline e o convite ficam na tela de cada grupo. */
 @Component({
   selector: 'app-social',
   imports: [RouterLink, Avatar, AvatarGrupo, BarraTopo, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Grupos">
-        <button type="button" class="novo novo--barra" aria-label="Criar grupo" (click)="criando.set(true)">
-          <app-icon name="plus" [size]="20" [stroke]="2.4" />
-        </button>
-      </app-barra-topo>
+      <app-barra-topo titulo="Social" />
       <header class="cabeca">
         <div>
           <p class="apoio">Treine junto</p>
-          <h1 class="titulo">Grupos</h1>
+          <h1 class="titulo">Social</h1>
         </div>
-        <button type="button" class="novo" aria-label="Criar grupo" (click)="criando.set(true)">
-          <app-icon name="plus" [size]="22" [stroke]="2.4" />
-        </button>
       </header>
 
       @if (!cloud.configurado) {
@@ -43,6 +36,13 @@ import { Carregando } from '../core/spinner';
         @if (social.erro()) {
           <p class="erro" role="alert">{{ social.erro() }}</p>
         }
+
+        <div class="secao-topo">
+          <h2 class="secao">Grupos</h2>
+          <button type="button" class="novo" aria-label="Criar grupo" (click)="criando.set(true)">
+            <app-icon name="plus" [size]="20" [stroke]="2.4" />
+          </button>
+        </div>
 
         @if (criando()) {
           <form class="card criar" (submit)="criar($event, campo)" aria-label="Novo grupo">
@@ -107,14 +107,52 @@ import { Carregando } from '../core/spinner';
             <app-carregando texto="Carregando grupos…" />
           }
         }
+
+        <div class="secao-topo secao-topo--amigos">
+          <h2 class="secao">Amigos mais chegados</h2>
+          <a class="novo" routerLink="/amigos" aria-label="Adicionar amigo">
+            <app-icon name="user-add" [size]="20" [stroke]="2" />
+          </a>
+        </div>
+
+        @for (p of social.pedidosDeAmizade(); track p.amizade.id) {
+          <div class="card pedido">
+            <app-avatar [usuario]="{ uid: p.perfil.uid, nome: p.perfil.nome, email: '', foto: p.perfil.foto }" [tamanho]="40" />
+            <p class="texto"><strong>{{ p.perfil.nome }}</strong><span class="apoio">quer ser seu amigo</span></p>
+            <button type="button" class="btn btn--escuro mini" (click)="social.aceitarAmizade(p.amizade)">Aceitar</button>
+            <button type="button" class="btn btn--claro mini" (click)="social.removerAmizade(p.amizade)">Recusar</button>
+          </div>
+        }
+
+        @if (social.amigos().length) {
+          <div class="card amigos">
+            @for (a of social.amigos(); track a.uid) {
+              <a class="amigo" [routerLink]="['/membro', a.uid]" [attr.aria-label]="'Abrir ' + a.nome">
+                <app-avatar [usuario]="{ uid: a.uid, nome: a.nome, email: '', foto: a.foto }" [tamanho]="44" />
+                <span class="amigo__txt">
+                  <strong class="amigo__nome">{{ a.nome }}</strong>
+                  <span class="amigo__meta">{{ ultimoTreino(a.uid) }}</span>
+                </span>
+                <app-icon class="amigo__seta" name="chevron" [size]="18" [stroke]="2.2" />
+              </a>
+            }
+          </div>
+        } @else if (!social.pedidosDeAmizade().length) {
+          <div class="card vazio">
+            <p class="apoio">Amigos mais chegados veem seus treinos e as estatísticas que você deixar. Pode ser alguém dos seus grupos ou de fora.</p>
+            <a class="btn btn--claro" routerLink="/amigos">Adicionar amigo</a>
+          </div>
+        }
       }
     </section>
   `,
   styles: `
     .page { display: flex; flex-direction: column; gap: 12px; }
     .cabeca { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .novo { position: relative; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
-    .novo--barra { width: 40px; height: 40px; }
+    .secao-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+    .secao-topo--amigos { margin-top: 14px; }
+    .secao { margin: 0; font-size: 20px; }
+    .novo { position: relative; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
     .sub { font-size: 18px; margin: 0 0 8px; }
     .rot { font-size: 15px; font-weight: 500; color: var(--muted); }
     .criar { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -135,6 +173,13 @@ import { Carregando } from '../core/spinner';
     .gc__pessoas app-avatar:first-child { margin-left: 0; }
     .gc__mais { margin-left: 8px; font-size: 13px; color: var(--muted); }
     .gc__ultima { min-width: 0; font-size: 13px; color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .amigos { padding: 4px 0; }
+    .amigo { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: inherit; text-decoration: none; }
+    .amigo + .amigo { border-top: 1px solid var(--soft); }
+    .amigo__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .amigo__nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .amigo__meta { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .amigo__seta { flex: none; color: var(--muted); }
     .pedido { padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .texto { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; font-size: 14px; }
     .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
@@ -158,6 +203,12 @@ export class Social {
     const e = item.evento;
     const quem = e.autor === this.social.eu()?.uid ? 'Você' : this.social.nomeDe(e.autor, e.autorNome).split(/\s+/)[0];
     return `Último treino: ${quem} · ${tempoRelativo(item.criadoEm, Date.now())}`;
+  }
+
+  /** Quando foi o treino mais recente de um amigo (que o app já leu). */
+  protected ultimoTreino(uid: string): string {
+    const item = this.social.timelineDePessoa(uid).find((i) => i.tipo === 'evento');
+    return item ? `Último treino · ${tempoRelativo(item.criadoEm, Date.now())}` : 'Sem treinos ainda';
   }
 
   protected async criar(ev: Event, campo: HTMLInputElement): Promise<void> {

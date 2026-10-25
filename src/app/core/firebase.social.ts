@@ -1,5 +1,6 @@
 import type { Firestore } from 'firebase/firestore';
-import { AcessoGrupo, Atividade, Comentario, Conexao, Evento, Grupo, Perfil, SocialBackend, TAMANHO_COMENTARIO, chaveConexao, fotoParaItens, nomeComMaiuscula } from './social';
+import { AcessoGrupo, Amizade, Atividade, Comentario, Conexao, Evento, Grupo, Perfil, SocialBackend, TAMANHO_COMENTARIO, chaveConexao, fotoParaItens, nomeComMaiuscula } from './social';
+import { RegistroPeso } from './models';
 import { Cancelar } from './sync';
 
 type Fs = typeof import('firebase/firestore');
@@ -36,6 +37,57 @@ export class FirebaseSocial implements SocialBackend {
   gravarPerfil(p: Perfil): Promise<void> {
     const { uid, ...dados } = p;
     return this.fs.setDoc(this.fs.doc(this.db, 'perfis', uid), limpo({ ...dados, atualizadoEm: Date.now() }), { merge: true });
+  }
+
+  async reservarCodigo(uid: string, codigo: string): Promise<boolean> {
+    try {
+      await this.fs.setDoc(this.fs.doc(this.db, 'codigos', codigo), { uid });
+      return true;
+    } catch (e) {
+      if ((e as { code?: string }).code === 'permission-denied') return false; // já existe: as regras não deixam sobrescrever
+      throw e;
+    }
+  }
+
+  async uidDoCodigo(codigo: string): Promise<string | null> {
+    const snap = await this.fs.getDoc(this.fs.doc(this.db, 'codigos', codigo));
+    return snap.exists() ? ((snap.data() as { uid: string }).uid ?? null) : null;
+  }
+
+  ouvirAmizades(uid: string, cb: (a: Amizade[]) => void, erro: (e: unknown) => void): Cancelar {
+    const { query, collection, where, onSnapshot } = this.fs;
+    return onSnapshot(
+      query(collection(this.db, 'amizades'), where('membros', 'array-contains', uid)),
+      (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Amizade), id: d.id }))),
+      erro,
+    );
+  }
+
+  pedirAmizade(a: Amizade): Promise<void> {
+    const { id, ...dados } = a;
+    return this.fs.setDoc(this.fs.doc(this.db, 'amizades', id), limpo(dados));
+  }
+
+  aceitarAmizade(id: string): Promise<void> {
+    return this.fs.updateDoc(this.fs.doc(this.db, 'amizades', id), { status: 'aceita' });
+  }
+
+  removerAmizade(id: string): Promise<void> {
+    return this.fs.deleteDoc(this.fs.doc(this.db, 'amizades', id));
+  }
+
+  async publicarPeso(uid: string, registros: RegistroPeso[] | null): Promise<void> {
+    const ref = this.usuario(uid, 'compartilhado', 'peso');
+    if (registros === null) await this.fs.deleteDoc(ref);
+    else await this.fs.setDoc(ref, limpo({ registros, atualizadoEm: Date.now() }));
+  }
+
+  ouvirPeso(uid: string, cb: (r: RegistroPeso[] | null) => void, erro: (e: unknown) => void): Cancelar {
+    return this.fs.onSnapshot(
+      this.usuario(uid, 'compartilhado', 'peso'),
+      (snap) => cb(snap.exists() ? ((snap.data() as { registros?: RegistroPeso[] }).registros ?? []) : null),
+      erro,
+    );
   }
 
   ouvirGrupos(uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): Cancelar {

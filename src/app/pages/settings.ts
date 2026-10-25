@@ -79,6 +79,19 @@ import { UpdateService } from '../core/update.service';
 
       <app-peso-registro />
 
+      @if (social.eu(); as eu) {
+        <article class="card bloco" aria-labelledby="t-priv">
+          <h2 id="t-priv" class="sub">Amigos mais chegados</h2>
+          <div class="troca">
+            <span class="troca__txt">
+              <strong>Compartilhar o gráfico de peso</strong>
+              <span class="apoio">Quem você aceita como amigo mais chegado passa a ver a evolução do seu peso nas suas estatísticas. Colegas de grupo não veem.</span>
+            </span>
+            <button type="button" class="chave" role="switch" aria-label="Compartilhar o gráfico de peso com amigos mais chegados" [attr.aria-checked]="eu.compartilhaPeso === true" (click)="social.compartilharPeso(eu.compartilhaPeso !== true)"></button>
+          </div>
+        </article>
+      }
+
       <article class="card bloco" aria-labelledby="t-versao">
         <h2 id="t-versao" class="sub">Versão do app</h2>
         <p class="versao">
@@ -341,6 +354,51 @@ import { UpdateService } from '../core/update.service';
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+    }
+    .troca {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .troca__txt {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 15px;
+    }
+    .troca__txt .apoio {
+      font-size: 13px;
+    }
+    .chave {
+      position: relative;
+      flex: none;
+      width: 52px;
+      height: 32px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--line);
+      transition: background 0.2s;
+    }
+    .chave::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+      transition: transform 0.2s;
+    }
+    .chave[aria-checked='true'] {
+      background: var(--ink);
+    }
+    .chave[aria-checked='true']::after {
+      transform: translateX(20px);
+      background: var(--accent);
     }
     .acoes-topo {
       display: flex;
