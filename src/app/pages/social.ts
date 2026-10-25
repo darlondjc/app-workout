@@ -97,7 +97,7 @@ import { Carregando } from '../core/spinner';
             </div>
           </a>
         } @empty {
-          @if (social.gruposCarregados()) {
+          @if (social.gruposCarregados() && !social.gruposPendentes().length) {
             <div class="card vazio">
               <h2 class="sub">Você ainda não está em nenhum grupo</h2>
               <p class="apoio">Crie um grupo e convide amigos por link para ver os treinos uns dos outros, com curtidas e comentários. Se alguém mandou um link de convite, é só abri-lo.</p>
@@ -106,6 +106,22 @@ import { Carregando } from '../core/spinner';
           } @else {
             <app-carregando texto="Carregando grupos…" />
           }
+        }
+
+        @for (g of social.gruposPendentes(); track g.id) {
+          <div class="gc gc--pendente card" role="group" [attr.aria-label]="g.nome + ', aguardando aprovação'">
+            <div class="gc__topo">
+              <app-avatar-grupo [nome]="g.nome" [foto]="g.foto" [tamanho]="48" />
+              <div class="gc__titulo">
+                <strong class="gc__nome">{{ g.nome }}</strong>
+                <span class="gc__meta">{{ donoDe(g) ? 'Dono: ' + donoDe(g) : 'Você pediu para entrar' }}</span>
+              </div>
+            </div>
+            <div class="gc__rodape">
+              <span class="gc__novo gc__novo--espera" role="status">Aguardando aprovação</span>
+              <button type="button" class="btn btn--claro mini" aria-label="Cancelar pedido de entrada" (click)="social.cancelarPedido(g)">Cancelar</button>
+            </div>
+          </div>
         }
 
         <div class="secao-topo secao-topo--amigos">
@@ -166,6 +182,9 @@ import { Carregando } from '../core/spinner';
     .gc__nome { font-family: var(--font-display); font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gc__meta { font-size: 13px; color: var(--muted); }
     .gc__novo { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--ink); font-size: 12px; font-weight: 700; }
+    .gc--pendente .gc__rodape { flex-wrap: wrap; }
+    .gc--pendente { border-style: dashed; border-color: var(--line); box-shadow: none; background: transparent; }
+    .gc__novo--espera { background: var(--soft); color: var(--muted); }
     .gc__seta { flex: none; color: var(--muted); }
     .gc__rodape { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--soft); }
     .gc__pessoas { display: flex; align-items: center; flex: none; }
@@ -203,6 +222,12 @@ export class Social {
     const e = item.evento;
     const quem = e.autor === this.social.eu()?.uid ? 'Você' : this.social.nomeDe(e.autor, e.autorNome).split(/\s+/)[0];
     return `Último treino: ${quem} · ${tempoRelativo(item.criadoEm, Date.now())}`;
+  }
+
+  /** Primeiro nome do dono do grupo, se o perfil dele já chegou. */
+  protected donoDe(g: { dono: string }): string {
+    const nome = this.social.perfilDe(g.dono)?.nome ?? '';
+    return nome.trim().split(/\s+/)[0];
   }
 
   /** Quando foi o treino mais recente de um amigo (que o app já leu). */

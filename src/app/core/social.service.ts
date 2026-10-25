@@ -74,6 +74,8 @@ export class SocialService {
   readonly eu = signal<Perfil | null>(null);
   readonly erro = signal('');
   readonly grupos = signal<Grupo[]>([]);
+  /** Grupos com aprovação em que a pessoa pediu para entrar e ainda espera o dono responder. */
+  readonly gruposPendentes = signal<Grupo[]>([]);
   readonly amizades = signal<Amizade[]>([]);
   private readonly conexoes = signal<Conexao[]>([]);
   /** Falso até a primeira resposta da nuvem com os grupos da pessoa. */
@@ -349,6 +351,7 @@ export class SocialService {
       this.eu.set(perfil);
       this.parar.push(
         api.ouvirGrupos(uid, (l) => this.aoGrupos(l), (e) => this.falhou(e, 'ouvir grupos')),
+        api.ouvirPedidosFeitos(uid, (l) => this.aoPedidosFeitos(l), (e) => this.falhou(e, 'ouvir pedidos de entrada')),
         api.ouvirAmizades(uid, (l) => this.aoAmizades(l), (e) => this.falhou(e, 'ouvir amigos')),
         api.ouvirConexoes(uid, (l) => { this.conexoes.set(l); this.conexoesCarregadas.set(true); }, (e) => this.falhou(e, 'ouvir ligações entre membros')),
       );
@@ -386,6 +389,7 @@ export class SocialService {
     this.membrosVistos.set({});
     this.eu.set(null);
     this.grupos.set([]);
+    this.gruposPendentes.set([]);
     this.amizades.set([]);
     this.pesosPor.set({});
     this.conexoes.set([]);
@@ -585,6 +589,25 @@ export class SocialService {
     for (const m of new Set(lista.flatMap((g) => [...g.membros, ...(g.pedidos ?? [])]))) this.garantirPerfil(m, true);
   }
 
+  private aoPedidosFeitos(lista: Grupo[]): void {
+    // Quem foi aceito já aparece entre os grupos: não repete como pendente.
+    this.gruposPendentes.set(lista.filter((g) => !g.membros.includes(this.uid)).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
+    for (const g of lista) this.garantirPerfil(g.dono, true);
+  }
+
+  /** A pessoa desiste de um pedido de entrada que ainda não foi respondido. */
+  async cancelarPedido(g: Grupo): Promise<void> {
+    if (!this.api || !this.uid) return;
+    const antes = this.gruposPendentes();
+    this.gruposPendentes.set(antes.filter((x) => x.id !== g.id));
+    try {
+      await this.api.responderPedido(g.id, this.uid, false);
+    } catch (e) {
+      this.gruposPendentes.set(antes);
+      this.falhou(e, 'cancelar o pedido de entrada');
+    }
+  }
+
   /**
    * Quem entra num grupo (ou já estava nele quando alguém chega) liga a si mesma a cada outro membro.
    * É a ligação que dá o direito de ler os treinos um do outro.
@@ -704,6 +727,7 @@ export class SocialService {
       }
       if ((g.pedidos ?? []).includes(eu.uid)) return { estado: 'pedido-pendente', grupo: g };
       await api.pedirEntrada(g.id, eu.uid);
+      this.gruposPendentes.update((l) => (l.some((x) => x.id === g.id) ? l : [...l, { ...g, pedidos: [...(g.pedidos ?? []), eu.uid] }]));
       return { estado: 'pedido-enviado', grupo: g };
     } catch (e) {
       this.falhou(e, 'entrar no grupo');

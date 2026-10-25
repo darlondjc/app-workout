@@ -155,6 +155,8 @@ export interface SocialBackend {
   definirFotoDoGrupo(codigo: string, foto: string | null): Promise<void>;
   /** Sai do grupo; se era o dono e há mais gente, `novoDono` assume. Sem ninguém, o grupo é apagado. */
   sairDoGrupo(codigo: string, uid: string, novoDono?: string): Promise<void>;
+  /** Grupos com aprovação em que a pessoa pediu para entrar e ainda espera o dono. */
+  ouvirPedidosFeitos(uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): Cancelar;
   ouvirConexoes(uid: string, cb: (c: Conexao[]) => void, erro: (e: unknown) => void): Cancelar;
   /** Garante que a ligação entre as duas pessoas inclui o grupo. */
   ligar(a: string, b: string, grupo: string): Promise<void>;

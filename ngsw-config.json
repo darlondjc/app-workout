@@ -38,10 +38,11 @@
     }
   ],
   "appData": {
-    "versao": "1.18.3",
-    "titulo": "Entrar por um link de convite leva ao grupo",
+    "versao": "1.19.0",
+    "titulo": "Grupo aguardando aprovação",
     "novidades": [
-      "Quem abre um link de convite (de grupo ou de amigo) sem estar logado agora volta ao convite depois de entrar com o Google, e é levado ao grupo. Antes, caía no início."
+      "Quem pede para entrar em um grupo com aprovação passa a ver o grupo na aba Social como Aguardando aprovação, com a opção de cancelar o pedido. Quando o dono aceita, ele vira um grupo normal.",
+      "Importante: publique o firestore.rules novo no Console do Firebase."
     ]
   }
 }

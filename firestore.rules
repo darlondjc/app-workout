@@ -149,7 +149,8 @@ service cloud.firestore {
       }
 
       allow get: if logado();
-      allow list: if logado() && request.auth.uid in resource.data.membros;
+      // Lista os grupos de que a pessoa faz parte e aqueles em que pediu para entrar (a aba Social mostra "aguardando aprovação").
+      allow list: if logado() && (request.auth.uid in resource.data.membros || request.auth.uid in resource.data.pedidos);
 
       allow create: if logado()
         && request.resource.data.dono == request.auth.uid

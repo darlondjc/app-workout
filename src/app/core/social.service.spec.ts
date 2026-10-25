@@ -45,6 +45,12 @@ class ApiFalsa implements SocialBackend {
     this.amizades = o;
     return () => (o.cancelado = true);
   }
+  pedidosFeitos?: Ouvinte<Grupo[]>;
+  ouvirPedidosFeitos(_uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): () => void {
+    const o = ouvinte(cb, erro);
+    this.pedidosFeitos = o;
+    return () => (o.cancelado = true);
+  }
   grupos?: Ouvinte<Grupo[]>;
   conexoes?: Ouvinte<Conexao[]>;
   eventos = new Map<string, Ouvinte<Evento[]>>();
@@ -973,6 +979,40 @@ describe('SocialService', () => {
       api.gruposNaNuvem['ABCD2345'] = grupoDe({ acesso: 'aprovado', pedidos: ['eu'] });
       expect((await social.entrarPorCodigo('ABCD2345')).estado).toBe('pedido-pendente');
       expect(api.chamadas.filter((c) => c.startsWith('pedir'))).toEqual(['pedir ABCD2345 eu']);
+    });
+
+    it('pedir entrada em grupo com aprovação já coloca o grupo como aguardando aprovação', async () => {
+      api.gruposNaNuvem['ABCD2345'] = grupoDe({ acesso: 'aprovado' });
+      await entrarComAmigos();
+      expect(social.gruposPendentes()).toEqual([]);
+      await social.entrarPorCodigo('ABCD2345');
+      expect(social.gruposPendentes().map((g) => g.id)).toEqual(['ABCD2345']);
+    });
+
+    it('a lista de pedidos feitos vem da nuvem; quem foi aceito sai de aguardando', async () => {
+      await entrarComAmigos();
+      api.pedidosFeitos?.cb([grupoDe({ id: 'g9', acesso: 'aprovado', pedidos: ['eu'] }), grupoDe({ id: 'g8', acesso: 'aprovado', pedidos: ['eu'], membros: ['ana', 'eu'] })]);
+      await assentar();
+      expect(social.gruposPendentes().map((g) => g.id)).toEqual(['g9']);
+      api.pedidosFeitos?.cb([]); // o dono aceitou ou recusou
+      await assentar();
+      expect(social.gruposPendentes()).toEqual([]);
+    });
+
+    it('cancelar o pedido tira o grupo de aguardando e avisa a nuvem; se falhar, volta', async () => {
+      await entrarComAmigos();
+      const g = grupoDe({ id: 'g9', acesso: 'aprovado', pedidos: ['eu'] });
+      api.pedidosFeitos?.cb([g]);
+      await assentar();
+      await social.cancelarPedido(g);
+      expect(social.gruposPendentes()).toEqual([]);
+      expect(api.chamadas).toContain('responder g9 eu false');
+
+      api.pedidosFeitos?.cb([g]);
+      await assentar();
+      api.responderPedido = () => Promise.reject({ code: 'unavailable' });
+      await social.cancelarPedido(g);
+      expect(social.gruposPendentes().map((x) => x.id)).toEqual(['g9']);
     });
 
     it('quem já é membro não entra de novo', async () => {

@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.19.0",
+    "data": "2026-10-25",
+    "titulo": "Grupo aguardando aprovação",
+    "itens": [
+      "Quem pede para entrar em um grupo com aprovação passa a ver o grupo na aba Social como Aguardando aprovação, com a opção de cancelar o pedido. Quando o dono aceita, ele vira um grupo normal.",
+      "Importante: publique o firestore.rules novo no Console do Firebase."
+    ]
+  },
+  {
     "versao": "1.18.3",
     "data": "2026-10-25",
     "titulo": "Entrar por um link de convite leva ao grupo",

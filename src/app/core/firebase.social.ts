@@ -99,6 +99,15 @@ export class FirebaseSocial implements SocialBackend {
     );
   }
 
+  ouvirPedidosFeitos(uid: string, cb: (g: Grupo[]) => void, erro: (e: unknown) => void): Cancelar {
+    const { query, collection, where, onSnapshot } = this.fs;
+    return onSnapshot(
+      query(collection(this.db, 'grupos'), where('pedidos', 'array-contains', uid)),
+      (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Grupo), id: d.id }))),
+      erro,
+    );
+  }
+
   private grupoRef(codigo: string) {
     return this.fs.doc(this.db, 'grupos', codigo);
   }
