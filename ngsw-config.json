@@ -38,13 +38,11 @@
     }
   ],
   "appData": {
-    "versao": "1.15.0",
-    "titulo": "Grupos no lugar de amigos",
+    "versao": "1.15.1",
+    "titulo": "Convite de grupo: QR code e menos botões",
     "novidades": [
-      "A aba Social agora lista seus grupos. Cada grupo tem só a timeline de quem está nele; toque no ícone de uma pessoa para ver as estatísticas dela.",
-      "Convide por link, compartilhando ou mostrando o QR code. O grupo pode ser aberto (quem tem o link entra) ou aprovado (o dono aceita cada pedido).",
-      "Você pode estar em vários grupos. As suas estatísticas ficam no Perfil, que é o antigo Ajustes.",
-      "Adicionar amigos por código foi removido. Importante: publique o firestore.rules novo no Console do Firebase."
+      "O QR code do convite agora aparece.",
+      "Saiu o botão Convidar de baixo: ele fazia o mesmo que Compartilhar convite."
     ]
   }
 }

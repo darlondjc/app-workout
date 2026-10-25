@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.15.1",
+    "data": "2026-10-25",
+    "titulo": "Convite de grupo: QR code e menos botões",
+    "itens": [
+      "O QR code do convite agora aparece.",
+      "Saiu o botão Convidar de baixo: ele fazia o mesmo que Compartilhar convite."
+    ]
+  },
+  {
     "versao": "1.15.0",
     "data": "2026-10-25",
     "titulo": "Grupos no lugar de amigos",

@@ -102,15 +102,16 @@ import { Carregando } from '../core/spinner';
           }
         </p>
 
-        <button type="button" class="btn btn--destaque convidar" (click)="convidar()">
-          <app-icon name="send" [size]="22" [stroke]="2" /> Convidar
-        </button>
-
         <button type="button" class="sair" (click)="saindo.set(true)">Sair do grupo</button>
 
         @if (qrAberto()) {
           <app-dialogo titulo="QR code do convite" (fechar)="qrAberto.set(false)">
-            <div class="qr" [innerHTML]="qrSvg()" role="img" [attr.aria-label]="'QR code para entrar em ' + g.nome"></div>
+            <div class="qr" role="img" [attr.aria-label]="'QR code para entrar em ' + g.nome">
+              <svg [attr.viewBox]="qr().viewBox" shape-rendering="crispEdges" aria-hidden="true">
+                <rect width="100%" height="100%" fill="#fff" />
+                <path [attr.d]="qr().caminho" fill="#000" />
+              </svg>
+            </div>
             <p class="apoio centro">Peça para a pessoa apontar a câmera do celular para este código.</p>
           </app-dialogo>
         }
@@ -157,13 +158,12 @@ import { Carregando } from '../core/spinner';
     .acesso[aria-checked='true'] { border-color: var(--ink); }
     .acesso[aria-checked='true'] app-icon { color: var(--ink); }
     .dica { margin: 0 4px; }
-    .convidar { min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .sair { border: 0; background: none; font: inherit; color: #b3261e; min-height: 44px; }
     .pedido { padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
     .qr { display: flex; justify-content: center; padding: 12px; background: #fff; border-radius: 12px; margin-bottom: 12px; }
-    .qr :is(svg) { width: min(260px, 100%); height: auto; }
+    .qr svg { width: min(260px, 100%); height: auto; }
     .acoes { display: flex; gap: 10px; margin-top: 16px; }
     .acoes .btn { flex: 1; }
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -201,11 +201,16 @@ export class GroupInvite {
     return (g.pedidos ?? []).map((uid) => this.social.perfilDe(uid) ?? { uid, nome: 'Alguém', foto: null });
   });
 
-  protected readonly qrSvg = computed(() => {
+  /** QR code do link como um único caminho SVG (um quadradinho por módulo escuro), com a margem de 4 módulos que a leitura pede. */
+  protected readonly qr = computed(() => {
     const qr = qrcode(0, 'M');
     qr.addData(this.link());
     qr.make();
-    return qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    const n = qr.getModuleCount();
+    const margem = 4;
+    let caminho = '';
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.isDark(y, x)) caminho += `M${x + margem} ${y + margem}h1v1h-1z`;
+    return { viewBox: `0 0 ${n + margem * 2} ${n + margem * 2}`, caminho };
   });
 
   private textoConvite(): string {
@@ -228,11 +233,6 @@ export class GroupInvite {
     } catch {
       this.social.erro.set('Não deu para copiar. Selecione o link e copie manualmente.');
     }
-  }
-
-  protected convidar(): void {
-    if (this.podeCompartilhar) void this.compartilhar();
-    else void this.copiar();
   }
 
   protected mudarAcesso(acesso: AcessoGrupo): void {
