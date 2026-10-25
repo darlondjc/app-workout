@@ -3,6 +3,7 @@ import { CloudService } from './cloud.service';
 import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
 import { resumoAtividade } from './atividade';
+import { MedalhasService } from './medalhas.service';
 import { PlanService } from './plan.service';
 import {
   AcessoGrupo,
@@ -57,6 +58,7 @@ export class SocialService {
   private readonly cloud = inject(CloudService);
   private readonly plans = inject(PlanService);
   private readonly ex = inject(ExerciseService);
+  private readonly medalhas = inject(MedalhasService);
 
   readonly eu = signal<Perfil | null>(null);
   readonly erro = signal('');
@@ -200,6 +202,7 @@ export class SocialService {
     effect(() => {
       this.plans.historico();
       this.eu();
+      this.medalhas.pronto(); // as medalhas do treino só podem ser contadas com o catálogo de exercícios pronto
       untracked(() => void this.publicarNovos());
     });
     effect(() => {
@@ -549,13 +552,14 @@ export class SocialService {
   private async publicarNovos(): Promise<void> {
     const eu = this.eu();
     const api = this.api;
-    if (!eu || !api) return;
+    if (!eu || !api || !this.medalhas.pronto()) return;
     const historico = this.plans.historico();
     const ordenados = [...historico].sort((a, b) => a.data.localeCompare(b.data) || (a.concluidaEm ?? 0) - (b.concluidaEm ?? 0));
     const agora = Date.now();
     for (const s of historico) {
       if (!s.id || !s.concluidaEm || this.publicados.has(s.id) || agora - s.concluidaEm > JANELA_PUBLICACAO_MS) continue;
       this.publicados.add(s.id);
+      const medalhas = this.medalhas.ganhosDoTreino(historico, s);
       const evento: Evento = {
         id: idEvento(s.concluidaEm, s.id),
         autor: eu.uid,
@@ -570,6 +574,7 @@ export class SocialService {
         volume: volumeSessao(s),
         recordes: recordesDaSessao(historico, s).slice(0, 3).map((r) => ({ nome: this.nomeExercicio(r.exerciseId), carga: r.carga })),
         marco: marcoDoTreino(ordenados.findIndex((x) => x.id === s.id) + 1),
+        ...(medalhas.length ? { medalhas } : {}),
         ...(s.atividade ? { detalhe: resumoAtividade(s.atividade) } : {}),
         ...(s.temFoto ? { temFoto: true } : {}),
       };

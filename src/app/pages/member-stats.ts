@@ -1,7 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
+import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
+import { MedalhasGaleria } from '../core/medalhas-galeria';
+import { MedalhasService } from '../core/medalhas.service';
+import { QuadroMedalhas } from '../core/quadro-medalhas';
+import { TipoConquista, ordenarPorNivel } from '../core/medalhas';
 import { NavegacaoService } from '../core/navegacao.service';
 import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
@@ -10,7 +15,7 @@ import { Progress } from './progress';
 /** Estatísticas de uma pessoa de um dos meus grupos (aberta ao tocar no ícone dela). */
 @Component({
   selector: 'app-member-stats',
-  imports: [RouterLink, Avatar, Icon, Carregando, Progress],
+  imports: [RouterLink, Avatar, Dialogo, Icon, MedalhasGaleria, QuadroMedalhas, Carregando, Progress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -37,9 +42,22 @@ import { Progress } from './progress';
           <a class="btn btn--escuro" routerLink="/social">Ver meus grupos</a>
         </div>
       } @else if (carregado()) {
+        <section class="medalhas" aria-labelledby="t-med">
+          <div class="medalhas__topo">
+            <h2 id="t-med" class="sub">Medalhas</h2>
+            <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="abrirGaleria(null)">Ver todas</button>
+          </div>
+          <app-quadro-medalhas [conquistas]="melhores()" (abrir)="abrirGaleria($event)" />
+        </section>
         <app-progress [historico]="sessoes()" [editavel]="false" [nome]="primeiroNome()" [metaBase]="perfil()?.metaSemanal" />
       } @else {
         <app-carregando texto="Carregando treinos…" />
+      }
+
+      @if (galeriaAberta()) {
+        <app-dialogo titulo="Medalhas" [subtitulo]="resumoConquistas()" (fechar)="galeriaAberta.set(false)">
+          <app-medalhas-galeria [conquistas]="conquistas()" [foco]="foco()" />
+        </app-dialogo>
       }
     </section>
   `,
@@ -50,6 +68,9 @@ import { Progress } from './progress';
     .nome { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 24px; }
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
     .sub { font-size: 18px; margin: 0; }
+    .medalhas { display: flex; flex-direction: column; gap: 10px; }
+    .medalhas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ver-todas { min-height: 32px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--accent-ink); }
     .erro { color: #b3261e; font-size: 14px; }
   `,
 })
@@ -67,6 +88,22 @@ export class MemberStats {
     this.social.sessoesDe(this.uid()); // começa a acompanhar os treinos da pessoa
     return this.social.sessoesCarregadas(this.uid());
   });
+  private readonly medalhasService = inject(MedalhasService);
+  /** As medalhas da pessoa, calculadas dos treinos dela (os mais recentes) com a meta semanal dela. */
+  protected readonly conquistas = computed(() => ordenarPorNivel(this.medalhasService.conquistasDe(this.sessoes(), this.perfil()?.metaSemanal ?? 3)));
+  protected readonly melhores = computed(() => this.conquistas().slice(0, 6));
+  protected readonly resumoConquistas = computed(() => {
+    const degraus = this.conquistas().flatMap((c) => c.degraus);
+    return `${degraus.filter((d) => d.conquistado).length} de ${degraus.length} níveis conquistados`;
+  });
+  protected readonly galeriaAberta = signal(false);
+  protected readonly foco = signal<TipoConquista | null>(null);
+
+  protected abrirGaleria(foco: TipoConquista | null): void {
+    this.foco.set(foco);
+    this.galeriaAberta.set(true);
+  }
+
   protected readonly primeiroNome = computed(() => {
     const nome = this.perfil()?.nome ?? '';
     return nome.trim().split(/\s+/)[0] || nome;

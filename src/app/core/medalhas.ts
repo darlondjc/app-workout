@@ -282,6 +282,13 @@ export function formatarValor(id: TipoConquista, v: number): string {
   }
 }
 
+/** Medalha que um treino fez subir de nível, como vai para a timeline. */
+export interface MedalhaDoTreino {
+  id: TipoConquista;
+  nivel: Nivel;
+  titulo: string;
+}
+
 /** Um nível novo conquistado, ainda não visto pela pessoa. */
 export interface NovaMedalha {
   id: TipoConquista;

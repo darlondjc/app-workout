@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { ExerciseService } from './exercise.service';
-import { Conquista, NovaMedalha, TipoConquista, calcularConquistas, impressaoDoHistorico, niveisGanhos, regiaoDoExercicio } from './medalhas';
+import { Conquista, MedalhaDoTreino, NovaMedalha, TipoConquista, calcularConquistas, impressaoDoHistorico, niveisGanhos, regiaoDoExercicio } from './medalhas';
 import { lerMeta, metaPadrao } from './meta';
 import { PlanService, dataLocal } from './plan.service';
 import { Sessao } from './models';
@@ -95,6 +95,28 @@ export class MedalhasService {
     return ganhos;
   }
 
+  /** O catálogo de exercícios (que diz a região de cada um) já está pronto: sem ele as medalhas por região ficam zeradas. */
+  pronto(): boolean {
+    return this.exercicios.ready();
+  }
+
+  /** As medalhas de qualquer histórico (o de outra pessoa, por exemplo), com a meta semanal dela. */
+  conquistasDe(h: Sessao[], meta: number): Conquista[] {
+    return this.pronto() ? this.calcular(h, meta) : [];
+  }
+
+  /**
+   * O que subiu de nível por causa de um treino: compara as medalhas com os treinos até o anterior e com ele.
+   * Serve também para treinos já concluídos, como os que vão para a timeline.
+   */
+  ganhosDoTreino(h: Sessao[], s: Sessao): MedalhaDoTreino[] {
+    if (!this.pronto()) return [];
+    const ate = s.concluidaEm ?? 0;
+    const antes = h.filter((x) => x.id !== s.id && (x.concluidaEm ?? 0) <= ate);
+    const depois = this.calcular([...antes, s]);
+    return niveisGanhos(this.calcular(antes), depois, s.data).map((g) => ({ id: g.id, nivel: g.nivel, titulo: depois.find((c) => c.id === g.id)?.titulo ?? g.id }));
+  }
+
   /** A pessoa viu as novas (abriu a galeria): somem os destaques. */
   reconhecer(): void {
     const g = this.guardado();
@@ -120,8 +142,8 @@ export class MedalhasService {
     return impressaoDoHistorico(h, this.meta(), new Date().getFullYear());
   }
 
-  private calcular(h: Sessao[]): Conquista[] {
-    return calcularConquistas(h, this.meta(), { hoje: new Date(), regiaoDe: (id) => regiaoDoExercicio(this.exercicios.get(id)) });
+  private calcular(h: Sessao[], meta = this.meta()): Conquista[] {
+    return calcularConquistas(h, meta, { hoje: new Date(), regiaoDe: (id) => regiaoDoExercicio(this.exercicios.get(id)) });
   }
 
   private gravar(g: Guardado): void {

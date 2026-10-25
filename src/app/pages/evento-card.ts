@@ -6,6 +6,8 @@ import { ExercicioDialogo } from '../core/exercicio-dialogo';
 import { FotoBotao } from '../core/foto-botao';
 import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
+import { Medalha } from '../core/medalha';
+import { NOMES_NIVEL } from '../core/medalhas';
 import { PlanService } from '../core/plan.service';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { Comentario, Evento, TAMANHO_COMENTARIO, tempoRelativo } from '../core/social';
@@ -17,7 +19,7 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
 /** Treino de alguém na timeline, com curtidas e comentários. */
 @Component({
   selector: 'app-evento-card',
-  imports: [RouterLink, Avatar, Confirmacao, ExercicioDialogo, FotoBotao, Icon, SessaoDetalhe, Dialogo],
+  imports: [RouterLink, Avatar, Confirmacao, ExercicioDialogo, FotoBotao, Icon, SessaoDetalhe, Dialogo, Medalha],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card">
@@ -42,6 +44,19 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
               <span class="selo">Recorde: {{ r.nome }} · {{ r.carga }} kg</span>
             }
           </div>
+        }
+        @if (evento().medalhas?.length) {
+          <ul class="conquistas" aria-label="Medalhas conquistadas neste treino">
+            @for (m of evento().medalhas; track m.id) {
+              <li class="conquista">
+                <app-medalha [nivel]="m.nivel" [size]="40" />
+                <span class="conquista__txt">
+                  <span class="apoio">{{ minha() ? 'Você ganhou uma medalha' : 'Nova medalha' }}</span>
+                  <strong>{{ nomes[m.nivel] }} · {{ m.titulo }}</strong>
+                </span>
+              </li>
+            }
+          </ul>
         }
       </div>
 
@@ -133,6 +148,10 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
     }
   `,
   styles: `
+    .conquistas { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .conquista { display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 6px; border-radius: 14px; background: var(--soft); }
+    .conquista__txt { display: flex; flex-direction: column; min-width: 0; font-size: 14px; line-height: 1.25; }
+    .conquista__txt .apoio { font-size: 12px; }
     .foto-autor { display: flex; flex: none; border-radius: 50%; }
     .card { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
     .topo { display: flex; align-items: center; gap: 10px; }
@@ -198,6 +217,7 @@ export class EventoCard {
   });
   protected readonly carregandoSessao = computed(() => this.detalhe() && !this.minha() && !this.social.sessoesCarregadas(this.evento().autor));
 
+  protected readonly nomes = NOMES_NIVEL;
   protected readonly minha = computed(() => this.evento().autor === this.social.eu()?.uid);
   /** Foto nova só nas primeiras 24 horas depois do treino, e só no seu. Passado esse prazo o botão some. */
   protected readonly podeAdicionarFoto = computed(

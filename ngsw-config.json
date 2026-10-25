@@ -38,12 +38,11 @@
     }
   ],
   "appData": {
-    "versao": "1.15.1",
-    "titulo": "Convite de grupo: QR code, e estatísticas pelo Perfil",
+    "versao": "1.16.0",
+    "titulo": "Medalhas na timeline e nas estatísticas dos membros",
     "novidades": [
-      "O QR code do convite agora aparece.",
-      "Saiu o botão Convidar de baixo: ele fazia o mesmo que Compartilhar convite.",
-      "No Perfil, um ícone de gráfico no topo abre as suas estatísticas."
+      "Quando um treino faz alguém subir de nível em uma medalha, o card dele na timeline do grupo mostra a medalha conquistada.",
+      "Nas estatísticas de um membro do grupo agora aparecem as medalhas dele, com a galeria completa em Ver todas."
     ]
   }
 }

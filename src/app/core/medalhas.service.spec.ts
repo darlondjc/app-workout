@@ -54,6 +54,20 @@ describe('MedalhasService', () => {
     expect(guardado().novas.some((x: { id: string }) => x.id === 'treinos')).toBeTrue();
   });
 
+  it('ganhosDoTreino diz o que um treino já concluído fez subir, sem mexer no que está guardado', () => {
+    const todos = treinos(5);
+    const { medalhas } = montar(todos);
+    const antes = guardado();
+    expect(medalhas.ganhosDoTreino(todos, todos[4]).find((g) => g.id === 'treinos')).toEqual(jasmine.objectContaining({ nivel: 'bronze', titulo: jasmine.any(String) }));
+    expect(medalhas.ganhosDoTreino(todos, todos[0])).toEqual([]);
+    expect(guardado()).toEqual(antes);
+  });
+
+  it('conquistasDe calcula as medalhas de qualquer histórico', () => {
+    const { medalhas } = montar([]);
+    expect(medalhas.conquistasDe(treinos(5), 3).find((c) => c.id === 'treinos')?.nivel).toBe('bronze');
+  });
+
   it('treino que não muda nenhum nível não gera novas', () => {
     const { plans, medalhas } = montar(treinos(6));
     const nova = sessao(0);

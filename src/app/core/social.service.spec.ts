@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { CloudService } from './cloud.service';
 import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
+import { MedalhasService } from './medalhas.service';
 import { PlanService } from './plan.service';
 import { Atividade, Comentario, Conexao, Evento, Grupo, Perfil, SocialBackend, chaveConexao, fotoParaItens } from './social';
 import { LIMITE_SESSOES_MEMBRO, PAGINA_TIMELINE, SocialService } from './social.service';
@@ -160,6 +161,7 @@ const evento = (autor: string, criadoEm: number): Evento => ({
 });
 
 describe('SocialService', () => {
+  let medalhas: { pronto: () => boolean; ganhosDoTreino: jasmine.Spy };
   let marcadas: { id: string; tem: boolean }[];
   let api: ApiFalsa;
   let nuvem: NuvemFalsa;
@@ -185,6 +187,7 @@ describe('SocialService', () => {
   beforeEach(() => {
     localStorage.clear();
     marcadas = [];
+    medalhas = { pronto: () => true, ganhosDoTreino: jasmine.createSpy('ganhosDoTreino').and.returnValue([]) };
     api = new ApiFalsa();
     api.perfis['ana'] = { uid: 'ana', nome: 'Ana', foto: null };
     api.perfis['bia'] = { uid: 'bia', nome: 'Bia', foto: null };
@@ -195,6 +198,7 @@ describe('SocialService', () => {
       providers: [
         { provide: CloudService, useValue: cloud },
         { provide: PlanService, useValue: { historico: signal<Sessao[]>([]), get: () => undefined, marcarFoto: (id: string, tem: boolean) => marcadas.push({ id, tem }) } },
+        { provide: MedalhasService, useValue: medalhas },
         { provide: ExerciseService, useValue: { get: () => undefined, nome: () => '' } },
       ],
     });
@@ -721,6 +725,38 @@ describe('SocialService', () => {
       expect(publicado?.temFoto).toBeUndefined();
     });
   });
+  describe('medalhas na timeline', () => {
+    const concluir = (id: string) => {
+      const plans = TestBed.inject(PlanService) as unknown as { historico: ReturnType<typeof signal<Sessao[]>> };
+      plans.historico.set([{ id, data: '2026-10-23', fichaId: 'f', fichaNome: 'A', concluidaEm: Date.now(), registros: [] }]);
+    };
+
+    it('o treino que fez subir de nível leva as medalhas no card publicado', async () => {
+      medalhas.ganhosDoTreino.and.returnValue([{ id: 'treinos', nivel: 'bronze', titulo: 'Treinos' }]);
+      concluir('sm');
+      await entrarComAmigos();
+      await assentar();
+      expect(api.publicados.find((e) => e.sessaoId === 'sm')?.medalhas).toEqual([{ id: 'treinos', nivel: 'bronze', titulo: 'Treinos' }]);
+    });
+
+    it('sem nível novo, o card não leva o campo', async () => {
+      concluir('sn');
+      await entrarComAmigos();
+      await assentar();
+      const publicado = api.publicados.find((e) => e.sessaoId === 'sn');
+      expect(publicado).toBeDefined();
+      expect('medalhas' in publicado!).toBeFalse();
+    });
+
+    it('espera o catálogo de exercícios ficar pronto para publicar', async () => {
+      medalhas.pronto = () => false;
+      concluir('so');
+      await entrarComAmigos();
+      await assentar();
+      expect(api.publicados.length).toBe(0);
+    });
+  });
+
   describe('grupos', () => {
     const grupoDe = (campos: Partial<Grupo> = {}): Grupo => ({ id: 'ABCD2345', nome: 'Trabalho', dono: 'ana', membros: ['ana'], acesso: 'aberto', pedidos: [], criadoEm: 1, ...campos });
 

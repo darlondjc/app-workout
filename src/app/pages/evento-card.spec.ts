@@ -30,6 +30,37 @@ const treino: Sessao = {
   registros: [{ exerciseId: 'supino', series: [{ carga: 20, reps: 12 }, { carga: 22.5, reps: 10, descanso: 75 }] }],
 };
 
+describe('EventoCard: medalhas', () => {
+  it('mostra a medalha que o treino fez subir de nível', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: PlanService, useValue: { historico: signal<Sessao[]>([]) } },
+        { provide: ExerciseService, useValue: { get: () => undefined, nome: () => '' } },
+        {
+          provide: SocialService,
+          useValue: {
+            eu: signal<Perfil | null>({ uid: 'eu', nome: 'Eu', foto: null }),
+            nomeDe: (_u: string, n: string) => n,
+            fotoDe: (_u: string, f: string | null) => f,
+            ouvirCurtidas: () => () => undefined,
+            ouvirComentarios: () => () => undefined,
+            sessoesDe: () => [],
+            sessoesCarregadas: () => true,
+            lerFoto: () => Promise.resolve(null),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(EventoCard);
+    fixture.componentRef.setInput('evento', { ...evento('ana'), medalhas: [{ id: 'treinos', nivel: 'ouro', titulo: 'Treinos' }] });
+    fixture.detectChanges();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Nova medalha');
+    expect(texto).toContain('Ouro · Treinos');
+  });
+});
+
 describe('EventoCard: ver treino', () => {
   let amigo: { lista: ReturnType<typeof signal<Record<string, Sessao[]>>>; chamadas: string[] };
   let comentariosCb: ((c: Comentario[]) => void) | undefined;
