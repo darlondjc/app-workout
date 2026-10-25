@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.18.2",
+    "data": "2026-10-25",
+    "titulo": "Medalhas nas suas estatísticas",
+    "itens": [
+      "Em Minhas estatísticas, o calendário vem primeiro e depois as suas medalhas, só as conquistadas, em uma lista horizontal. Ver todas abre a galeria completa."
+    ]
+  },
+  {
     "versao": "1.18.1",
     "data": "2026-10-25",
     "titulo": "Tela de amigo: abas fixas e estatísticas reorganizadas",
