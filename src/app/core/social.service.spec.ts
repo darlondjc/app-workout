@@ -725,6 +725,54 @@ describe('SocialService', () => {
       expect(publicado?.temFoto).toBeUndefined();
     });
   });
+  describe('gente nova nos grupos', () => {
+    const grupo = (membros: string[], id = 'g1'): Grupo => ({ id, nome: 'Grupo', dono: 'eu', membros, acesso: 'aberto', pedidos: [], criadoEm: 1 });
+
+    async function comGrupo(membros: string[]): Promise<void> {
+      cloud.social.set({ uid: 'eu', api, nuvem });
+      await assentar();
+      api.grupos?.cb([grupo(membros)]);
+      await assentar();
+    }
+
+    it('quem já estava no grupo quando o app o conheceu não é novo', async () => {
+      await comGrupo(['eu', 'ana']);
+      expect(social.novosMembros()).toBe(0);
+      expect(social.avisosDaAba()).toBe(0);
+    });
+
+    it('quem entra depois vira aviso na aba e no grupo, e some quando o grupo é aberto', async () => {
+      await comGrupo(['eu', 'ana']);
+      api.grupos?.cb([grupo(['eu', 'ana', 'bia', 'caio'])]);
+      await assentar();
+      expect(social.novosMembrosDe('g1')).toBe(2);
+      expect(social.avisosDaAba()).toBe(2);
+
+      social.marcarMembrosVistos('g1');
+      expect(social.novosMembrosDe('g1')).toBe(0);
+      expect(social.avisosDaAba()).toBe(0);
+    });
+
+    it('o que já foi visto continua visto ao reabrir o app', async () => {
+      await comGrupo(['eu', 'ana']);
+      api.grupos?.cb([grupo(['eu', 'ana', 'bia'])]);
+      await assentar();
+      social.marcarMembrosVistos('g1');
+
+      cloud.social.set(null);
+      await assentar();
+      await comGrupo(['eu', 'ana', 'bia']);
+      expect(social.novosMembros()).toBe(0);
+    });
+
+    it('a própria pessoa entrando em outro grupo não conta como gente nova', async () => {
+      await comGrupo(['eu', 'ana']);
+      api.grupos?.cb([grupo(['eu', 'ana']), grupo(['bia', 'eu'], 'g2')]);
+      await assentar();
+      expect(social.novosMembros()).toBe(0);
+    });
+  });
+
   describe('medalhas na timeline', () => {
     const concluir = (id: string) => {
       const plans = TestBed.inject(PlanService) as unknown as { historico: ReturnType<typeof signal<Sessao[]>> };

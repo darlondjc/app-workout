@@ -99,6 +99,7 @@ describe('Group — rolagem infinita da timeline', () => {
               if (temMais()) pagina.update((p) => p + 1);
             },
             marcarTimelineVista: () => undefined,
+            marcarMembrosVistos: () => undefined,
             nomeDe: (_u: string, n: string) => n,
             fotoDe: (_u: string, f: string | null) => f,
           },

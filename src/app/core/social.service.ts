@@ -32,6 +32,8 @@ import { Cancelar, NuvemBackend } from './sync';
 const CHAVE_PUBLICADOS = 'app-workout:publicados:v1';
 /** Até quando a timeline já foi vista, por conta (a chave leva o uid no fim). */
 const CHAVE_VISTO = 'app-workout:social-visto:v1';
+/** Quem já estava em cada grupo na última vez que a pessoa o abriu, por conta (a chave leva o uid no fim). */
+const CHAVE_MEMBROS_VISTOS = 'app-workout:grupos-membros-vistos:v1';
 /** Treinos mais antigos que isto não vão para a timeline (evita despejar o histórico ao entrar). */
 const JANELA_PUBLICACAO_MS = 3 * 24 * 3600 * 1000;
 /** Quantos treinos de cada colega de grupo são lidos para as estatísticas (os mais recentes). */
@@ -182,8 +184,34 @@ export class SocialService {
     return this.timeline().filter((i) => i.criadoEm > visto && (i.tipo === 'evento' ? i.evento.autor : i.atividade.autor) !== eu).length;
   });
 
-  /** O que o selo da aba Social mostra: novidades dos grupos mais pedidos de entrada esperando resposta. */
-  readonly avisosDaAba = computed(() => this.novidades() + this.pedidosRecebidos().length);
+  /** Membros de cada grupo que a pessoa já viu (ao abrir o grupo); quem entra depois disso é novo. */
+  private readonly membrosVistos = signal<Record<string, string[]>>({});
+
+  /** Quantas pessoas entraram neste grupo desde a última vez que a pessoa o abriu. */
+  novosMembrosDe(grupoId: string): number {
+    const g = this.grupo(grupoId);
+    if (!g) return 0;
+    const vistos = this.membrosVistos()[g.id] ?? g.membros; // grupo ainda não registrado: tudo o que há nele já conta como visto
+    return g.membros.filter((m) => m !== this.uid && !vistos.includes(m)).length;
+  }
+
+  /** Total de pessoas novas em todos os grupos. */
+  readonly novosMembros = computed(() => this.grupos().reduce((t, g) => t + this.novosMembrosDe(g.id), 0));
+
+  /** A pessoa abriu o grupo: quem está nele agora passa a ser conhecido. */
+  marcarMembrosVistos(grupoId: string): void {
+    const g = this.grupo(grupoId);
+    if (!g || !this.uid || this.novosMembrosDe(g.id) === 0) return;
+    this.guardarMembrosVistos({ ...this.membrosVistos(), [g.id]: [...g.membros] });
+  }
+
+  private guardarMembrosVistos(v: Record<string, string[]>): void {
+    this.membrosVistos.set(v);
+    gravarMembrosVistos(this.uid, v);
+  }
+
+  /** O que o selo da aba Social mostra: novidades dos grupos, pedidos de entrada esperando resposta e gente nova nos grupos. */
+  readonly avisosDaAba = computed(() => this.novidades() + this.pedidosRecebidos().length + this.novosMembros());
 
   /** A pessoa está olhando a timeline: tudo o que há nela passa a ser visto. */
   marcarTimelineVista(): void {
@@ -225,6 +253,7 @@ export class SocialService {
     this.api = api;
     this.nuvem = nuvem;
     this.vistoAte.set(lerVisto(uid));
+    this.membrosVistos.set(lerMembrosVistos(uid));
     const u = this.cloud.usuario();
     try {
       const existente = await api.lerPerfil(uid);
@@ -272,6 +301,7 @@ export class SocialService {
     this.nuvem = undefined;
     this.uid = '';
     this.vistoAte.set(0);
+    this.membrosVistos.set({});
     this.eu.set(null);
     this.grupos.set([]);
     this.conexoes.set([]);
@@ -334,6 +364,10 @@ export class SocialService {
   private aoGrupos(lista: Grupo[]): void {
     this.grupos.set(lista);
     this.gruposCarregados.set(true);
+    // Grupo que a pessoa ainda não tinha registrado (o primeiro uso ou um grupo em que acabou de entrar): quem já está nele não é novo.
+    const vistos = this.membrosVistos();
+    const faltam = lista.filter((g) => !(g.id in vistos));
+    if (faltam.length) this.guardarMembrosVistos({ ...vistos, ...Object.fromEntries(faltam.map((g) => [g.id, [...g.membros]])) });
     // Quem vem de um grupo tenta de novo se a busca falhar: a próxima atualização da lista repete.
     for (const m of new Set(lista.flatMap((g) => [...g.membros, ...(g.pedidos ?? [])]))) this.garantirPerfil(m, true);
   }
@@ -735,6 +769,23 @@ function lerVisto(uid: string): number {
 function gravarVisto(uid: string, t: number): void {
   try {
     localStorage.setItem(`${CHAVE_VISTO}:${uid}`, String(t));
+  } catch {
+    // sem armazenamento: vale só nesta sessão
+  }
+}
+
+function lerMembrosVistos(uid: string): Record<string, string[]> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(`${CHAVE_MEMBROS_VISTOS}:${uid}`) ?? '{}');
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string[]>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function gravarMembrosVistos(uid: string, v: Record<string, string[]>): void {
+  try {
+    localStorage.setItem(`${CHAVE_MEMBROS_VISTOS}:${uid}`, JSON.stringify(v));
   } catch {
     // sem armazenamento: vale só nesta sessão
   }

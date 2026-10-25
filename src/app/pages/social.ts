@@ -78,6 +78,9 @@ import { Carregando } from '../core/spinner';
                   {{ g.membros.length }} {{ g.membros.length === 1 ? 'pessoa' : 'pessoas' }} · {{ g.acesso === 'aberto' ? 'Aberto' : 'Com aprovação' }}
                 </span>
               </div>
+              @if (social.novosMembrosDe(g.id); as n) {
+                <span class="gc__novo" role="status">{{ n }} {{ n === 1 ? 'nova pessoa' : 'novas pessoas' }}</span>
+              }
               <app-icon class="gc__seta" name="chevron" [size]="20" [stroke]="2.2" />
             </div>
             <div class="gc__rodape">
@@ -124,6 +127,7 @@ import { Carregando } from '../core/spinner';
     .gc__titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
     .gc__nome { font-family: var(--font-display); font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gc__meta { font-size: 13px; color: var(--muted); }
+    .gc__novo { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--ink); font-size: 12px; font-weight: 700; }
     .gc__seta { flex: none; color: var(--muted); }
     .gc__rodape { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--soft); }
     .gc__pessoas { display: flex; align-items: center; flex: none; }

@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.16.1",
+    "data": "2026-10-25",
+    "titulo": "Aviso de gente nova nos grupos",
+    "itens": [
+      "Quando alguém entra em um dos seus grupos, o ícone da aba Social mostra um contador, e o card do grupo diz quantas pessoas novas entraram. O aviso some quando você abre o grupo."
+    ]
+  },
+  {
     "versao": "1.16.0",
     "data": "2026-10-25",
     "titulo": "Medalhas na timeline e nas estatísticas dos membros",

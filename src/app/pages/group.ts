@@ -150,6 +150,13 @@ export class Group {
       this.social.timeline();
       untracked(() => this.social.marcarTimelineVista());
     });
+    // Abrir o grupo (ou alguém entrar com ele aberto) é ver quem está nele: o aviso de gente nova some.
+    effect(() => {
+      const g = this.grupo();
+      if (!this.social.ativo() || !g) return;
+      void g.membros.length;
+      untracked(() => this.social.marcarMembrosVistos(g.id));
+    });
   }
 
   protected primeiroNome(nome: string): string {

@@ -38,11 +38,10 @@
     }
   ],
   "appData": {
-    "versao": "1.16.0",
-    "titulo": "Medalhas na timeline e nas estatísticas dos membros",
+    "versao": "1.16.1",
+    "titulo": "Aviso de gente nova nos grupos",
     "novidades": [
-      "Quando um treino faz alguém subir de nível em uma medalha, o card dele na timeline do grupo mostra a medalha conquistada.",
-      "Nas estatísticas de um membro do grupo agora aparecem as medalhas dele, com a galeria completa em Ver todas."
+      "Quando alguém entra em um dos seus grupos, o ícone da aba Social mostra um contador, e o card do grupo diz quantas pessoas novas entraram. O aviso some quando você abre o grupo."
     ]
   }
 }
