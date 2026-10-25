@@ -4,7 +4,7 @@ import { Avatar } from '../core/avatar';
 import { BarraTopo } from '../core/barra-topo';
 import { CloudService } from '../core/cloud.service';
 import { Icon } from '../core/icon';
-import { TAMANHO_NOME_GRUPO } from '../core/social';
+import { TAMANHO_NOME_GRUPO, tempoRelativo } from '../core/social';
 import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
 
@@ -47,7 +47,7 @@ import { Carregando } from '../core/spinner';
           <form class="card criar" (submit)="criar($event, campo)" aria-label="Novo grupo">
             <label class="rot" for="nome-grupo">Nome do grupo</label>
             <input #campo id="nome-grupo" class="campo" type="text" autocomplete="off" [attr.maxlength]="limiteNome" placeholder="Ex.: Grupo do Trabalho" />
-            <div class="linha">
+            <div class="botoes">
               <button type="button" class="btn btn--claro" (click)="criando.set(false)">Cancelar</button>
               <button type="submit" class="btn btn--escuro" [disabled]="salvando()">{{ salvando() ? 'Criando…' : 'Criar grupo' }}</button>
             </div>
@@ -69,20 +69,28 @@ import { Carregando } from '../core/spinner';
         }
 
         @for (g of social.gruposOrdenados(); track g.id) {
-          <a class="card grupo" [routerLink]="['/grupo', g.id]">
-            <div class="grupo__topo">
-              <strong class="grupo__nome">{{ g.nome }}</strong>
-              <span class="apoio">{{ g.membros.length }} {{ g.membros.length === 1 ? 'pessoa' : 'pessoas' }}</span>
+          <a class="gc card" [routerLink]="['/grupo', g.id]" [attr.aria-label]="'Abrir ' + g.nome">
+            <div class="gc__topo">
+              <span class="gc__marca" aria-hidden="true">{{ inicial(g.nome) }}</span>
+              <div class="gc__titulo">
+                <strong class="gc__nome">{{ g.nome }}</strong>
+                <span class="gc__meta">
+                  {{ g.membros.length }} {{ g.membros.length === 1 ? 'pessoa' : 'pessoas' }} · {{ g.acesso === 'aberto' ? 'Aberto' : 'Com aprovação' }}
+                </span>
+              </div>
+              <app-icon class="gc__seta" name="chevron" [size]="20" [stroke]="2.2" />
             </div>
-            <div class="grupo__pessoas">
-              @for (m of social.membrosDe(g).slice(0, 6); track m.uid) {
-                <app-avatar [usuario]="{ uid: m.uid, nome: m.nome, email: '', foto: m.foto }" [tamanho]="32" />
-              }
-              @if (g.membros.length > 6) {
-                <span class="mais">+{{ g.membros.length - 6 }}</span>
-              }
+            <div class="gc__rodape">
+              <div class="gc__pessoas">
+                @for (m of social.membrosDe(g).slice(0, 5); track m.uid) {
+                  <app-avatar [usuario]="{ uid: m.uid, nome: m.nome, email: '', foto: m.foto }" [tamanho]="30" />
+                }
+                @if (g.membros.length > 5) {
+                  <span class="gc__mais">+{{ g.membros.length - 5 }}</span>
+                }
+              </div>
+              <span class="gc__ultima">{{ ultima(g.id) }}</span>
             </div>
-            <app-icon class="seta" name="chevron" [size]="20" [stroke]="2.2" />
           </a>
         } @empty {
           @if (social.gruposCarregados()) {
@@ -107,15 +115,22 @@ import { Carregando } from '../core/spinner';
     .rot { font-size: 15px; font-weight: 500; color: var(--muted); }
     .criar { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .campo { min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font: inherit; }
-    .linha { display: flex; gap: 8px; }
-    .linha .btn { flex: 1; min-height: 48px; }
-    .grupo { position: relative; padding: 14px 40px 14px 16px; display: flex; flex-direction: column; gap: 10px; color: inherit; text-decoration: none; }
-    .grupo__topo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-    .grupo__nome { font-size: 17px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .grupo__pessoas { display: flex; align-items: center; }
-    .grupo__pessoas app-avatar { margin-right: -8px; box-shadow: 0 0 0 2px var(--card); }
-    .mais { margin-left: 14px; font-size: 13px; color: var(--muted); }
-    .seta { position: absolute; right: 12px; top: 50%; margin-top: -10px; color: var(--muted); }
+    .botoes { display: flex; gap: 8px; }
+    .botoes .btn { flex: 1; min-height: 48px; }
+    .gc { display: flex; flex-direction: column; gap: 14px; padding: 16px; color: inherit; text-decoration: none; border: 1px solid var(--soft); box-shadow: 0 1px 2px rgb(20 23 26 / 5%), 0 6px 16px -10px rgb(20 23 26 / 18%); }
+    .gc:active { transform: scale(0.99); }
+    .gc__topo { display: flex; align-items: center; gap: 14px; }
+    .gc__marca { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--ink); color: var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+    .gc__titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .gc__nome { font-family: var(--font-display); font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gc__meta { font-size: 13px; color: var(--muted); }
+    .gc__seta { flex: none; color: var(--muted); }
+    .gc__rodape { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--soft); }
+    .gc__pessoas { display: flex; align-items: center; flex: none; }
+    .gc__pessoas app-avatar { margin-left: -8px; box-shadow: 0 0 0 2px var(--card); }
+    .gc__pessoas app-avatar:first-child { margin-left: 0; }
+    .gc__mais { margin-left: 8px; font-size: 13px; color: var(--muted); }
+    .gc__ultima { min-width: 0; font-size: 13px; color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pedido { padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .texto { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; font-size: 14px; }
     .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
@@ -131,6 +146,19 @@ export class Social {
   protected readonly criando = signal(false);
   protected readonly salvando = signal(false);
   protected readonly limiteNome = TAMANHO_NOME_GRUPO;
+
+  protected inicial(nome: string): string {
+    return nome.trim().charAt(0).toLocaleUpperCase('pt-BR') || '?';
+  }
+
+  /** Resumo do treino mais recente de alguém do grupo, para o rodapé do card. */
+  protected ultima(grupoId: string): string {
+    const item = this.social.timelineDe(grupoId).find((i) => i.tipo === 'evento');
+    if (!item || item.tipo !== 'evento') return 'Sem treinos ainda';
+    const e = item.evento;
+    const quem = e.autor === this.social.eu()?.uid ? 'Você' : this.social.nomeDe(e.autor, e.autorNome).split(/\s+/)[0];
+    return `Último treino: ${quem} · ${tempoRelativo(item.criadoEm, Date.now())}`;
+  }
 
   protected async criar(ev: Event, campo: HTMLInputElement): Promise<void> {
     ev.preventDefault();
