@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.18.3",
+    "data": "2026-10-25",
+    "titulo": "Entrar por um link de convite leva ao grupo",
+    "itens": [
+      "Quem abre um link de convite (de grupo ou de amigo) sem estar logado agora volta ao convite depois de entrar com o Google, e é levado ao grupo. Antes, caía no início."
+    ]
+  },
+  {
     "versao": "1.18.2",
     "data": "2026-10-25",
     "titulo": "Medalhas nas suas estatísticas",

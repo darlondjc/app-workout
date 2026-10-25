@@ -60,9 +60,10 @@ export class App {
         estavaOffline = !online;
       });
     });
-    // Se a sessão terminar (ou sair da conta), volta para a tela de login.
+    // Se a sessão terminar (ou sair da conta), volta para a tela de login. Na abertura do app quem manda para o login é o
+    // guard da rota, que guarda para onde a pessoa queria ir (um convite, por exemplo); por isso espera a primeira navegação.
     effect(() => {
-      if (this.nuvem.configurado && this.nuvem.pronto() && !this.nuvem.usuario() && !this.url().startsWith('/entrar')) {
+      if (this.nuvem.configurado && this.nuvem.pronto() && !this.nuvem.usuario() && this.router.navigated && !this.url().startsWith('/entrar')) {
         void this.router.navigateByUrl('/entrar', { replaceUrl: true });
       }
     });

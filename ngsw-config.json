@@ -38,10 +38,10 @@
     }
   ],
   "appData": {
-    "versao": "1.18.2",
-    "titulo": "Medalhas nas suas estatísticas",
+    "versao": "1.18.3",
+    "titulo": "Entrar por um link de convite leva ao grupo",
     "novidades": [
-      "Em Minhas estatísticas, o calendário vem primeiro e depois as suas medalhas, só as conquistadas, em uma lista horizontal. Ver todas abre a galeria completa."
+      "Quem abre um link de convite (de grupo ou de amigo) sem estar logado agora volta ao convite depois de entrar com o Google, e é levado ao grupo. Antes, caía no início."
     ]
   }
 }
