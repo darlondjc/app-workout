@@ -29,7 +29,7 @@ function lerDispensadas(): string[] {
   imports: [ExercicioDialogo, Icon, SessaoDetalhe, Dialogo, PesoGrafico],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="pagina">
+    <section class="pagina" [class.pagina--calendario-primeiro]="calendarioPrimeiro()">
       <article class="card meta" aria-labelledby="t-meta">
         <div class="meta__topo">
           <h2 id="t-meta" class="rot">Meta da semana</h2>
@@ -64,7 +64,7 @@ function lerDispensadas(): string[] {
         </ul>
       }
 
-      <article class="card" aria-labelledby="t-cal">
+      <article class="card calendario" aria-labelledby="t-cal">
         <div class="cal__topo">
           <button type="button" class="seta" aria-label="Mês anterior" (click)="mudarMes(-1)">
             <app-icon name="back" [size]="20" [stroke]="2.4" />
@@ -120,6 +120,8 @@ function lerDispensadas(): string[] {
           </div>
         }
       </article>
+
+      <div class="projetado"><ng-content /></div>
 
       @if (sessaoDoDialogo(); as d) {
         <app-dialogo [titulo]="d.fichaNome || 'Treino'" [subtitulo]="d.dia" (fechar)="sessaoAberta.set(null); exercicioAberto.set(null)">
@@ -178,6 +180,10 @@ function lerDispensadas(): string[] {
   `,
   styles: `
     .pagina { display: flex; flex-direction: column; gap: 10px; }
+    .projetado:empty { display: none; }
+    /* Estatísticas de outra pessoa: o calendário vem primeiro e, em seguida, o que for projetado (as medalhas). */
+    .pagina--calendario-primeiro .calendario { order: -2; }
+    .pagina--calendario-primeiro .projetado { order: -1; }
     .card { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
     .rot { font-size: 14px; font-weight: 500; color: var(--muted); margin: 0; }
     .meta__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -234,6 +240,8 @@ export class Progress {
   readonly historico = input.required<Sessao[]>();
   /** Só a própria pessoa muda a meta. */
   readonly editavel = input(true);
+  /** Calendário no topo, seguido do que for projetado dentro do componente (usado nas estatísticas de outra pessoa). */
+  readonly calendarioPrimeiro = input(false);
   /** Peso que um amigo compartilha; sem ele (ou sem ser amigo), o gráfico de peso não aparece nas estatísticas dos outros. */
   readonly pesos = input<RegistroPeso[] | null>(null);
   /** Preenchido ao ver um amigo: as mensagens falam dele. */

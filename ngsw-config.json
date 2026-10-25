@@ -38,13 +38,11 @@
     }
   ],
   "appData": {
-    "versao": "1.18.0",
-    "titulo": "Amigos mais chegados",
+    "versao": "1.18.1",
+    "titulo": "Tela de amigo: abas fixas e estatísticas reorganizadas",
     "novidades": [
-      "A aba Social ganhou a seção Amigos mais chegados, ao lado dos grupos. Adicione alguém de um grupo (pelo ícone da pessoa) ou de fora, pelo seu link ou código de amigo.",
-      "Depois que a pessoa aceita, vocês veem a timeline um do outro. Ao tocar no ícone de um amigo, aparecem duas abas: Timeline e Estatísticas.",
-      "No Perfil, você escolhe se compartilha o gráfico de peso com os amigos mais chegados. Colegas de grupo não veem o peso.",
-      "Importante: publique o firestore.rules novo no Console do Firebase."
+      "As abas Timeline e Estatísticas da tela de um amigo agora ficam sempre coladas acima da barra de navegação, sem subir junto com a rolagem.",
+      "Nas estatísticas de outra pessoa, o calendário vem primeiro e depois as medalhas, só as conquistadas, em uma lista horizontal e sem a barra de progresso."
     ]
   }
 }

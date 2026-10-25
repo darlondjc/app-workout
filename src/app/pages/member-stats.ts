@@ -5,7 +5,7 @@ import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
 import { MedalhasGaleria } from '../core/medalhas-galeria';
 import { MedalhasService } from '../core/medalhas.service';
-import { QuadroMedalhas } from '../core/quadro-medalhas';
+import { MedalhasFaixa } from '../core/medalhas-faixa';
 import { TipoConquista, ordenarPorNivel } from '../core/medalhas';
 import { NavegacaoService } from '../core/navegacao.service';
 import { SocialService } from '../core/social.service';
@@ -21,7 +21,7 @@ type Aba = 'timeline' | 'estatisticas';
  */
 @Component({
   selector: 'app-member-stats',
-  imports: [RouterLink, Avatar, Dialogo, Icon, MedalhasGaleria, QuadroMedalhas, Carregando, EventoCard, Progress],
+  imports: [RouterLink, Avatar, Dialogo, Icon, MedalhasGaleria, MedalhasFaixa, Carregando, EventoCard, Progress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page" [class.page--abas]="amigo()">
@@ -96,14 +96,15 @@ type Aba = 'timeline' | 'estatisticas';
             </div>
           }
         } @else if (carregado()) {
-          <section class="medalhas" aria-labelledby="t-med">
-            <div class="medalhas__topo">
-              <h2 id="t-med" class="sub">Medalhas</h2>
-              <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="abrirGaleria(null)">Ver todas</button>
-            </div>
-            <app-quadro-medalhas [conquistas]="melhores()" (abrir)="abrirGaleria($event)" />
-          </section>
-          <app-progress [historico]="sessoes()" [editavel]="false" [nome]="primeiroNome()" [metaBase]="perfil()?.metaSemanal" [pesos]="pesos()" />
+          <app-progress [historico]="sessoes()" [editavel]="false" [calendarioPrimeiro]="true" [nome]="primeiroNome()" [metaBase]="perfil()?.metaSemanal" [pesos]="pesos()">
+            <section class="medalhas" aria-labelledby="t-med">
+              <div class="medalhas__topo">
+                <h2 id="t-med" class="sub">Medalhas</h2>
+                <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="abrirGaleria(null)">Ver todas</button>
+              </div>
+              <app-medalhas-faixa [conquistas]="conquistas()" (abrir)="abrirGaleria($event)" />
+            </section>
+          </app-progress>
           @if (amigo()) {
             @if (confirmandoRemocao()) {
               <div class="card pedir">
@@ -141,7 +142,7 @@ type Aba = 'timeline' | 'estatisticas';
   styles: `
     .page { display: flex; flex-direction: column; gap: 16px; }
     /* Com as abas fixas embaixo, espaço para o conteúdo não ficar escondido atrás delas (altura delas: 50 px). */
-    .page--abas { padding-bottom: calc(24px + 50px); gap: 10px; }
+    .page--abas { gap: 10px; padding-bottom: 0; min-height: calc(100dvh - 84px - env(safe-area-inset-bottom, 0px)); }
     .cabeca { display: flex; align-items: center; gap: 10px; }
     .voltar { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--soft); color: var(--ink); display: flex; align-items: center; justify-content: center; }
     .quem { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -159,8 +160,8 @@ type Aba = 'timeline' | 'estatisticas';
     .desfazer { border: 0; background: none; font: inherit; color: #b3261e; min-height: 44px; }
     .fim-lista { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0 16px; min-height: 64px; }
     .fim-lista .btn { min-height: 40px; font-size: 14px; }
-    /* Abas sempre à vista, coladas acima da barra de navegação (73 px + a área segura do aparelho). */
-    .abas-fixas { position: fixed; z-index: 9; bottom: calc(73px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); box-sizing: border-box; width: 100%; max-width: 480px; padding: 6px 20px; background: color-mix(in srgb, var(--card) 96%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); box-shadow: 0 -1px 0 var(--line); }
+    /* Abas sempre à vista, coladas acima da barra de navegação (73 px + a área segura do aparelho). Ficam coladas na rolagem (sticky) em vez de fixas: com pouco conteúdo ficam no pé da tela e no fim da página sentam no lugar delas, sem cobrir nada (11 px = folga que o <main> deixa acima da barra de navegação). */
+    .abas-fixas { position: sticky; z-index: 9; bottom: calc(73px + env(safe-area-inset-bottom, 0px)); margin: auto -20px -11px; box-sizing: border-box; padding: 6px 20px; background: color-mix(in srgb, var(--card) 96%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); box-shadow: 0 -1px 0 var(--line); }
     /* Dois botões separados, cada um com o seu fundo e um vão entre eles. */
     .abas-sociais { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
     .abas-sociais button { min-height: 38px; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; background: var(--soft); font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
@@ -209,7 +210,6 @@ export class MemberStats {
   private readonly medalhasService = inject(MedalhasService);
   /** As medalhas da pessoa, calculadas dos treinos dela (os mais recentes) com a meta semanal dela. */
   protected readonly conquistas = computed(() => ordenarPorNivel(this.medalhasService.conquistasDe(this.sessoes(), this.perfil()?.metaSemanal ?? 3)));
-  protected readonly melhores = computed(() => this.conquistas().slice(0, 6));
   protected readonly resumoConquistas = computed(() => {
     const degraus = this.conquistas().flatMap((c) => c.degraus);
     return `${degraus.filter((d) => d.conquistado).length} de ${degraus.length} níveis conquistados`;

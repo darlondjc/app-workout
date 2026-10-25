@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.18.1",
+    "data": "2026-10-25",
+    "titulo": "Tela de amigo: abas fixas e estatísticas reorganizadas",
+    "itens": [
+      "As abas Timeline e Estatísticas da tela de um amigo agora ficam sempre coladas acima da barra de navegação, sem subir junto com a rolagem.",
+      "Nas estatísticas de outra pessoa, o calendário vem primeiro e depois as medalhas, só as conquistadas, em uma lista horizontal e sem a barra de progresso."
+    ]
+  },
+  {
     "versao": "1.18.0",
     "data": "2026-10-25",
     "titulo": "Amigos mais chegados",
