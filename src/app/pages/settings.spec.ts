@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { CloudService } from '../core/cloud.service';
 import { SocialService } from '../core/social.service';
 import { UpdateService } from '../core/update.service';
@@ -21,6 +22,7 @@ describe('Settings', () => {
   function criar(logado: boolean): void {
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         {
@@ -49,6 +51,12 @@ describe('Settings', () => {
     TestBed.inject(HttpTestingController).expectOne('data/changelog.json').flush(LOG);
     fixture.detectChanges();
   }
+
+  it('tem um ícone no topo que leva às minhas estatísticas, com ou sem conta', () => {
+    criar(false);
+    expect(q('a.estatisticas')?.getAttribute('href')).toBe('/estatisticas');
+    expect(q('a.estatisticas')?.getAttribute('aria-label')).toBe('Minhas estatísticas');
+  });
 
   it('mostra o botão de sair no topo só com a conta conectada', () => {
     criar(true);

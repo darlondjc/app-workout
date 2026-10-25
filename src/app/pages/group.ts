@@ -43,7 +43,7 @@ import { EventoCard } from './evento-card';
         @if (grupo(); as g) {
           <div class="pessoas" role="list" aria-label="Membros do grupo">
             @for (m of membros(); track m.uid) {
-              <a role="listitem" [routerLink]="m.uid === social.eu()?.uid ? '/perfil' : ['/membro', m.uid]" [attr.aria-label]="'Estatísticas de ' + m.nome">
+              <a role="listitem" [routerLink]="m.uid === social.eu()?.uid ? '/estatisticas' : ['/membro', m.uid]" [attr.aria-label]="'Estatísticas de ' + m.nome">
                 <app-avatar [usuario]="{ uid: m.uid, nome: m.nome, email: '', foto: m.foto }" [tamanho]="40" />
                 <span>{{ m.uid === social.eu()?.uid ? 'Eu' : primeiroNome(m.nome) }}</span>
               </a>

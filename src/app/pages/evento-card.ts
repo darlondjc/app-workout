@@ -22,7 +22,7 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
   template: `
     <article class="card">
       <header class="topo">
-        <a class="foto-autor" [routerLink]="minha() ? '/perfil' : ['/membro', evento().autor]" [attr.aria-label]="minha() ? 'Ver meu perfil' : 'Ver estatísticas de ' + social.nomeDe(evento().autor, evento().autorNome)">
+        <a class="foto-autor" [routerLink]="minha() ? '/estatisticas' : ['/membro', evento().autor]" [attr.aria-label]="minha() ? 'Ver minhas estatísticas' : 'Ver estatísticas de ' + social.nomeDe(evento().autor, evento().autorNome)">
           <app-avatar [usuario]="{ uid: evento().autor, nome: social.nomeDe(evento().autor, evento().autorNome), email: '', foto: social.fotoDe(evento().autor, evento().autorFoto) }" [tamanho]="32" />
         </a>
         <div class="quem">

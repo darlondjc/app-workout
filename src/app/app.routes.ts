@@ -88,8 +88,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/member-stats').then((m) => m.MemberStats),
   },
   { path: 'amigos', redirectTo: 'social' },
-  { path: 'progresso', redirectTo: 'perfil' },
+  { path: 'progresso', redirectTo: 'estatisticas' },
   { path: 'ajustes', redirectTo: 'perfil' },
+  {
+    path: 'estatisticas',
+    canActivate: [logado],
+    title: 'Minhas estatísticas · App Workout',
+    loadComponent: () => import('./pages/my-stats').then((m) => m.MyStats),
+  },
   {
     path: 'perfil',
     canActivate: [logado],

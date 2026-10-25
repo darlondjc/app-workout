@@ -73,9 +73,9 @@ export class MemberStats {
   });
 
   constructor() {
-    // As estatísticas da própria pessoa ficam no Perfil.
+    // As estatísticas da própria pessoa têm tela própria.
     effect(() => {
-      if (this.social.eu()?.uid === this.uid()) untracked(() => void this.router.navigateByUrl('/perfil', { replaceUrl: true }));
+      if (this.social.eu()?.uid === this.uid()) untracked(() => void this.router.navigateByUrl('/estatisticas', { replaceUrl: true }));
     });
     // Traz a meta mais recente da pessoa.
     effect(() => {

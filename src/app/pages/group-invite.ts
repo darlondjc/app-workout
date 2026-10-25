@@ -32,7 +32,7 @@ import { Carregando } from '../core/spinner';
         <div class="vagas" aria-label="Membros do grupo">
           @for (v of vagas(); track $index) {
             @if (v) {
-              <a [routerLink]="v.uid === social.eu()?.uid ? '/perfil' : ['/membro', v.uid]" [attr.aria-label]="v.nome">
+              <a [routerLink]="v.uid === social.eu()?.uid ? '/estatisticas' : ['/membro', v.uid]" [attr.aria-label]="v.nome">
                 <app-avatar [usuario]="{ uid: v.uid, nome: v.nome, email: '', foto: v.foto }" [tamanho]="48" />
               </a>
             } @else {

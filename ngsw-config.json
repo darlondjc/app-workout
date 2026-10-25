@@ -39,10 +39,11 @@
   ],
   "appData": {
     "versao": "1.15.1",
-    "titulo": "Convite de grupo: QR code e menos botões",
+    "titulo": "Convite de grupo: QR code, e estatísticas pelo Perfil",
     "novidades": [
       "O QR code do convite agora aparece.",
-      "Saiu o botão Convidar de baixo: ele fazia o mesmo que Compartilhar convite."
+      "Saiu o botão Convidar de baixo: ele fazia o mesmo que Compartilhar convite.",
+      "No Perfil, um ícone de gráfico no topo abre as suas estatísticas."
     ]
   }
 }

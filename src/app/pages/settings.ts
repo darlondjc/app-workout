@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ChangelogService } from '../core/changelog.service';
 import { CloudService } from '../core/cloud.service';
 import { Avatar } from '../core/avatar';
@@ -6,25 +7,28 @@ import { Dialogo } from '../core/dialogo';
 import { FotoBotao } from '../core/foto-botao';
 import { Icon } from '../core/icon';
 import { PesoRegistro } from '../core/peso-registro';
-import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
-import { Progress } from './progress';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, Progress],
+  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <header class="cabeca">
         <h1 class="titulo">Perfil</h1>
-        @if (nuvem.usuario()) {
-          <button type="button" class="sair" aria-label="Sair da conta" (click)="confirmando.set(true)">
-            <app-icon name="logout" [size]="22" [stroke]="2.2" />
-          </button>
-        }
+        <div class="acoes-topo">
+          <a class="estatisticas" routerLink="/estatisticas" aria-label="Minhas estatísticas">
+            <app-icon name="chart" [size]="22" [stroke]="2.2" />
+          </a>
+          @if (nuvem.usuario()) {
+            <button type="button" class="sair" aria-label="Sair da conta" (click)="confirmando.set(true)">
+              <app-icon name="logout" [size]="22" [stroke]="2.2" />
+            </button>
+          }
+        </div>
       </header>
 
       <article class="card bloco" aria-labelledby="t-conta">
@@ -72,8 +76,6 @@ import { Progress } from './progress';
           </button>
         }
       </article>
-
-      <app-progress [historico]="plans.historico()" />
 
       <app-peso-registro />
 
@@ -340,6 +342,21 @@ import { Progress } from './progress';
       justify-content: space-between;
       gap: 12px;
     }
+    .acoes-topo {
+      display: flex;
+      gap: 8px;
+    }
+    .estatisticas {
+      flex: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .sair {
       flex: none;
       width: 44px;
@@ -399,7 +416,6 @@ export class Settings {
   protected readonly log = inject(ChangelogService);
   protected readonly nuvem = inject(CloudService);
   protected readonly social = inject(SocialService);
-  protected readonly plans = inject(PlanService);
   protected readonly confirmando = signal(false);
   protected readonly fotoAberta = signal(false);
   protected readonly anteriores = computed(() => this.log.lista().slice(1));
