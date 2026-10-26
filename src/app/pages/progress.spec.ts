@@ -61,8 +61,8 @@ describe('Progress — mensagens de incentivo dispensáveis', () => {
     }
     expect(textos()).toEqual([]);
 
-    // Mais um treino muda os números da semana: a mensagem passa a ter outro texto.
-    fixture.componentRef.setInput('historico', [sessao('a'), sessao('b', ontem())]);
+    // Mais um treino (hoje, para valer em qualquer dia da semana) muda os números da semana: a mensagem passa a ter outro texto.
+    fixture.componentRef.setInput('historico', [sessao('a'), sessao('b')]);
     fixture.detectChanges();
     const novos = textos().filter((t) => !antigos.includes(t));
     expect(novos.length).toBeGreaterThan(0);
