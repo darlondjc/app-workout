@@ -2,10 +2,11 @@
   {
     "versao": "1.22.1",
     "data": "2026-10-26",
-    "titulo": "Ajustes no mapa dos músculos",
+    "titulo": "Ajustes e gesto de arrastar no mapa dos músculos",
     "itens": [
       "O cartão do mapa ganhou margens laterais e o título no mesmo estilo dos outros cartões de Estatísticas.",
-      "\"Como é calculado?\" agora mostra uma seta e deixa claro que abre e fecha."
+      "\"Como é calculado?\" agora mostra uma seta e deixa claro que abre e fecha.",
+      "Arraste o corpo para os lados para alternar entre frente e costas; uma dica abaixo do desenho avisa disso."
     ]
   },
   {

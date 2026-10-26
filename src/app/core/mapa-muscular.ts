@@ -28,7 +28,12 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
       </div>
       <p class="apoio">Treinos recentes pesam mais. Toque num músculo para ver os detalhes.</p>
 
-      <div class="palco">
+      <div
+        class="palco"
+        (pointerdown)="comecarArraste($event)"
+        (pointerup)="terminarArraste($event)"
+        (pointercancel)="cancelarArraste()"
+      >
         <div class="giro" [class.giro--costas]="lado() === 'costas'">
           @for (v of vistas; track v) {
             <svg
@@ -75,6 +80,12 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
           }
         </div>
       </div>
+
+      <p class="dica" aria-hidden="true">
+        <span class="dica__seta">‹</span>
+        <span>Arraste para os lados para ver {{ lado() === 'frente' ? 'as costas' : 'a frente' }}</span>
+        <span class="dica__seta">›</span>
+      </p>
 
       <div class="legenda" aria-hidden="true">
         <span>Pouco</span>
@@ -152,7 +163,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .lados button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; }
     .lados button[aria-pressed='true'] { background: var(--ink); color: var(--accent); }
 
-    .palco { perspective: 1000px; }
+    .palco { perspective: 1000px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
     .giro { position: relative; width: 100%; max-width: 440px; margin: 0 auto; aspect-ratio: 1 / 1; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1); }
     .giro--costas { transform: rotateY(180deg); }
     .face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: visible; }
@@ -169,6 +180,12 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .seta text { font-size: 6.2px; fill: var(--ink); }
     .seta--sel text { font-weight: 700; }
 
+    .dica { margin: 10px 0 0; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12px; color: var(--muted); }
+    .dica__seta { font-size: 18px; line-height: 1; animation: balancar 1.6s ease-in-out 3; }
+    .dica__seta:last-child { animation-name: balancar-d; }
+    @keyframes balancar { 50% { transform: translateX(-4px); } }
+    @keyframes balancar-d { 50% { transform: translateX(4px); } }
+    @media (prefers-reduced-motion: reduce) { .dica__seta { animation: none; } }
     .legenda { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
     .legenda__barra { flex: 1; height: 8px; border-radius: 999px; border: 1px solid var(--line); }
 
@@ -206,6 +223,10 @@ export class MapaMuscular {
   protected readonly selecionado = signal<string | null>(null);
   protected readonly gradiente = `linear-gradient(to right, ${NIVEIS_LEGENDA.map((n) => `${corDoNivel(n)} ${n * 100}%`).join(', ')})`;
   protected readonly ultima = ultimaVez;
+
+  private inicioArraste: { x: number; y: number } | null = null;
+  /** Depois de um arraste o navegador ainda dispara um clique; ele não deve selecionar o músculo sob o dedo. */
+  private arrastou = false;
 
   protected readonly estados = computed(() => calcularMusculos(this.historico(), this.hoje, (id) => this.ex.get(id)));
   private readonly porId = computed(() => new Map(this.estados().map((e) => [e.id, e])));
@@ -247,6 +268,7 @@ export class MapaMuscular {
 
   /** Marca o músculo (ou desmarca, se já estava marcado) e vira o corpo para o lado em que ele aparece. */
   protected selecionar(id: string): void {
+    if (this.arrastou) return;
     if (this.selecionado() === id) {
       this.selecionado.set(null);
       return;
@@ -254,5 +276,26 @@ export class MapaMuscular {
     this.selecionado.set(id);
     const aparece = (l: Lado) => CORPO[l].regioes.some((r) => r.musculo === id);
     if (!aparece(this.lado())) this.lado.set(aparece('frente') ? 'frente' : 'costas');
+  }
+
+  protected comecarArraste(e: PointerEvent): void {
+    this.inicioArraste = { x: e.clientX, y: e.clientY };
+  }
+
+  protected cancelarArraste(): void {
+    this.inicioArraste = null;
+  }
+
+  /** Um gesto de pelo menos 40 px, mais horizontal que vertical, vira o corpo; um gesto vertical continua rolando a página. */
+  protected terminarArraste(e: PointerEvent): void {
+    const ini = this.inicioArraste;
+    this.inicioArraste = null;
+    if (!ini) return;
+    const dx = e.clientX - ini.x;
+    const dy = e.clientY - ini.y;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    this.lado.set(this.lado() === 'frente' ? 'costas' : 'frente');
+    this.arrastou = true;
+    setTimeout(() => (this.arrastou = false));
   }
 }

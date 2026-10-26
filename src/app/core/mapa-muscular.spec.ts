@@ -85,4 +85,23 @@ describe('MapaMuscular', () => {
     fixture.detectChanges();
     expect(el.querySelector('.giro--costas')).not.toBeNull();
   });
+
+  it('arrastar para o lado vira o corpo, e um arraste curto ou vertical não', () => {
+    const fixture = montar([sessao('supino')]);
+    const el: HTMLElement = fixture.nativeElement;
+    const palco = el.querySelector('.palco')!;
+    const gesto = (x0: number, y0: number, x1: number, y1: number) => {
+      palco.dispatchEvent(new PointerEvent('pointerdown', { clientX: x0, clientY: y0, bubbles: true }));
+      palco.dispatchEvent(new PointerEvent('pointerup', { clientX: x1, clientY: y1, bubbles: true }));
+      fixture.detectChanges();
+    };
+    gesto(200, 100, 190, 100);
+    gesto(200, 100, 100, 220);
+    expect(el.querySelector('.giro--costas')).toBeNull();
+    gesto(200, 100, 100, 110);
+    expect(el.querySelector('.giro--costas')).not.toBeNull();
+    expect(el.querySelector('.dica')!.textContent).toContain('a frente');
+    gesto(100, 100, 220, 100);
+    expect(el.querySelector('.giro--costas')).toBeNull();
+  });
 });
