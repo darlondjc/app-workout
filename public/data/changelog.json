@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.22.1",
+    "data": "2026-10-26",
+    "titulo": "Ajustes no mapa dos músculos",
+    "itens": [
+      "O cartão do mapa ganhou margens laterais e o título no mesmo estilo dos outros cartões de Estatísticas.",
+      "\"Como é calculado?\" agora mostra uma seta e deixa claro que abre e fecha."
+    ]
+  },
+  {
     "versao": "1.22.0",
     "data": "2026-10-26",
     "titulo": "Mapa dos músculos",
