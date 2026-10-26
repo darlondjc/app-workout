@@ -127,7 +127,7 @@ function lerDispensadas(): string[] {
 
       @if (sessaoDoDialogo(); as d) {
         <app-dialogo [titulo]="d.fichaNome || 'Treino'" [subtitulo]="d.dia" (fechar)="sessaoAberta.set(null); exercicioAberto.set(null)">
-          <app-sessao-detalhe [sessao]="d.sessao" (verExercicio)="exercicioAberto.set($event)" />
+          <app-sessao-detalhe [sessao]="d.sessao" [kcal]="d.kcal" (verExercicio)="exercicioAberto.set($event)" />
         </app-dialogo>
       }
 
@@ -360,7 +360,7 @@ export class Progress {
         const cal = this.editavel() ? caloriasDaSessao(s, this.peso.registros()) : null;
         const calorias = cal === null ? '' : kcalTexto(cal);
         const partes = (s.atividade ? [resumoAtividade(s.atividade)] : [exercicios ? `${exercicios} ${exercicios === 1 ? 'exercício' : 'exercícios'}` : '', vol ? `${this.volume(vol)} de carga` : '']).concat(calorias).filter(Boolean);
-        return { chave: `${iso}:${s.id ?? i}`, sessao: s, fichaNome: s.fichaNome ?? this.plans.get(s.fichaId)?.nome, resumo: partes.join(' · ') || 'Treino concluído' };
+        return { chave: `${iso}:${s.id ?? i}`, sessao: s, kcal: cal, fichaNome: s.fichaNome ?? this.plans.get(s.fichaId)?.nome, resumo: partes.join(' · ') || 'Treino concluído' };
       });
   });
 
@@ -392,7 +392,7 @@ export class Progress {
     const aberta = this.sessaoAberta();
     const iso = this.selecionado();
     const s = aberta && iso ? this.sessoesDoDia().find((x) => x.chave === aberta) : undefined;
-    return s && iso ? { sessao: s.sessao, fichaNome: s.fichaNome, dia: this.tituloDia(iso) } : null;
+    return s && iso ? { sessao: s.sessao, kcal: s.kcal, fichaNome: s.fichaNome, dia: this.tituloDia(iso) } : null;
   });
 
   protected mudarMeta(delta: number): void {

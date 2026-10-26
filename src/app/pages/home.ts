@@ -192,6 +192,14 @@ export class Home {
     return formatarProgresso(id, atual, alvo);
   }
 
+  /** Calorias estimadas do treino de hoje (número cru, para o detalhe do treino). */
+  protected readonly kcalHoje = computed(() => {
+    const s = this.sessaoHoje();
+    return s ? caloriasDaSessao(s, this.peso.registros()) : null;
+  });
+  /** Sem nenhum peso registrado: o card de hoje convida a registrar. */
+  protected readonly semPeso = computed(() => this.peso.registros().length === 0);
+
   /** Calorias estimadas do treino de hoje já arredondadas ("235"), ou `null` sem peso registrado ou sem duração. */
   private kcalDe(sessao: Sessao): string | null {
     const k = caloriasDaSessao(sessao, this.peso.registros());

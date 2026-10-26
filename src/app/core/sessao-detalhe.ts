@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { kcalTexto } from './calorias';
 import { ExerciseService } from './exercise.service';
 import { Sessao } from './models';
 
@@ -43,6 +44,12 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
   selector: 'app-sessao-detalhe',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (kcal(); as k) {
+      <p class="kcal">
+        <strong>{{ kcalTexto(k) }}</strong>
+        <span class="apoio">estimativa a partir do seu peso e da duração do treino</span>
+      </p>
+    }
     @for (r of linhas(); track $index) {
       <section class="ex">
         <h4 class="ex__titulo">
@@ -87,6 +94,9 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 14px; }
+    .kcal { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--soft); display: flex; flex-direction: column; gap: 2px; }
+    .kcal strong { font-family: var(--font-display); font-size: 18px; }
+    .kcal span { font-size: 12px; }
     .ex { display: flex; flex-direction: column; gap: 6px; }
     .ex__titulo { margin: 0; }
     .ex__topo { width: 100%; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; border-radius: 12px; }
@@ -99,6 +109,9 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
 })
 export class SessaoDetalhe {
   readonly sessao = input.required<Sessao>();
+  /** Calorias estimadas do treino. Quem usa passa só nos treinos da própria pessoa; sem valor, a linha não aparece. */
+  readonly kcal = input<number | null>(null);
+  protected readonly kcalTexto = kcalTexto;
   /** Quem usa decide como mostrar a imagem (o diálogo do treino não pode abrir outro dentro dele). */
   readonly verExercicio = output<string>();
   protected readonly ex = inject(ExerciseService);
