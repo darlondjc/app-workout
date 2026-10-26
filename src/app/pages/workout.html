@@ -40,6 +40,22 @@
         <app-concluir-treino (concluir)="finalizar($event)" (cancelar)="concluindo.set(false)" />
       }
 
+      @if (editandoNotas()) {
+        <app-dialogo titulo="Notas" [subtitulo]="nome()" (fechar)="editandoNotas.set(false)">
+          @if (!trocado()) {
+            <label class="nota-campo">
+              <span class="nota-campo__rotulo">Deste exercício <span class="apoio">(fica na ficha)</span></span>
+              <textarea rows="3" [attr.maxlength]="notaMaxExercicio" placeholder="Ex.: banco na posição 4" [value]="rascunhoExercicio()" (input)="rascunhoExercicio.set(lerCampo($event))"></textarea>
+            </label>
+          }
+          <label class="nota-campo">
+            <span class="nota-campo__rotulo">Do treino de hoje <span class="apoio">(vai para o histórico e para a timeline)</span></span>
+            <textarea rows="3" [attr.maxlength]="notaMaxTreino" placeholder="Ex.: ombro incomodando" [value]="rascunhoTreino()" (input)="rascunhoTreino.set(lerCampo($event))"></textarea>
+          </label>
+          <button type="button" class="btn btn--destaque nota-salvar" (click)="salvarNotas()">Salvar notas</button>
+        </app-dialogo>
+      }
+
       <div class="barra" role="progressbar" aria-label="Progresso do treino" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progresso()">
         <div class="barra__cheia" [style.width.%]="progresso()"></div>
       </div>
@@ -53,6 +69,16 @@
           <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
         </div>
       </div>
+
+      @if (notaExercicio(); as n) {
+        <p class="nota-fixa"><span class="nota-fixa__rotulo">Nota</span> {{ n }}</p>
+      }
+      @if (notaTreino(); as n) {
+        <p class="nota-fixa"><span class="nota-fixa__rotulo">Hoje</span> {{ n }}</p>
+      }
+      <button type="button" class="nota-botao" aria-haspopup="dialog" (click)="abrirNotas()">
+        {{ notaExercicio() || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}
+      </button>
 
       <div class="tabela" role="group" aria-label="Séries">
         <div class="todos">
@@ -88,6 +114,13 @@
 
       @if (ultima(); as u) {
         <p class="ultima">Última vez: {{ u }}</p>
+      }
+
+      @if (sugestaoCarga(); as sg) {
+        <div class="sugestao">
+          <p>Na última vez você fez todas as séries com {{ kg(sg.de) }} kg. Que tal {{ kg(sg.para) }} kg hoje?</p>
+          <button type="button" class="sugestao__botao" (click)="aplicarSugestao()">Usar {{ kg(sg.para) }} kg</button>
+        </div>
       }
 
       <!-- Com uma série só (como o cardio) não há descanso entre séries: o cronômetro não faz sentido. -->

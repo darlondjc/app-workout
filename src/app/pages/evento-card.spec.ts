@@ -310,6 +310,18 @@ describe('EventoCard: ver treino', () => {
     });
   });
 
+  describe('nota do treino', () => {
+    it('mostra a nota escrita pela pessoa', () => {
+      criar('ana', { nota: 'Foi pesado hoje' });
+      expect(texto()).toContain('Foi pesado hoje');
+    });
+
+    it('sem nota, não mostra o bloco', () => {
+      criar('ana');
+      expect((fixture.nativeElement as HTMLElement).querySelector('.nota')).toBeNull();
+    });
+  });
+
   describe('foto do treino', () => {
     const FOTO = 'data:image/jpeg;base64,/9j/AAAA';
     const el = () => fixture.nativeElement as HTMLElement;

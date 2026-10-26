@@ -66,6 +66,19 @@ describe('sessao-detalhe', () => {
       expect(el.querySelector('.kcal')?.textContent).toContain('≈ 235 kcal');
     });
 
+    it('mostra a nota do treino quando existe', () => {
+      localStorage.clear();
+      TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+      const fixture = TestBed.createComponent(SessaoDetalhe);
+      fixture.componentRef.setInput('sessao', { ...sessao, nota: 'ombro incomodando' });
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelector('.nota')?.textContent).toContain('ombro incomodando');
+    });
+
+    it('sem nota, não mostra o bloco', () => {
+      expect(montar(null).querySelector('.nota')).toBeNull();
+    });
+
     it('sem valor (treino de outra pessoa ou sem peso), não mostra a linha', () => {
       expect(montar(null).querySelector('.kcal')).toBeNull();
     });

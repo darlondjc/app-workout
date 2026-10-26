@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.21.0",
+    "data": "2026-10-26",
+    "titulo": "Tela ligada, notas e sugestão de carga",
+    "itens": [
+      "A tela fica acesa durante o treino e apaga de novo quando você conclui ou sai. No iPhone, no app instalado, isso só funciona a partir do iOS 18.4; antes disso a tela se comporta como sempre.",
+      "Notas: em cada exercício do treino, o botão Adicionar nota abre dois campos. A nota do exercício fica na ficha e aparece em todo treino (ex.: banco na posição 4). A nota do treino vale só para o treino de hoje, aparece no histórico e na timeline dos amigos.",
+      "Sugestão de carga: se na última vez você fez todas as séries com todas as repetições da ficha e com a mesma carga, o app sugere subir cerca de 5% (entre 1 e 5 kg). Um toque aplica a carga nas séries; se preferir, ignore."
+    ]
+  },
+  {
     "versao": "1.20.0",
     "data": "2026-10-26",
     "titulo": "Calorias estimadas do treino",

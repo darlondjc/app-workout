@@ -35,6 +35,9 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
 
       <div class="corpo">
         <p class="apoio resumo">{{ resumo() }}</p>
+        @if (evento().nota; as n) {
+          <p class="nota">{{ n }}</p>
+        }
         @if (evento().marco || evento().recordes.length) {
           <div class="selos">
             @if (evento().marco) {
@@ -163,6 +166,7 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
     .corpo { display: flex; flex-direction: column; gap: 6px; }
     .corpo p { margin: 0; }
     .resumo { font-size: 13px; }
+    .nota { font-size: 14px; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
     .selos { display: flex; flex-wrap: wrap; gap: 4px 6px; }
     .selo { padding: 2px 8px; border-radius: 999px; background: #f1f8cf; font-size: 12px; line-height: 1.5; }
     .selo--marco { background: var(--ink); color: var(--accent); font-weight: 700; }

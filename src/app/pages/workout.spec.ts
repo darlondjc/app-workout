@@ -5,6 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
+import { TelaLigada } from '../core/tela-ligada';
 import { Workout } from './workout';
 
 describe('Workout — marcar séries em bloco', () => {
@@ -243,5 +244,149 @@ describe('Workout — marcar séries em bloco', () => {
       clicar(botao('Próximo exercício'));
       expect(piscando().some(Boolean)).toBeFalse();
     });
+  });
+
+  describe('sugestão de carga', () => {
+    const sugestao = () => el().querySelector('.sugestao');
+    const cargas = () =>
+      [...el().querySelectorAll('input[aria-label^="Carga"]')].map((i) => Number((i as HTMLInputElement).value));
+    const treinoAnterior = (series: [number, number][]) => {
+      plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: series.map(([carga, reps]) => ({ carga, reps })) }]);
+      fixture.detectChanges();
+    };
+
+    it('sem treino anterior, não sugere nada', () => {
+      expect(sugestao()).toBeNull();
+    });
+
+    it('com todas as séries e repetições feitas na última vez, sugere subir a carga', () => {
+      treinoAnterior([[40, 10], [40, 10], [40, 10]]);
+      expect(sugestao()?.textContent).toContain('40 kg');
+      expect(sugestao()?.textContent).toContain('42 kg');
+    });
+
+    it('"Usar" põe a carga sugerida em todas as séries e some com o aviso', () => {
+      treinoAnterior([[40, 10], [40, 10], [40, 10]]);
+      expect(cargas()).toEqual([40, 40, 40]);
+      clicar(botao('Usar 42 kg'));
+      expect(cargas()).toEqual([42, 42, 42]);
+      expect(sugestao()).toBeNull();
+    });
+
+    it('repetição abaixo da meta na última vez: não sugere', () => {
+      treinoAnterior([[40, 10], [40, 10], [40, 8]]);
+      expect(sugestao()).toBeNull();
+    });
+
+    it('depois de marcar uma série, o aviso some', () => {
+      treinoAnterior([[40, 10], [40, 10], [40, 10]]);
+      clicar(marcas()[0]);
+      expect(sugestao()).toBeNull();
+    });
+  });
+
+  describe('notas', () => {
+    const abrir = () => clicar(botao('Adicionar nota') ?? botao('Editar notas'));
+    const campos = () => [...el().querySelectorAll('app-dialogo textarea')] as HTMLTextAreaElement[];
+    const digitar = (campo: HTMLTextAreaElement, valor: string) => {
+      campo.value = valor;
+      campo.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    it('começa sem notas e oferece adicionar', () => {
+      expect(botao('Adicionar nota')).toBeDefined();
+      expect(el().querySelector('.nota-fixa')).toBeNull();
+    });
+
+    it('a nota do exercício vai para a ficha e a do treino para o treino em andamento', () => {
+      abrir();
+      expect(campos().length).toBe(2);
+      digitar(campos()[0], '  banco na posição 4  ');
+      digitar(campos()[1], 'ombro incomodando');
+      clicar(botao('Salvar notas'));
+      expect(plans.get(fichaId)!.itens[0].nota).toBe('banco na posição 4');
+      expect(plans.emAndamento()?.nota).toBe('ombro incomodando');
+      const fixas = [...el().querySelectorAll('.nota-fixa')].map((n) => n.textContent?.replace(/\s+/g, ' ').trim());
+      expect(fixas).toEqual(['Nota banco na posição 4', 'Hoje ombro incomodando']);
+      expect(botao('Editar notas')).toBeDefined();
+    });
+
+    it('apagar o texto remove a nota', () => {
+      abrir();
+      digitar(campos()[0], 'banco no 4');
+      clicar(botao('Salvar notas'));
+      abrir();
+      digitar(campos()[0], '   ');
+      clicar(botao('Salvar notas'));
+      expect('nota' in plans.get(fichaId)!.itens[0]).toBeFalse();
+      expect(el().querySelector('.nota-fixa')).toBeNull();
+    });
+
+    it('a nota do treino fica na sessão ao concluir', () => {
+      abrir();
+      digitar(campos()[1], 'treino pesado');
+      clicar(botao('Salvar notas'));
+      clicar(botao('Próximo exercício'));
+      clicar(botao('Finalizar treino'));
+      clicar(botao('Marcar e finalizar'));
+      expect(plans.historico()[0].nota).toBe('treino pesado');
+    });
+
+    it('sem nota escrita, a sessão não ganha o campo', () => {
+      clicar(botao('Marcar todos'));
+      clicar(botao('Próximo exercício'));
+      clicar(botao('Marcar todos'));
+      clicar(botao('Finalizar treino'));
+      expect('nota' in plans.historico()[0]).toBeFalse();
+    });
+  });
+});
+
+describe('Workout — tela ligada', () => {
+  const tela = { ligar: jasmine.createSpy('ligar'), desligar: jasmine.createSpy('desligar') };
+  let fixture: ComponentFixture<Workout>;
+  let plans: PlanService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    tela.ligar.calls.reset();
+    tela.desligar.calls.reset();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: SocialService, useValue: { ativo: signal(false) } },
+        { provide: TelaLigada, useValue: tela },
+      ],
+    });
+    plans = TestBed.inject(PlanService);
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    const [ficha] = plans.criarComItens([{ nome: 'Ficha A', itens: [{ exerciseId: 'x1', series: 1, reps: 10, carga: 20, descanso: 60 }] }]);
+    fixture = TestBed.createComponent(Workout);
+    fixture.componentRef.setInput('id', ficha.id);
+    fixture.detectChanges();
+  });
+
+  afterEach(() => localStorage.clear());
+
+  it('liga a tela ao abrir o treino', () => {
+    expect(tela.ligar).toHaveBeenCalledTimes(1);
+    expect(tela.desligar).not.toHaveBeenCalled();
+  });
+
+  it('solta a tela ao concluir o treino', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('.marca') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    ([...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Finalizar treino')) as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(tela.desligar).toHaveBeenCalled();
+  });
+
+  it('solta a tela ao sair da página sem concluir', () => {
+    fixture.destroy();
+    expect(tela.desligar).toHaveBeenCalled();
   });
 });

@@ -865,6 +865,7 @@ export class SocialService {
         marco: marcoDoTreino(ordenados.findIndex((x) => x.id === s.id) + 1),
         ...(medalhas.length ? { medalhas } : {}),
         ...(s.atividade ? { detalhe: resumoAtividade(s.atividade) } : {}),
+        ...(s.nota ? { nota: s.nota } : {}),
         ...(s.temFoto ? { temFoto: true } : {}),
       };
       try {

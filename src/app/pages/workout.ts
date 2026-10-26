@@ -2,18 +2,22 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input
 import { Router, RouterLink } from '@angular/router';
 import { TituloEmDuasLinhas } from '../core/ajuste-titulo';
 import { ConcluirTreino } from '../core/concluir-treino';
+import { Dialogo } from '../core/dialogo';
 import { ExerciseImage } from '../core/exercise-image';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { RegistroExercicio, SerieEmAndamento } from '../core/models';
 import { NavegacaoService } from '../core/navegacao.service';
+import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX } from '../core/notas';
 import { MedalhasService } from '../core/medalhas.service';
 import { caloriasDaSessao } from '../core/calorias';
 import { PesoService } from '../core/peso.service';
 import { DadosResumo, ResumoTreino } from '../core/resumo-treino';
 import { PlanService } from '../core/plan.service';
+import { sugerirCarga } from '../core/progressao';
 import { SocialService } from '../core/social.service';
 import { volumeSessao } from '../core/stats';
+import { TelaLigada } from '../core/tela-ligada';
 import { ToastService } from '../core/toast.service';
 
 const CHAVE_MARCAR_AO_FINALIZAR = 'app-workout:marcar-tudo-ao-finalizar:v1';
@@ -28,7 +32,7 @@ function lerPreferencia(): boolean {
 
 @Component({
   selector: 'app-workout',
-  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino, ResumoTreino, TituloEmDuasLinhas],
+  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './workout.html',
   styleUrl: './workout.scss',
@@ -45,6 +49,7 @@ export class Workout {
   private readonly social = inject(SocialService);
   private readonly peso = inject(PesoService);
   private readonly router = inject(Router);
+  private readonly tela = inject(TelaLigada);
   protected readonly nav = inject(NavegacaoService);
 
   /** Segundos de descanso decorridos desde a última série marcada (o timer é progressivo). */
@@ -144,7 +149,71 @@ export class Workout {
   });
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.pararDescanso());
+    // A tela fica acesa enquanto o treino está aberto, para não apagar entre as séries.
+    this.tela.ligar();
+    inject(DestroyRef).onDestroy(() => {
+      this.pararDescanso();
+      this.tela.desligar();
+    });
+  }
+
+  /** Sugestão de subir a carga, enquanto nenhuma série do exercício foi marcada e a carga sugerida ainda não está na tela. */
+  protected readonly sugestaoCarga = computed(() => {
+    const it = this.item();
+    if (!it || this.feitas() > 0) return null;
+    const s = sugerirCarga(it, this.anterior_());
+    if (!s) return null;
+    return this.series().every((x) => x.carga === s.para) ? null : s;
+  });
+
+  /** Põe a carga sugerida em todas as séries do exercício (todas mudam juntas e piscam, como na cópia automática). */
+  protected aplicarSugestao(): void {
+    const s = this.sugestaoCarga();
+    if (!s) return;
+    const i = this.indice();
+    const base = this.series().map((x) => this.paraSalvar({ ...x, carga: s.para }));
+    this.piscadas.update((p) => {
+      const novo = { ...p };
+      for (const x of this.series()) novo[x.n] = (novo[x.n] ?? 0) + 1;
+      return novo;
+    });
+    this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
+  }
+
+  /** 22.5 → "22,5". */
+  protected kg(valor: number): string {
+    return valor.toLocaleString('pt-BR');
+  }
+
+  protected readonly editandoNotas = signal(false);
+  protected readonly rascunhoExercicio = signal('');
+  protected readonly rascunhoTreino = signal('');
+  protected readonly notaMaxExercicio = NOTA_EXERCICIO_MAX;
+  protected readonly notaMaxTreino = NOTA_TREINO_MAX;
+  /** Exercício trocado só neste treino: a nota da ficha é do exercício original e não vale para o que entrou. */
+  protected readonly trocado = computed(() => !!this.estado()?.trocas?.[this.indice()]);
+  protected readonly notaExercicio = computed(() => (this.trocado() ? '' : (this.item()?.nota ?? '')));
+  protected readonly notaTreino = computed(() => this.estado()?.nota ?? '');
+
+  protected abrirNotas(): void {
+    this.rascunhoExercicio.set(this.notaExercicio());
+    this.rascunhoTreino.set(this.notaTreino());
+    this.editandoNotas.set(true);
+  }
+
+  protected lerCampo(evento: Event): string {
+    return (evento.target as HTMLTextAreaElement).value;
+  }
+
+  /** Grava só o que mudou: a nota do exercício vai para a ficha, a do treino para o treino em andamento. */
+  protected salvarNotas(): void {
+    if (!this.trocado() && this.rascunhoExercicio().trim() !== this.notaExercicio()) {
+      this.plans.definirNotaDoItem(this.id(), this.indice(), this.rascunhoExercicio());
+    }
+    if (this.rascunhoTreino().trim() !== this.notaTreino()) {
+      this.plans.definirNotaDoTreino(this.id(), this.rascunhoTreino());
+    }
+    this.editandoNotas.set(false);
   }
 
   /** Só guarda `descanso` quando existe: o Firestore não aceita campos `undefined`. */
@@ -292,6 +361,7 @@ export class Workout {
   protected finalizar(foto: string | null): void {
     this.concluindo.set(false);
     this.pararDescanso();
+    this.tela.desligar();
     const f = this.ficha();
     const salvo = this.estado();
     const efetivos = f ? this.plans.exerciciosEfetivos(f) : [];
