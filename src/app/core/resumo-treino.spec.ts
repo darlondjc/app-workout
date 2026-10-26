@@ -30,6 +30,19 @@ describe('ResumoTreino', () => {
     expect(el.textContent).not.toContain('Carga total');
   });
 
+  it('mostra as calorias estimadas com ≈, quando há estimativa', () => {
+    const el: HTMLElement = montar({ ...base, kcal: 237 }).nativeElement;
+    expect(el.textContent).toContain('Calorias');
+    expect(el.textContent).toContain('≈ 235');
+    expect(el.textContent).not.toContain('Registre seu peso');
+  });
+
+  it('sem estimativa, não mostra calorias; sem peso registrado, convida a registrar', () => {
+    const el: HTMLElement = montar({ ...base, kcal: null, semPeso: true }).nativeElement;
+    expect(el.textContent).not.toContain('Calorias');
+    expect(el.textContent).toContain('Registre seu peso no Perfil');
+  });
+
   it('lista as medalhas novas e usa o singular quando é uma só', () => {
     const uma: HTMLElement = montar({ ...base, medalhas: [{ titulo: 'Treinos', nivel: 'bronze' }] }).nativeElement;
     expect(uma.querySelectorAll('.item').length).toBe(1);

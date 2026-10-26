@@ -1,5 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
+import { duracaoDoTreino } from './calorias';
 import { PesoService } from './peso.service';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
@@ -302,9 +303,22 @@ export class PlanService {
   registrarSessao(fichaId: string, registros: RegistroExercicio[] = [], temFoto = false): string {
     const ficha = this.get(fichaId);
     const id = crypto.randomUUID();
+    const agora = Date.now();
+    const andamento = this.emAndamento();
+    // Sem treino em andamento desta ficha não há horário de início, e a duração fica sem registro.
+    const duracaoMin = andamento && andamento.fichaId === fichaId ? duracaoDoTreino(andamento.iniciadoEm, agora, registros) : null;
     this.historico.update((h) => [
       ...h,
-      { id, data: dataLocal(), fichaId, fichaNome: ficha?.nome, concluidaEm: Date.now(), registros, ...(temFoto ? { temFoto: true } : {}) },
+      {
+        id,
+        data: dataLocal(),
+        fichaId,
+        fichaNome: ficha?.nome,
+        concluidaEm: agora,
+        ...(duracaoMin !== null ? { duracaoMin } : {}),
+        registros,
+        ...(temFoto ? { temFoto: true } : {}),
+      },
     ]);
     this.emAndamento.set(null);
     return id;

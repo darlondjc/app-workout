@@ -1,4 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
 import { Sessao } from './models';
+import { SessaoDetalhe } from './sessao-detalhe';
 import { intervalo, montarLinhas } from './sessao-detalhe';
 
 const nomeDe = (id: string) => `Nome de ${id}`;
@@ -42,5 +46,28 @@ describe('sessao-detalhe', () => {
     const l = montarLinhas(antigo, nomeDe);
     expect(l.length).toBe(1);
     expect(l[0].temIntervalo).toBeFalse();
+  });
+
+  describe('componente', () => {
+    const sessao: Sessao = { id: 's', data: '2026-10-22', fichaId: 'f', registros: [{ exerciseId: 'supino', series: [{ carga: 20, reps: 12 }] }] };
+
+    function montar(kcal: number | null) {
+      localStorage.clear();
+      TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+      const fixture = TestBed.createComponent(SessaoDetalhe);
+      fixture.componentRef.setInput('sessao', sessao);
+      if (kcal !== null) fixture.componentRef.setInput('kcal', kcal);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('mostra as calorias estimadas quando recebe o valor', () => {
+      const el = montar(237);
+      expect(el.querySelector('.kcal')?.textContent).toContain('≈ 235 kcal');
+    });
+
+    it('sem valor (treino de outra pessoa ou sem peso), não mostra a linha', () => {
+      expect(montar(null).querySelector('.kcal')).toBeNull();
+    });
   });
 });

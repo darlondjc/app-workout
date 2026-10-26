@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.20.0",
+    "data": "2026-10-26",
+    "titulo": "Calorias estimadas do treino",
+    "itens": [
+      "O resumo ao concluir o treino, o card de hoje na tela inicial e o detalhe do treino mostram as calorias estimadas (≈). Nas suas estatísticas aparecem o total do mês e as calorias de cada treino.",
+      "A conta usa o seu peso, a duração do treino e o tipo de esforço (na musculação, pelo descanso entre as séries; nas atividades, pelo tipo e esforço). É uma estimativa, não um valor exato. Sem peso registrado, a tela inicial convida a registrar no Perfil.",
+      "A duração do treino passa a ser guardada a partir de agora. Treinos antigos têm só uma estimativa, quando há tempos de descanso registrados."
+    ]
+  },
+  {
     "versao": "1.19.0",
     "data": "2026-10-25",
     "titulo": "Grupo aguardando aprovação",

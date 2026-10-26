@@ -42,7 +42,7 @@
         <span class="selo selo--feito"><app-icon name="check" [size]="14" [stroke]="3" /> Feito</span>
       </div>
       @if (r.atividade) {
-        <p class="destaque__rotulo">{{ r.atividade }}</p>
+        <p class="destaque__rotulo">{{ r.atividade }}@if (r.kcal) { · ≈ {{ r.kcal }} kcal }</p>
       } @else {
         <ul class="numeros" aria-label="Resumo do treino">
           <li><strong>{{ r.exercicios }}</strong><span>{{ r.exercicios === 1 ? 'exercício' : 'exercícios' }}</span></li>
@@ -50,7 +50,13 @@
           @if (r.volume > 0) {
             <li><strong>{{ carga(r.volume) }}</strong><span>de carga</span></li>
           }
+          @if (r.kcal) {
+            <li><strong>≈ {{ r.kcal }}</strong><span>kcal</span></li>
+          }
         </ul>
+      }
+      @if (semPeso()) {
+        <p class="apoio">Registre seu peso no <a routerLink="/perfil">Perfil</a> para ver as calorias estimadas.</p>
       }
       @if (r.textoRecordes) {
         <p class="recorde"><app-icon name="medal" [size]="18" [stroke]="2.2" /> {{ r.textoRecordes }}</p>
@@ -192,7 +198,7 @@
 
   @if (sessaoAberta() && resumoHoje(); as r) {
     <app-dialogo [titulo]="r.nome" subtitulo="Treino de hoje" (fechar)="sessaoAberta.set(false); exercicioAberto.set(null)">
-      <app-sessao-detalhe [sessao]="r.sessao" (verExercicio)="exercicioAberto.set($event)" />
+      <app-sessao-detalhe [sessao]="r.sessao" [kcal]="kcalHoje()" (verExercicio)="exercicioAberto.set($event)" />
     </app-dialogo>
   }
 
