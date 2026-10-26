@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.22.0",
+    "data": "2026-10-26",
+    "titulo": "Mapa dos músculos",
+    "itens": [
+      "Em Estatísticas, o novo mapa do corpo (frente e costas, com um botão que vira o corpo) mostra quais músculos você tem treinado: azul para os parados, vermelho para os mais trabalhados. Toque num músculo, ou num nome nas listas, para ver o último treino dele e as séries da semana.",
+      "Treinos recentes pesam mais: o peso cai pela metade a cada 7 dias e só entram as últimas 8 semanas. Músculos secundários contam um pouco, e alongamentos, cardio e atividades fora da ficha não entram.",
+      "As listas Mais trabalhados e Menos trabalhados ajudam a escolher o que treinar a seguir. O mapa é só seu e não aparece para os amigos.",
+      "Os desenhos do corpo vêm do projeto react-body-highlighter (licença MIT, aviso em data/LICENSE-body-highlighter.md)."
+    ]
+  },
+  {
     "versao": "1.21.0",
     "data": "2026-10-26",
     "titulo": "Tela ligada, notas e sugestão de carga",
