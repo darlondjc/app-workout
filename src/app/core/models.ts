@@ -81,6 +81,8 @@ export interface Sessao {
   /** Presente quando a sessão é uma atividade registrada fora da ficha; `registros` fica vazio. */
   atividade?: AtividadeRegistro;
   concluidaEm?: number;
+  /** Minutos do começo à conclusão do treino. Ausente nos treinos anteriores à 1.20 e nas atividades (que têm os seus). */
+  duracaoMin?: number;
   registros?: RegistroExercicio[];
   /** Este treino tem uma foto guardada na nuvem (a foto em si não fica no histórico). */
   temFoto?: boolean;

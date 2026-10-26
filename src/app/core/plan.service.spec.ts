@@ -153,6 +153,18 @@ describe('PlanService: foto do treino', () => {
     expect(s?.temFoto).toBeTrue();
   });
 
+  it('concluir um treino em andamento grava a duração em minutos', () => {
+    const fichaId = plans.fichas()[0].id;
+    plans.andamento(fichaId, (a) => ({ ...a, iniciadoEm: Date.now() - 45 * 60000 }));
+    const id = plans.registrarSessao(fichaId, []);
+    expect(plans.historico().find((x) => x.id === id)?.duracaoMin).toBe(45);
+  });
+
+  it('concluir sem treino em andamento não inventa duração', () => {
+    const id = plans.registrarSessao(plans.fichas()[0].id, []);
+    expect('duracaoMin' in plans.historico().find((x) => x.id === id)!).toBeFalse();
+  });
+
   it('concluir sem foto não marca nada', () => {
     const id = plans.registrarSessao(plans.fichas()[0].id, []);
     expect(plans.historico().find((x) => x.id === id)?.temFoto).toBeUndefined();

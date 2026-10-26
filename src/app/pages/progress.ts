@@ -10,6 +10,8 @@ import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { LIMITE_SESSOES_MEMBRO, SocialService } from '../core/social.service';
 import { CHAVE_META, lerMeta, metaPadrao } from '../core/meta';
 import { PesoGrafico } from '../core/peso-grafico';
+import { caloriasDaSessao, caloriasNoMes, kcalTexto } from '../core/calorias';
+import { PesoService } from '../core/peso.service';
 import { calcularResumo, dataISO, gerarInsights, volumeSessao } from '../core/stats';
 
 const CHAVE_DISPENSADAS = 'app-workout:mensagens-dispensadas:v1';
@@ -141,6 +143,12 @@ function lerDispensadas(): string[] {
           <strong>{{ resumo().diasSemTreinar === null ? '—' : resumo().diasSemTreinar }}</strong>
           <span class="apoio">{{ resumo().diasSemTreinar === 1 ? 'dia' : 'dias' }} desde o último</span>
         </div>
+        @if (kcalMes() !== null) {
+          <div class="card num num--largo">
+            <strong>{{ kcalMes() }}</strong>
+            <span class="apoio">calorias estimadas no mês (a partir do seu peso e da duração dos treinos)</span>
+          </div>
+        }
         <div class="card num num--largo">
           <strong>{{ duracao(resumo().descansoMedio) }}</strong>
           <span class="apoio">tempo médio entre séries</span>
@@ -235,6 +243,7 @@ export class Progress {
   private readonly plans = inject(PlanService);
   private readonly social = inject(SocialService);
   private readonly ex = inject(ExerciseService);
+  private readonly peso = inject(PesoService);
 
   /** Treinos da pessoa exibida: os seus ou os de um amigo. */
   readonly historico = input.required<Sessao[]>();
@@ -285,6 +294,12 @@ export class Progress {
     this.editavel() ? (this.metaEscolhida() ?? metaPadrao(this.plans.fichas().length)) : (this.metaBase() ?? 3),
   );
   protected readonly resumo = computed(() => calcularResumo(this.historico(), this.hoje, this.meta()));
+  /** Calorias estimadas do mês, só nas estatísticas da própria pessoa (o peso dos amigos não entra na conta). */
+  protected readonly kcalMes = computed(() => {
+    if (!this.editavel()) return null;
+    const total = caloriasNoMes(this.historico(), this.peso.registros(), this.hoje.getFullYear(), this.hoje.getMonth());
+    return total === null ? null : kcalTexto(total);
+  });
   /** Do amigo só se leem os treinos mais recentes: com o limite atingido, o total deixa de ser o total. */
   protected readonly totalParcial = computed(() => !this.editavel() && this.historico().length >= LIMITE_SESSOES_MEMBRO);
   private readonly mensagens = computed(() => gerarInsights(this.resumo(), this.hoje, this.nome()));
@@ -342,7 +357,9 @@ export class Progress {
       .map((s, i) => {
         const exercicios = s.registros?.length ?? 0;
         const vol = volumeSessao(s);
-        const partes = s.atividade ? [resumoAtividade(s.atividade)] : [exercicios ? `${exercicios} ${exercicios === 1 ? 'exercício' : 'exercícios'}` : '', vol ? `${this.volume(vol)} de carga` : ''].filter(Boolean);
+        const cal = this.editavel() ? caloriasDaSessao(s, this.peso.registros()) : null;
+        const calorias = cal === null ? '' : kcalTexto(cal);
+        const partes = (s.atividade ? [resumoAtividade(s.atividade)] : [exercicios ? `${exercicios} ${exercicios === 1 ? 'exercício' : 'exercícios'}` : '', vol ? `${this.volume(vol)} de carga` : '']).concat(calorias).filter(Boolean);
         return { chave: `${iso}:${s.id ?? i}`, sessao: s, fichaNome: s.fichaNome ?? this.plans.get(s.fichaId)?.nome, resumo: partes.join(' · ') || 'Treino concluído' };
       });
   });

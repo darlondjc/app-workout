@@ -42,13 +42,16 @@
         <span class="selo selo--feito"><app-icon name="check" [size]="14" [stroke]="3" /> Feito</span>
       </div>
       @if (r.atividade) {
-        <p class="destaque__rotulo">{{ r.atividade }}</p>
+        <p class="destaque__rotulo">{{ r.atividade }}@if (r.kcal) { · ≈ {{ r.kcal }} kcal }</p>
       } @else {
         <ul class="numeros" aria-label="Resumo do treino">
           <li><strong>{{ r.exercicios }}</strong><span>{{ r.exercicios === 1 ? 'exercício' : 'exercícios' }}</span></li>
           <li><strong>{{ r.series }}</strong><span>{{ r.series === 1 ? 'série' : 'séries' }}</span></li>
           @if (r.volume > 0) {
             <li><strong>{{ carga(r.volume) }}</strong><span>de carga</span></li>
+          }
+          @if (r.kcal) {
+            <li><strong>≈ {{ r.kcal }}</strong><span>kcal</span></li>
           }
         </ul>
       }

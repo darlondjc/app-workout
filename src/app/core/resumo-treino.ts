@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { Dialogo } from './dialogo';
 import { Icon } from './icon';
 import { Medalha } from './medalha';
+import { kcalNumero } from './calorias';
 import { NOMES_NIVEL, Nivel } from './medalhas';
 
 export interface MedalhaDoResumo {
@@ -15,6 +16,10 @@ export interface DadosResumo {
   series: number;
   /** Carga total em kg (0 quando o treino não teve carga, como o cardio). */
   volume: number;
+  /** Calorias estimadas; ausente ou `null` quando não deu para estimar. */
+  kcal?: number | null;
+  /** Sem peso registrado, o resumo convida a registrar em vez de mostrar calorias. */
+  semPeso?: boolean;
   medalhas: MedalhaDoResumo[];
 }
 
@@ -46,7 +51,16 @@ export interface DadosResumo {
             <dd>{{ volume() }} <small>kg</small></dd>
           </div>
         }
+        @if (dados().kcal; as k) {
+          <div class="kcal">
+            <dt>Calorias</dt>
+            <dd>≈ {{ kcal(k) }} <small>kcal</small></dd>
+          </div>
+        }
       </dl>
+      @if (dados().semPeso) {
+        <p class="apoio dica">Registre seu peso no Perfil para ver as calorias estimadas do treino.</p>
+      }
 
       @if (dados().medalhas.length > 0) {
         <section class="medalhas" aria-labelledby="resumo-medalhas">
@@ -76,6 +90,7 @@ export interface DadosResumo {
     .numeros dt { font-size: 12px; color: var(--muted); }
     .numeros dd { margin: 2px 0 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; }
     .numeros small { font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--muted); }
+    .dica { margin: -8px 0 16px; text-align: center; }
     .medalhas { margin-bottom: 18px; }
     .rot { margin: 0 0 8px; font-size: 14px; font-weight: 500; color: var(--muted); text-align: center; }
     /* "safe center": centraliza quando cabe e, quando passa, deixa rolar desde a primeira medalha. */
@@ -97,6 +112,10 @@ export class ResumoTreino {
   readonly ok = output<void>();
 
   protected readonly nomes = NOMES_NIVEL;
+
+  protected kcal(valor: number): string {
+    return kcalNumero(valor);
+  }
 
   protected volume(): string {
     return this.dados().volume.toLocaleString('pt-BR');

@@ -8,6 +8,8 @@ import { Icon } from '../core/icon';
 import { RegistroExercicio, SerieEmAndamento } from '../core/models';
 import { NavegacaoService } from '../core/navegacao.service';
 import { MedalhasService } from '../core/medalhas.service';
+import { caloriasDaSessao } from '../core/calorias';
+import { PesoService } from '../core/peso.service';
 import { DadosResumo, ResumoTreino } from '../core/resumo-treino';
 import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
@@ -41,6 +43,7 @@ export class Workout {
   private readonly ex = inject(ExerciseService);
   private readonly toast = inject(ToastService);
   private readonly social = inject(SocialService);
+  private readonly peso = inject(PesoService);
   private readonly router = inject(Router);
   protected readonly nav = inject(NavegacaoService);
 
@@ -302,7 +305,10 @@ export class Workout {
     const ganhas = this.medalhas.aposTreino(sessaoId);
     if (foto) void this.social.salvarFoto(sessaoId, foto);
     const todas = this.medalhas.conquistas();
+    const gravada = this.plans.historico().find((s) => s.id === sessaoId);
     this.resumo.set({
+      kcal: gravada ? caloriasDaSessao(gravada, this.peso.registros()) : null,
+      semPeso: this.peso.registros().length === 0,
       nome: f?.nome ?? 'Treino',
       exercicios: registros.length,
       series: registros.reduce((t, r) => t + r.series.length, 0),

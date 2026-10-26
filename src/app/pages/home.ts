@@ -17,8 +17,10 @@ import { lerMeta, metaPadrao } from '../core/meta';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { SocialService } from '../core/social.service';
 import { PlanService, dataLocal } from '../core/plan.service';
-import { AtividadeRegistro } from '../core/models';
+import { AtividadeRegistro, Sessao } from '../core/models';
 import { ToastService } from '../core/toast.service';
+import { caloriasDaSessao, kcalNumero } from '../core/calorias';
+import { PesoService } from '../core/peso.service';
 import { recordesDaSessao, treinosNaSemana, volumeSessao } from '../core/stats';
 
 /** Quantas medalhas aparecem no quadro da tela inicial. */
@@ -47,6 +49,7 @@ export class Home {
 
   protected readonly nuvem = inject(CloudService);
   protected readonly social = inject(SocialService);
+  private readonly peso = inject(PesoService);
   protected readonly primeiroNome = computed(() => this.nuvem.usuario()?.nome.trim().split(/\s+/)[0] ?? '');
 
   protected readonly saudacao =
@@ -95,7 +98,7 @@ export class Home {
     const sessao = this.sessaoHoje();
     if (!sessao) return null;
     if (sessao.atividade) {
-      return { sessao, nome: sessao.atividade.nome, atividade: resumoAtividade(sessao.atividade), exercicios: 0, series: 0, volume: 0, textoRecordes: '' };
+      return { sessao, nome: sessao.atividade.nome, atividade: resumoAtividade(sessao.atividade), exercicios: 0, series: 0, volume: 0, kcal: this.kcalDe(sessao), textoRecordes: '' };
     }
     const registros = sessao.registros ?? [];
     const nomes = recordesDaSessao(this.plans.historico(), sessao).map((r) => this.nomeExercicio(r.exerciseId));
@@ -109,6 +112,7 @@ export class Home {
       exercicios: registros.length,
       series: registros.reduce((t, r) => t + r.series.length, 0),
       volume: volumeSessao(sessao),
+      kcal: this.kcalDe(sessao),
       textoRecordes: nomes.length === 0 ? '' : `${nomes.length === 1 ? 'Novo recorde' : nomes.length + ' novos recordes'}: ${lista}`,
     };
   });
@@ -186,6 +190,12 @@ export class Home {
 
   protected progresso(id: TipoConquista, atual: number, alvo: number): string {
     return formatarProgresso(id, atual, alvo);
+  }
+
+  /** Calorias estimadas do treino de hoje já arredondadas ("235"), ou `null` sem peso registrado ou sem duração. */
+  private kcalDe(sessao: Sessao): string | null {
+    const k = caloriasDaSessao(sessao, this.peso.registros());
+    return k === null ? null : kcalNumero(k);
   }
 
   protected carga(kg: number): string {
