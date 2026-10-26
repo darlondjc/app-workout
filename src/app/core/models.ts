@@ -30,6 +30,8 @@ export interface ItemFicha {
   unidade?: 'reps' | 'min';
   carga: number;
   descanso: number;
+  /** Nota fixa do exercício nesta ficha (ex.: "banco na posição 4"); aparece em todo treino. */
+  nota?: string;
 }
 
 export interface Ficha {
@@ -81,6 +83,8 @@ export interface Sessao {
   /** Presente quando a sessão é uma atividade registrada fora da ficha; `registros` fica vazio. */
   atividade?: AtividadeRegistro;
   concluidaEm?: number;
+  /** Nota escrita durante o treino (ex.: "ombro incomodando"). */
+  nota?: string;
   /** Minutos do começo à conclusão do treino. Ausente nos treinos anteriores à 1.20 e nas atividades (que têm os seus). */
   duracaoMin?: number;
   registros?: RegistroExercicio[];
@@ -112,6 +116,8 @@ export interface EmAndamento {
   /** Séries por posição do exercício na ficha. */
   series: Record<string, SerieEmAndamento[]>;
   iniciadoEm: number;
+  /** Nota do treino, escrita enquanto ele acontece; vai para a sessão ao concluir. */
+  nota?: string;
   /** Exercícios trocados só neste treino: posição na ficha → exercício que entra no lugar. */
   trocas?: Record<string, string>;
 }

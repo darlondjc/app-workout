@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
 import { duracaoDoTreino } from './calorias';
+import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX, limparNota } from './notas';
 import { PesoService } from './peso.service';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
@@ -266,6 +267,28 @@ export class PlanService {
     });
   }
 
+  /** Nota fixa do exercício na ficha; texto vazio apaga a nota. */
+  definirNotaDoItem(fichaId: string, indice: number, texto: string): void {
+    const nota = limparNota(texto, NOTA_EXERCICIO_MAX);
+    this.atualizar(fichaId, (f) => ({
+      ...f,
+      itens: f.itens.map((item, i) => {
+        if (i !== indice) return item;
+        const { nota: _antes, ...resto } = item;
+        return nota ? { ...resto, nota } : resto;
+      }),
+    }));
+  }
+
+  /** Nota do treino em andamento; texto vazio apaga a nota. */
+  definirNotaDoTreino(fichaId: string, texto: string): void {
+    const nota = limparNota(texto, NOTA_TREINO_MAX);
+    this.andamento(fichaId, (a) => {
+      const { nota: _antes, ...resto } = a;
+      return nota ? { ...resto, nota } : resto;
+    });
+  }
+
   editarItem(fichaId: string, indice: number, campo: keyof Omit<ItemFicha, 'exerciseId'>, valor: number): void {
     const v = Number.isFinite(valor) && valor >= 0 ? valor : 0;
     this.atualizar(fichaId, (f) => ({
@@ -307,6 +330,7 @@ export class PlanService {
     const andamento = this.emAndamento();
     // Sem treino em andamento desta ficha não há horário de início, e a duração fica sem registro.
     const duracaoMin = andamento && andamento.fichaId === fichaId ? duracaoDoTreino(andamento.iniciadoEm, agora, registros) : null;
+    const nota = andamento && andamento.fichaId === fichaId ? limparNota(andamento.nota, NOTA_TREINO_MAX) : undefined;
     this.historico.update((h) => [
       ...h,
       {
@@ -316,6 +340,7 @@ export class PlanService {
         fichaNome: ficha?.nome,
         concluidaEm: agora,
         ...(duracaoMin !== null ? { duracaoMin } : {}),
+        ...(nota ? { nota } : {}),
         registros,
         ...(temFoto ? { temFoto: true } : {}),
       },

@@ -317,3 +317,81 @@ h1 {
   background: var(--dark2);
   color: #fff;
 }
+
+.nota-fixa {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #1c2024;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.nota-fixa__rotulo {
+  margin-right: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.nota-botao {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid #3a4046;
+  border-radius: 999px;
+  background: transparent;
+  color: #d6dbd7;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.nota-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.nota-campo__rotulo {
+  font-size: 14px;
+  font-weight: 600;
+}
+.nota-campo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card, #fff);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  resize: vertical;
+}
+.nota-salvar {
+  width: 100%;
+}
+.sugestao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(200, 236, 58, 0.12);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.sugestao__botao {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}

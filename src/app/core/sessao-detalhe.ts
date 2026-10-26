@@ -44,6 +44,9 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
   selector: 'app-sessao-detalhe',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (sessao().nota; as n) {
+      <p class="nota"><span class="apoio">Nota do treino</span>{{ n }}</p>
+    }
     @if (kcal(); as k) {
       <p class="kcal">
         <strong>{{ kcalTexto(k) }}</strong>
@@ -94,6 +97,8 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 14px; }
+    .nota { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--soft); display: flex; flex-direction: column; gap: 2px; font-size: 15px; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
+    .nota .apoio { font-size: 12px; }
     .kcal { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--soft); display: flex; flex-direction: column; gap: 2px; }
     .kcal strong { font-family: var(--font-display); font-size: 18px; }
     .kcal span { font-size: 12px; }

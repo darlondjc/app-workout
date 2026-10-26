@@ -85,6 +85,8 @@ export interface Evento {
   detalhe?: string;
   /** Medalhas que este treino fez subir de nível. */
   medalhas?: MedalhaDoTreino[];
+  /** Nota que a pessoa escreveu sobre o treino. */
+  nota?: string;
   /** Ex.: "50º treino", quando o total de treinos chega a um marco. */
   marco?: string;
   /** Há uma foto deste treino em `usuarios/{autor}/fotos/{sessaoId}`; ela é lida só quando o card aparece. */

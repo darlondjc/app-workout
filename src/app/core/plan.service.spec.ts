@@ -307,3 +307,60 @@ describe('PlanService: atividade fora da ficha', () => {
     expect(plans.proxima()?.id).toBe(b.id);
   });
 });
+
+describe('PlanService: notas', () => {
+  let plans: PlanService;
+  let fichaId: string;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+    [{ id: fichaId }] = plans.criarComItens([{ nome: 'A', itens: [item('supino', 60), item('remada', 40)] }]);
+  });
+
+  it('nota do exercício: grava só no item escolhido, sem espaços nas pontas', () => {
+    plans.definirNotaDoItem(fichaId, 1, '  banco no 4 ');
+    const itens = plans.get(fichaId)!.itens;
+    expect(itens[1].nota).toBe('banco no 4');
+    expect('nota' in itens[0]).toBeFalse();
+  });
+
+  it('nota do exercício: texto vazio apaga o campo', () => {
+    plans.definirNotaDoItem(fichaId, 0, 'algo');
+    plans.definirNotaDoItem(fichaId, 0, '   ');
+    expect('nota' in plans.get(fichaId)!.itens[0]).toBeFalse();
+  });
+
+  it('nota do exercício respeita o limite de tamanho', () => {
+    plans.definirNotaDoItem(fichaId, 0, 'a'.repeat(500));
+    expect(plans.get(fichaId)!.itens[0].nota!.length).toBe(200);
+  });
+
+  it('nota do treino: vai para o andamento e, ao concluir, para a sessão', () => {
+    plans.definirNotaDoTreino(fichaId, ' ombro incomodando ');
+    expect(plans.emAndamento()?.nota).toBe('ombro incomodando');
+    const id = plans.registrarSessao(fichaId, []);
+    expect(plans.historico().find((s) => s.id === id)?.nota).toBe('ombro incomodando');
+    expect(plans.emAndamento()).toBeNull();
+  });
+
+  it('nota do treino: apagar o texto tira o campo do andamento', () => {
+    plans.definirNotaDoTreino(fichaId, 'algo');
+    plans.definirNotaDoTreino(fichaId, '');
+    expect('nota' in plans.emAndamento()!).toBeFalse();
+  });
+
+  it('sessão sem nota não ganha o campo', () => {
+    const id = plans.registrarSessao(fichaId, []);
+    expect('nota' in plans.historico().find((s) => s.id === id)!).toBeFalse();
+  });
+
+  it('a nota de um treino de outra ficha não vai para esta sessão', () => {
+    const [outra] = plans.criarComItens([{ nome: 'B', itens: [item('agachamento', 80)] }]);
+    plans.definirNotaDoTreino(outra.id, 'só da B');
+    const id = plans.registrarSessao(fichaId, []);
+    expect('nota' in plans.historico().find((s) => s.id === id)!).toBeFalse();
+  });
+});
+
