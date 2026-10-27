@@ -1,3 +1,4 @@
+import { dataCurta, diasParaVencer, somarDias, textoDoPrazo } from '../core/ciclo';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Confirmacao } from '../core/confirmacao';
@@ -29,6 +30,19 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
             }
           </div>
           <p class="apoio">{{ plans.rotulo(f.id) }}</p>
+          @if (periodo(); as per) {
+            <div class="periodo">
+              <span class="apoio">{{ per }}</span>
+              <button type="button" class="periodo__btn" [attr.aria-expanded]="editandoPrazo()" (click)="editandoPrazo.set(!editandoPrazo())">Alterar prazo</button>
+            </div>
+            @if (editandoPrazo()) {
+              <div class="periodo__form">
+                <label for="fim-ficha" class="apoio">Termina em</label>
+                <input id="fim-ficha" type="date" [min]="amanha()" [value]="fimAtual()" #fimInput />
+                <button type="button" class="btn btn--escuro" (click)="salvarPrazo(fimInput.value)">Salvar</button>
+              </div>
+            }
+          }
           <label class="sr-only" for="nome-ficha">Nome da ficha</label>
           <input
             id="nome-ficha"
@@ -126,6 +140,11 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     }
   `,
   styles: `
+    .periodo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .periodo .apoio, .periodo__form .apoio { margin: 0; }
+    .periodo__btn { border: 0; background: none; padding: 0; min-height: 44px; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); text-decoration: underline; }
+    .periodo__form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .periodo__form input { min-height: 44px; padding: 0 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
     .nome {
       width: 100%;
       border: none;
@@ -287,6 +306,36 @@ export class PlanEditor {
   /** Ficha ainda vazia e não gravada: em vez de excluir, só dá para cancelar. */
   protected readonly rascunho = computed(() => this.plans.rascunho()?.id === this.id());
   protected readonly excluindo = signal(false);
+  protected readonly editandoPrazo = signal(false);
+  private readonly blocoDaFicha = computed(() => {
+    const f = this.ficha();
+    return f ? this.plans.blocos().find((b) => b.fichas.some((x) => x.id === f.id)) ?? null : null;
+  });
+  protected readonly fimAtual = computed(() => this.blocoDaFicha()?.fim ?? '');
+  protected readonly amanha = computed(() => somarDias(this.plans.hoje(), 1));
+  protected readonly periodo = computed(() => {
+    const b = this.blocoDaFicha();
+    if (!b || !b.fim || this.rascunho()) return '';
+    const sit = this.plans.situacaoDe(b.fichas[0]);
+    const dias = diasParaVencer(b, this.plans.hoje()) ?? 0;
+    if (sit === 'arquivada') return `Arquivada · terminou em ${dataCurta(b.fim)}`;
+    if (sit === 'vencida') return `Vencida · terminou em ${dataCurta(b.fim)}`;
+    return `${textoDoPrazo(dias)} · até ${dataCurta(b.fim)}`;
+  });
+
+  protected salvarPrazo(fim: string): void {
+    const b = this.blocoDaFicha();
+    if (!b || !fim) return;
+    if (fim <= this.plans.hoje()) {
+      this.toast.mostrar('Escolha uma data a partir de amanhã');
+      return;
+    }
+    if (this.plans.situacaoDe(b.fichas[0]) !== 'ativa') this.plans.reativarBloco(b.chave);
+    if (this.plans.definirFimBloco(b.chave, fim)) {
+      this.editandoPrazo.set(false);
+      this.toast.mostrar('Prazo atualizado');
+    }
+  }
   protected readonly removendo = signal<{ indice: number; nome: string } | null>(null);
   protected readonly linhas = computed(() =>
     (this.ficha()?.itens ?? []).map((item, i) => ({ item, i, ex: this.ex.get(item.exerciseId) })),

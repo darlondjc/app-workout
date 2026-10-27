@@ -9,6 +9,7 @@ PWA em Angular para montar fichas de treino. A biblioteca tem 876 exercícios co
 - **Biblioteca**: busca por nome em português ou inglês, filtro por grupo muscular, equipamento e nível.
 - **Exercício**: foto alternando entre as duas posições, músculos, equipamento e instruções.
 - **Fichas**: criar, renomear, reordenar, remover exercícios e definir séries, repetições, carga e descanso; cada ficha mostra os grupos musculares trabalhados, e um botão de play flutuante inicia o treino.
+- **Ciclo das fichas**: **Fichas → Nova ficha** pergunta como criar (montar do zero, sugestão automática ou personalizada). Cada ficha vale por um período (4 meses por padrão, ajustável em Perfil e em cada ficha); 10 dias antes do fim a Início avisa. Criar uma ficha nova encerra hoje a(s) ativa(s): a mais recente fica na seção "Vencida" (renovar ou arquivar) e as mais antigas vão para **Fichas arquivadas**. A situação (ativa, vencida, arquivada) é calculada pelas datas em `core/ciclo.ts`, sem alterar nada com o passar do tempo.
 - **Atividade**: o botão + da Início registra uma atividade fora da ficha (corrida, caminhada, esporte…) com duração, distância e esforço opcionais e foto opcional. Ela vale como o treino do dia (semana, meta, medalhas de treinos e cardio e timeline), mas não avança o rodízio das fichas.
 - **Treino**: marcar séries feitas (reps e carga editadas valem para as séries seguintes), cronômetro de descanso progressivo (vermelho no descanso da ficha), pausar ou cancelar pelo X, tempo entre séries e registro do treino concluído.
 

@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
 import { duracaoDoTreino } from './calorias';
+import { BlocoFichas, MESES_PADRAO, Situacao, agruparEmBlocos, chaveDe, limitarMeses, situacoes, somarMeses } from './ciclo';
 import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX, limparNota } from './notas';
 import { PesoService } from './peso.service';
 
@@ -8,6 +9,7 @@ const CHAVE_FICHAS = 'app-workout:fichas:v1';
 const CHAVE_ATIVA = 'app-workout:ficha-ativa:v1';
 const CHAVE_HISTORICO = 'app-workout:historico:v1';
 const CHAVE_ANDAMENTO = 'app-workout:andamento:v1';
+const CHAVE_MESES = 'app-workout:ficha-meses:v1';
 
 /** Parte do estado que vai para a nuvem num único documento. */
 export interface EstadoNuvem {
@@ -57,6 +59,22 @@ export class PlanService {
   /** O próximo exercício adicionado pela biblioteca vai para o rascunho (o usuário tocou em "Adicionar exercício" nele). */
   private readonly alvoRascunho = signal(false);
   readonly emAndamento = signal<EmAndamento | null>(ler<EmAndamento | null>(CHAVE_ANDAMENTO, null));
+  /** Duração padrão de uma ficha nova, em meses (só neste aparelho). */
+  readonly mesesPadrao = signal<number>(limitarMeses(ler<number>(CHAVE_MESES, MESES_PADRAO)));
+  /** Dia de hoje (data local); atualiza ao voltar para o app, para as fichas vencerem na virada do dia. */
+  readonly hoje = signal(dataLocal());
+  /** As fichas como a pessoa as vê (treino solto ou conjunto de treinos), na ordem da lista. */
+  readonly blocos = computed<BlocoFichas[]>(() => agruparEmBlocos(this.fichas()));
+  private readonly situacaoPorChave = computed(() => situacoes(this.blocos(), this.hoje()));
+  readonly blocosAtivos = computed(() => this.blocosEm('ativa'));
+  /** Só a vencida mais recente; as anteriores já estão arquivadas. */
+  readonly blocosVencidos = computed(() => this.blocosEm('vencida'));
+  readonly blocosArquivados = computed(() => this.blocosEm('arquivada'));
+  /** Fichas em uso: as ativas; se todas venceram, a vencida à vista, para o app não ficar sem treino. */
+  readonly fichasEmUso = computed<Ficha[]>(() => {
+    const ativas = this.blocosAtivos();
+    return (ativas.length ? ativas : this.blocosVencidos()).flatMap((b) => b.fichas);
+  });
 
   /** Fichas, ficha ativa e treino em andamento: o que o documento da nuvem guarda. */
   readonly estadoNuvem = computed<EstadoNuvem>(() => ({
@@ -71,7 +89,7 @@ export class PlanService {
     const em = this.emAndamento();
     const emCurso = em ? this.get(em.fichaId) : undefined;
     if (emCurso && emCurso.itens.length > 0) return emCurso;
-    const fichas = this.fichas().filter((f) => f.itens.length > 0);
+    const fichas = this.fichasEmUso().filter((f) => f.itens.length > 0);
     if (fichas.length === 0) return null;
     // Atividade fora da ficha não avança o rodízio.
     const ultima = this.historico().filter((s) => s.fichaId).at(-1);
@@ -80,7 +98,14 @@ export class PlanService {
   });
 
   constructor() {
+    this.garantirPeriodos();
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') this.hoje.set(dataLocal());
+      });
+    }
     effect(() => gravar(CHAVE_FICHAS, this.fichas()));
+    effect(() => gravar(CHAVE_MESES, this.mesesPadrao()));
     effect(() => gravar(CHAVE_ATIVA, this.ativaId()));
     effect(() => gravar(CHAVE_HISTORICO, this.historico()));
     effect(() => gravar(CHAVE_ANDAMENTO, this.emAndamento()));
@@ -104,8 +129,44 @@ export class PlanService {
     return f?.conjunto ? `${f.conjunto.nome} · Treino ${this.letra(id)}` : `Ficha ${this.letra(id)}`;
   }
 
+  private blocosEm(s: Situacao): BlocoFichas[] {
+    const m = this.situacaoPorChave();
+    return this.blocos().filter((b) => m.get(b.chave) === s);
+  }
+
+  /** Situação de uma ficha (ativa, vencida ou arquivada), pelo bloco a que pertence. */
+  situacaoDe(f: Ficha): Situacao {
+    return this.situacaoPorChave().get(chaveDe(f)) ?? 'ativa';
+  }
+
+  /** Período de uma ficha que começa hoje, com a duração padrão. */
+  private novoPeriodo(): { inicio: string; fim: string } {
+    const inicio = dataLocal();
+    return { inicio, fim: somarMeses(inicio, this.mesesPadrao()) };
+  }
+
+  /** Fichas criadas antes do período existir começam a contar a partir de hoje, para não vencerem de surpresa. */
+  private garantirPeriodos(): void {
+    if (this.fichas().every((f) => f.fim)) return;
+    const p = this.novoPeriodo();
+    // Os treinos de uma mesma ficha recebem o mesmo período.
+    this.fichas.update((l) => {
+      const comPeriodo = new Map(l.filter((f) => f.fim).map((f) => [chaveDe(f), { inicio: f.inicio ?? p.inicio, fim: f.fim! }]));
+      return l.map((f) => (f.fim ? f : { ...f, ...(comPeriodo.get(chaveDe(f)) ?? p) }));
+    });
+  }
+
+  /** Criar uma ficha nova encerra, hoje, as que estão ativas: elas passam a vencidas. */
+  private vencerAtivas(): void {
+    const chaves = new Set(this.blocosAtivos().map((b) => b.chave));
+    if (chaves.size === 0) return;
+    const hoje = dataLocal();
+    this.fichas.update((l) => l.map((f) => (chaves.has(chaveDe(f)) ? { ...f, fim: hoje } : f)));
+  }
+
   criar(nome = 'Nova ficha'): Ficha {
-    const ficha: Ficha = { id: crypto.randomUUID(), nome, itens: [] };
+    this.vencerAtivas();
+    const ficha: Ficha = { id: crypto.randomUUID(), nome, itens: [], ...this.novoPeriodo() };
     this.fichas.update((l) => [...l, ficha]);
     this.ativaId.set(ficha.id);
     return ficha;
@@ -113,6 +174,7 @@ export class PlanService {
 
   /** Começa uma ficha nova sem gravá-la: ela só é salva ao receber o primeiro exercício. */
   criarRascunho(nome: string): Ficha {
+    // O período começa quando a ficha passa a existir de verdade (ao receber o primeiro exercício), não agora.
     const ficha: Ficha = { id: crypto.randomUUID(), nome, itens: [] };
     this.rascunho.set(ficha);
     this.alvoRascunho.set(false);
@@ -126,8 +188,10 @@ export class PlanService {
 
   /** Cria várias fichas de uma vez (ex.: sugestão automática) e ativa a primeira. */
   criarComItens(modelos: { nome: string; itens: ItemFicha[] }[]): Ficha[] {
-    const novas = modelos.map((m) => ({ id: crypto.randomUUID(), nome: m.nome, itens: m.itens }));
-    if (novas.length === 0) return novas;
+    if (modelos.length === 0) return [];
+    this.vencerAtivas();
+    const periodo = this.novoPeriodo();
+    const novas = modelos.map((m) => ({ id: crypto.randomUUID(), nome: m.nome, itens: m.itens, ...periodo }));
     this.fichas.update((l) => [...l, ...novas]);
     this.ativaId.set(novas[0].id);
     return novas;
@@ -135,9 +199,11 @@ export class PlanService {
 
   /** Cria uma ficha com vários treinos (A, B, C…) e ativa o primeiro. As fichas que já existem não mudam. */
   criarConjunto(nome: string, treinos: { nome: string; itens: ItemFicha[] }[]): Ficha[] {
+    if (treinos.length === 0) return [];
+    this.vencerAtivas();
     const conjunto = { id: crypto.randomUUID(), nome: nome.trim() || 'Minha ficha' };
-    const novas: Ficha[] = treinos.map((t) => ({ id: crypto.randomUUID(), nome: t.nome, itens: t.itens, conjunto }));
-    if (novas.length === 0) return novas;
+    const periodo = this.novoPeriodo();
+    const novas: Ficha[] = treinos.map((t) => ({ id: crypto.randomUUID(), nome: t.nome, itens: t.itens, conjunto, ...periodo }));
     this.fichas.update((l) => [...l, ...novas]);
     this.ativaId.set(novas[0].id);
     return novas;
@@ -148,13 +214,16 @@ export class PlanService {
    * Se a ficha atual tinha um treino só, ela passa a ser uma ficha com dois. Sem nenhuma ficha, o treino vira a primeira.
    */
   adicionarTreino(nome: string, itens: ItemFicha[]): { treino: Ficha; ficha: string } {
-    const atual = this.fichas().find((f) => f.id === this.ativaId()) ?? this.fichas()[0];
+    const emUso = this.fichasEmUso();
+    const atual = emUso.find((f) => f.id === this.ativaId()) ?? emUso[0];
     if (!atual) {
       const [primeiro] = this.criarComItens([{ nome, itens }]);
       return { treino: primeiro, ficha: nome };
     }
     const conjunto = atual.conjunto ?? { id: crypto.randomUUID(), nome: atual.nome };
-    const treino: Ficha = { id: crypto.randomUUID(), nome, itens, conjunto };
+    // O treino novo entra na ficha atual e segue o período dela.
+    const periodo = atual.fim ? { inicio: atual.inicio ?? this.novoPeriodo().inicio, fim: atual.fim } : this.novoPeriodo();
+    const treino: Ficha = { id: crypto.randomUUID(), nome, itens, conjunto, ...periodo };
     this.fichas.update((l) => {
       const marcada = l.map((f) => (f.id === atual.id ? { ...f, conjunto } : f));
       let ultimo = -1;
@@ -164,6 +233,40 @@ export class PlanService {
       return [...marcada.slice(0, ultimo + 1), treino, ...marcada.slice(ultimo + 1)];
     });
     return { treino, ficha: conjunto.nome };
+  }
+
+  /** Duração padrão das fichas novas, em meses (1 a 12). */
+  definirMesesPadrao(meses: number): void {
+    this.mesesPadrao.set(limitarMeses(meses));
+  }
+
+  /** Guarda a ficha (todos os treinos dela) em "Fichas arquivadas". */
+  arquivarBloco(chave: string): void {
+    this.fichas.update((l) => l.map((f) => (chaveDe(f) === chave ? { ...f, arquivada: true as const } : f)));
+  }
+
+  /** Tira a ficha dos arquivados e começa um período novo, com a duração padrão: ela volta a ficar ativa. */
+  reativarBloco(chave: string): void {
+    const p = this.novoPeriodo();
+    this.fichas.update((l) =>
+      l.map((f) => {
+        if (chaveDe(f) !== chave) return f;
+        const { arquivada: _arquivada, ...resto } = f;
+        return { ...resto, ...p };
+      }),
+    );
+  }
+
+  /** Muda a data de fim da ficha. Precisa ser depois de hoje; devolve `false` se não for. */
+  definirFimBloco(chave: string, fim: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fim) || fim <= dataLocal()) return false;
+    this.fichas.update((l) => l.map((f) => (chaveDe(f) === chave ? { ...f, fim } : f)));
+    return true;
+  }
+
+  /** Exclui a ficha inteira (um treino solto ou o conjunto), com todos os seus treinos. */
+  removerBloco(chave: string): void {
+    for (const f of this.fichas().filter((x) => chaveDe(x) === chave)) this.remover(f.id);
   }
 
   /** Exclui a ficha inteira, com todos os seus treinos. */
@@ -199,7 +302,8 @@ export class PlanService {
     if (rascunho && this.alvoRascunho()) {
       // Primeiro exercício: a ficha passa a existir de verdade.
       this.descartarRascunho();
-      this.fichas.update((l) => [...l, rascunho]);
+      this.vencerAtivas();
+      this.fichas.update((l) => [...l, { ...rascunho, ...this.novoPeriodo() }]);
       this.ativaId.set(rascunho.id);
     }
     let ficha = this.fichas().find((f) => f.id === this.ativaId()) ?? this.fichas()[0];
@@ -385,6 +489,11 @@ export class PlanService {
 
   /** Aplica o estado vindo da nuvem. Com `mesclar`, junta com o que há no aparelho em vez de trocar. */
   aplicarEstadoNuvem(remoto: EstadoNuvem, mesclar = false): void {
+    this.aplicarFichasDaNuvem(remoto, mesclar);
+    this.pesos.aplicar(remoto.pesos, mesclar);
+  }
+
+  private aplicarFichasDaNuvem(remoto: EstadoNuvem, mesclar: boolean): void {
     if (mesclar) {
       const ids = new Set(remoto.fichas.map((f) => f.id));
       this.fichas.set([...remoto.fichas, ...this.fichas().filter((f) => !ids.has(f.id))]);
@@ -395,7 +504,7 @@ export class PlanService {
       this.ativaId.set(remoto.ativaId);
       this.emAndamento.set(remoto.emAndamento);
     }
-    this.pesos.aplicar(remoto.pesos, mesclar);
+    this.garantirPeriodos();
   }
 
   /** Junta sessões recebidas da nuvem ao histórico (união por id, em ordem de data). */

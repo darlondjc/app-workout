@@ -1,3 +1,5 @@
+import { MESES_MAX, MESES_MIN } from '../core/ciclo';
+import { PlanService } from '../core/plan.service';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChangelogService } from '../core/changelog.service';
@@ -101,6 +103,19 @@ import { UpdateService } from '../core/update.service';
           }
         </div>
         <p class="apoio">“Sistema” acompanha o modo claro ou escuro do aparelho. A escolha vale só neste aparelho.</p>
+      </article>
+
+      <article class="card bloco" aria-labelledby="t-fichas">
+        <h2 id="t-fichas" class="sub">Fichas</h2>
+        <div class="meses">
+          <span id="rot-meses">Duração padrão de uma ficha nova</span>
+          <div class="meses__ctl" role="group" aria-labelledby="rot-meses">
+            <button type="button" class="meses__btn" aria-label="Diminuir um mês" [disabled]="plans.mesesPadrao() <= minMeses" (click)="plans.definirMesesPadrao(plans.mesesPadrao() - 1)">−</button>
+            <output aria-live="polite">{{ plans.mesesPadrao() }} {{ plans.mesesPadrao() === 1 ? 'mês' : 'meses' }}</output>
+            <button type="button" class="meses__btn" aria-label="Aumentar um mês" [disabled]="plans.mesesPadrao() >= maxMeses" (click)="plans.definirMesesPadrao(plans.mesesPadrao() + 1)">+</button>
+          </div>
+        </div>
+        <p class="apoio">Ao fim do prazo a ficha vence; você recebe um aviso 10 dias antes. A data de cada ficha pode ser mudada nela. Vale só neste aparelho.</p>
       </article>
 
       <article class="card bloco" aria-labelledby="t-versao">
@@ -253,6 +268,10 @@ import { UpdateService } from '../core/update.service';
       flex-direction: column;
       gap: 16px;
     }
+    .meses { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+    .meses__ctl { display: flex; align-items: center; gap: 10px; font-weight: 700; white-space: nowrap; }
+    .meses__btn { width: 44px; height: 44px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; font-size: 20px; font-weight: 700; }
+    .meses__btn:disabled { opacity: 0.4; }
     .temas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .tema { min-height: 44px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; }
     .tema[aria-checked='true'] { border-color: var(--ink); background: var(--soft); }
@@ -490,6 +509,9 @@ export class Settings {
     { valor: 'claro', rotulo: 'Claro' },
     { valor: 'escuro', rotulo: 'Escuro' },
   ];
+  protected readonly plans = inject(PlanService);
+  protected readonly minMeses = MESES_MIN;
+  protected readonly maxMeses = MESES_MAX;
   protected readonly up = inject(UpdateService);
   protected readonly log = inject(ChangelogService);
   protected readonly nuvem = inject(CloudService);

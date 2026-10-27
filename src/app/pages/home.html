@@ -114,7 +114,7 @@
       <a class="btn btn--destaque" routerLink="/biblioteca">
         <app-icon name="plus" [size]="18" [stroke]="2.5" /> Escolher exercícios
       </a>
-      <a class="btn btn--claro" routerLink="/fichas/sugestao">Sugerir ficha</a>
+      <a class="btn btn--claro" routerLink="/fichas/nova">Nova ficha</a>
     </article>
   }
 
@@ -122,6 +122,21 @@
     <a class="btn btn--claro" routerLink="/treino-do-dia">
       <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino customizado para hoje
     </a>
+  }
+
+  @if (aviso(); as av) {
+    <article class="card aviso-ficha" aria-labelledby="t-aviso-ficha">
+      <h2 id="t-aviso-ficha" class="rot">{{ av.titulo }}</h2>
+      <p class="apoio">{{ av.texto }}</p>
+      <div class="aviso-ficha__acoes">
+        @if (av.renovar) {
+          <button type="button" class="btn btn--claro" (click)="renovar(av.chave)">Renovar</button>
+        } @else {
+          <a class="btn btn--claro" [routerLink]="['/ficha', av.fichaId]">Alterar prazo</a>
+        }
+        <a class="btn btn--escuro" routerLink="/fichas/nova">Nova ficha</a>
+      </div>
+    </article>
   }
 
   @if (plans.fichas().length > 0 || plans.historico().length > 0) {
@@ -154,13 +169,13 @@
     </section>
   }
 
-  @if (plans.fichas().length > 0) {
+  @if (plans.fichasEmUso().length > 0) {
     <section class="lista" aria-labelledby="titulo-fichas">
       <div class="lista__topo">
         <h2 id="titulo-fichas">Minhas fichas</h2>
         <a routerLink="/fichas" class="ver-todas">Ver todas</a>
       </div>
-      @for (f of plans.fichas().slice(0, 3); track f.id) {
+      @for (f of plans.fichasEmUso().slice(0, 3); track f.id) {
         <a class="card linha" [routerLink]="['/ficha', f.id]">
           <span class="letra">{{ plans.letra(f.id) }}</span>
           <span class="linha__texto">

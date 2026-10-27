@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { BlocoFichas, dataCurta, diasParaVencer, emAviso, textoDoPrazo } from '../core/ciclo';
 import { Confirmacao } from '../core/confirmacao';
 import { ExerciseService } from '../core/exercise.service';
 import { FichaCompartilhar } from '../core/ficha-compartilhar';
@@ -18,45 +19,90 @@ import { PlanService } from '../core/plan.service';
       <header>
         <h1 class="titulo">Fichas</h1>
         <p class="apoio">
-          {{ blocos().length }} {{ blocos().length === 1 ? 'ficha' : 'fichas' }}
+          {{ plans.blocosAtivos().length }} {{ plans.blocosAtivos().length === 1 ? 'ficha ativa' : 'fichas ativas' }}
         </p>
       </header>
 
+      <a class="btn btn--escuro" routerLink="/fichas/nova">
+        <app-icon name="plus" [size]="18" [stroke]="2.5" /> Nova ficha
+      </a>
+
+      @if (!plans.treinouHoje()) {
+        <a class="btn btn--destaque" routerLink="/treino-do-dia">
+          <app-icon name="play" [size]="18" /> Treino customizado para hoje
+        </a>
+      }
+
       <ul class="lista">
-        @for (b of blocos(); track b.chave) {
-          @if (b.conjunto; as c) {
-            <li class="conjunto">
-              <button type="button" class="conjunto__topo" [attr.aria-expanded]="aberto(b)" [attr.aria-controls]="'conj-' + c.id" (click)="alternar(b)">
-                <span class="conjunto__texto">
-                  <strong class="conjunto__nome">{{ c.nome }}</strong>
-                  <span class="apoio">{{ b.fichas.length }} {{ b.fichas.length === 1 ? 'treino' : 'treinos' }}@if (!aberto(b)) { · {{ resumo(b) }} }</span>
-                </span>
-                <app-icon [name]="aberto(b) ? 'up' : 'down'" [size]="22" [stroke]="2.2" />
-              </button>
-              @if (aberto(b)) {
-                <ul class="lista" [id]="'conj-' + c.id">
-                  @for (f of b.fichas; track f.id) {
-                    <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: f }" />
-                  }
-                </ul>
-                <div class="conjunto__acoes">
-                  <button type="button" class="conjunto__compartilhar" aria-haspopup="dialog" (click)="compartilhar(c.nome, b.fichas)">
-                    <app-icon name="share" [size]="18" [stroke]="2" /> Compartilhar
-                  </button>
-                  <button type="button" class="conjunto__excluir" aria-haspopup="dialog" (click)="excluindoConjunto.set({ id: c.id, nome: c.nome, treinos: b.fichas.length })">
-                    <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
-                  </button>
-                </div>
-              }
-            </li>
-          } @else {
-            <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: b.fichas[0] }" />
-          }
+        @for (b of plans.blocosAtivos(); track b.chave) {
+          <ng-container [ngTemplateOutlet]="blocoTpl" [ngTemplateOutletContext]="{ $implicit: b }" />
         } @empty {
-          <li class="apoio vazio">Você ainda não tem fichas. Crie a primeira para começar.</li>
+          @if (plans.blocosVencidos().length === 0) {
+            <li class="apoio vazio">Você ainda não tem fichas. Crie a primeira para começar.</li>
+          } @else {
+            <li class="apoio vazio">Nenhuma ficha em andamento. Renove uma vencida ou crie uma nova.</li>
+          }
         }
       </ul>
 
+      @if (plans.blocosVencidos().length > 0) {
+        <section class="vencidas" aria-label="Fichas vencidas">
+          <button type="button" class="vencidas__topo" [attr.aria-expanded]="vencidasAbertas()" aria-controls="vencidas-lista" (click)="vencidasAbertas.set(!vencidasAbertas())">
+            <span class="conjunto__texto">
+              <strong>Vencida</strong>
+              <span class="apoio">{{ vencidasResumo() }}</span>
+            </span>
+            <app-icon [name]="vencidasAbertas() ? 'up' : 'down'" [size]="22" [stroke]="2.2" />
+          </button>
+          @if (vencidasAbertas()) {
+            <ul class="lista" id="vencidas-lista">
+              @for (b of plans.blocosVencidos(); track b.chave) {
+                <ng-container [ngTemplateOutlet]="blocoTpl" [ngTemplateOutletContext]="{ $implicit: b }" />
+                <li class="vencida__acoes">
+                  <button type="button" class="btn btn--claro" (click)="renovar(b.chave)">Renovar por {{ plans.mesesPadrao() }} {{ plans.mesesPadrao() === 1 ? 'mês' : 'meses' }}</button>
+                  <button type="button" class="btn btn--claro" (click)="plans.arquivarBloco(b.chave)">Arquivar</button>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      @if (plans.blocosArquivados().length > 0) {
+        <a class="btn btn--claro" routerLink="/fichas/arquivadas">Fichas arquivadas ({{ plans.blocosArquivados().length }})</a>
+      }
+
+      <ng-template #blocoTpl let-b>
+        @if (b.conjunto; as c) {
+          <li class="conjunto">
+            <button type="button" class="conjunto__topo" [attr.aria-expanded]="aberto(b)" [attr.aria-controls]="'conj-' + c.id" (click)="alternar(b)">
+              <span class="conjunto__texto">
+                <strong class="conjunto__nome">{{ c.nome }}</strong>
+                <span class="apoio">{{ b.fichas.length }} {{ b.fichas.length === 1 ? 'treino' : 'treinos' }}@if (!aberto(b)) { · {{ resumo(b) }} }</span>
+                <span class="prazo" [class.prazo--aviso]="aviso(b)">{{ prazo(b) }}</span>
+              </span>
+              <app-icon [name]="aberto(b) ? 'up' : 'down'" [size]="22" [stroke]="2.2" />
+            </button>
+            @if (aberto(b)) {
+              <ul class="lista" [id]="'conj-' + c.id">
+                @for (f of b.fichas; track f.id) {
+                  <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: f }" />
+                }
+              </ul>
+              <div class="conjunto__acoes">
+                <button type="button" class="conjunto__compartilhar" aria-haspopup="dialog" (click)="compartilhar(c.nome, b.fichas)">
+                  <app-icon name="share" [size]="18" [stroke]="2" /> Compartilhar
+                </button>
+                <button type="button" class="conjunto__excluir" aria-haspopup="dialog" (click)="excluindoConjunto.set({ id: c.id, nome: c.nome, treinos: b.fichas.length })">
+                  <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
+                </button>
+              </div>
+            }
+          </li>
+        } @else {
+          <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: b.fichas[0] }" />
+        }
+      </ng-template>
 
       <ng-template #linha let-f>
           <li class="item">
@@ -106,21 +152,6 @@ import { PlanService } from '../core/plan.service';
             </div>
           </li>
       </ng-template>
-
-      @if (!plans.treinouHoje()) {
-        <a class="btn btn--destaque" routerLink="/treino-do-dia">
-          <app-icon name="play" [size]="18" /> Treino customizado para hoje
-        </a>
-      }
-      <a class="btn btn--claro" routerLink="/fichas/sugestao">
-        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Sugerir ficha
-      </a>
-      <a class="btn btn--claro" routerLink="/fichas/personalizada">
-        <app-icon name="settings" [size]="18" [stroke]="2.2" /> Criar ficha personalizada
-      </a>
-      <button type="button" class="btn btn--tracejado" (click)="nova()">
-        <app-icon name="plus" [size]="18" [stroke]="2.5" /> Nova ficha
-      </button>
 
       @if (compartilhando(); as c) {
         <app-ficha-compartilhar [ficha]="c" (fechar)="compartilhando.set(null)" />
@@ -262,6 +293,12 @@ import { PlanService } from '../core/plan.service';
       justify-content: center;
       font-weight: 700;
     }
+    .prazo { font-size: 12px; color: var(--muted); }
+    .prazo--aviso { color: var(--ink); font-weight: 700; }
+    .vencidas { border: 1px dashed var(--line); border-radius: 18px; padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 8px; }
+    .vencidas__topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 52px; padding: 6px 6px; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; }
+    .vencida__acoes { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+    .vencida__acoes .btn { flex: 1 1 140px; }
     .vazio {
       padding: 24px 0;
       text-align: center;
@@ -273,27 +310,29 @@ export class Plans {
 
   protected readonly plans = inject(PlanService);
   private readonly exercicios = inject(ExerciseService);
-  private readonly router = inject(Router);
 
-  /** Fichas na ordem da lista: cada treino solto é uma ficha; os treinos de uma ficha com vários ficam juntos, onde está o primeiro. */
-  protected readonly blocos = computed(() => {
-    const out: { chave: string; conjunto?: { id: string; nome: string }; fichas: Ficha[] }[] = [];
-    const porConjunto = new Map<string, (typeof out)[number]>();
-    for (const f of this.plans.fichas()) {
-      if (!f.conjunto) {
-        out.push({ chave: f.id, fichas: [f] });
-        continue;
-      }
-      const existente = porConjunto.get(f.conjunto.id);
-      if (existente) existente.fichas.push(f);
-      else {
-        const novo = { chave: f.conjunto.id, conjunto: f.conjunto, fichas: [f] };
-        porConjunto.set(f.conjunto.id, novo);
-        out.push(novo);
-      }
-    }
-    return out;
-  });
+  protected readonly vencidasAbertas = signal(false);
+
+  protected vencidasResumo(): string {
+    const v = this.plans.blocosVencidos();
+    return v.map((b) => `${b.nome} · terminou em ${b.fim ? dataCurta(b.fim) : ''}`).join(' · ');
+  }
+
+  protected prazo(b: BlocoFichas): string {
+    const hoje = this.plans.hoje();
+    const dias = diasParaVencer(b, hoje);
+    if (dias === null || !b.fim) return '';
+    return dias > 0 ? `${textoDoPrazo(dias)} · até ${dataCurta(b.fim)}` : `Terminou em ${dataCurta(b.fim)}`;
+  }
+
+  protected aviso(b: BlocoFichas): boolean {
+    return emAviso(b, this.plans.hoje());
+  }
+
+  protected renovar(chave: string): void {
+    this.plans.reativarBloco(chave);
+  }
+
   /** Fichas que a pessoa abriu ou fechou à mão; as demais seguem o padrão: só a ficha atual fica aberta. */
   private readonly manual = signal<Record<string, boolean>>({});
 
@@ -301,18 +340,18 @@ export class Plans {
     this.compartilhando.set(fichaParaCompartilhar(nome, treinos));
   }
 
-  protected aberto(b: { chave: string; fichas: Ficha[] }): boolean {
+  protected aberto(b: BlocoFichas): boolean {
     const escolha = this.manual()[b.chave];
     return escolha ?? b.fichas.some((f) => f.id === this.plans.ativaId());
   }
 
-  protected alternar(b: { chave: string; fichas: Ficha[] }): void {
+  protected alternar(b: BlocoFichas): void {
     const agora = !this.aberto(b);
     this.manual.update((m) => ({ ...m, [b.chave]: agora }));
   }
 
   /** Nomes dos treinos, para a ficha fechada mostrar do que se trata. */
-  protected resumo(b: { fichas: Ficha[] }): string {
+  protected resumo(b: BlocoFichas): string {
     return b.fichas.map((f) => f.nome).join(' · ');
   }
 
@@ -401,10 +440,5 @@ export class Plans {
     this.excluindo.set(null);
     this.aberta.set(null);
     this.plans.remover(f.id);
-  }
-
-  protected nova(): void {
-    const ficha = this.plans.criarRascunho(`Ficha ${String.fromCharCode(65 + (this.plans.fichas().length % 26))}`);
-    this.router.navigate(['/ficha', ficha.id]);
   }
 }

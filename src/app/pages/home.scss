@@ -263,3 +263,8 @@
 .page {
   padding-bottom: 72px;
 }
+
+.aviso-ficha { padding: 14px; display: flex; flex-direction: column; gap: 8px; border-color: var(--ink); }
+.aviso-ficha .apoio { margin: 0; }
+.aviso-ficha__acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.aviso-ficha__acoes .btn { flex: 1 1 140px; }

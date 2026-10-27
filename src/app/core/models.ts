@@ -44,6 +44,12 @@ export interface Ficha {
    * Sem isto, é uma ficha de um treino só, como eram todas antes.
    */
   conjunto?: { id: string; nome: string };
+  /** Primeiro dia da ficha (yyyy-mm-dd). Todos os treinos de uma ficha com vários treinos têm o mesmo período. Ausente nas fichas criadas antes da 1.24. */
+  inicio?: string;
+  /** Último dia da ficha (yyyy-mm-dd): nesse dia ela passa a vencida. */
+  fim?: string;
+  /** Guardada em "Fichas arquivadas" pela pessoa. Fichas vencidas além da mais recente também ficam arquivadas, sem este campo. */
+  arquivada?: true;
 }
 
 /** Valores realizados em uma série. */

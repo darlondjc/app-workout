@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { dataCurta, diasParaVencer, emAviso, textoDoPrazo } from '../core/ciclo';
 import { AtividadeDialogo } from '../core/atividade-dialogo';
 import { resumoAtividade } from '../core/atividade';
 import { Avatar } from '../core/avatar';
@@ -38,6 +39,28 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
 })
 export class Home {
   protected readonly plans = inject(PlanService);
+
+  /** Aviso do ciclo da ficha: falta pouco para vencer, ou todas as fichas venceram. */
+  protected readonly aviso = computed(() => {
+    const hoje = this.plans.hoje();
+    const perto = this.plans
+      .blocosAtivos()
+      .filter((b) => emAviso(b, hoje))
+      .sort((x, y) => (diasParaVencer(x, hoje) ?? 0) - (diasParaVencer(y, hoje) ?? 0))[0];
+    if (perto) {
+      const dias = diasParaVencer(perto, hoje) ?? 0;
+      return { chave: perto.chave, fichaId: perto.fichas[0].id, renovar: false, titulo: `${perto.nome}: ${textoDoPrazo(dias).toLowerCase()}`, texto: `A ficha vale até ${dataCurta(perto.fim ?? '')}. Estenda o prazo ou crie uma nova.` };
+    }
+    if (this.plans.blocosAtivos().length === 0) {
+      const v = this.plans.blocosVencidos()[0];
+      if (v) return { chave: v.chave, fichaId: v.fichas[0].id, renovar: true, titulo: `${v.nome} venceu`, texto: `Terminou em ${dataCurta(v.fim ?? '')}. Renove por mais ${this.plans.mesesPadrao()} meses ou crie uma nova.` };
+    }
+    return null;
+  });
+
+  protected renovar(chave: string): void {
+    this.plans.reativarBloco(chave);
+  }
   protected readonly exercicios = inject(ExerciseService);
 
   protected grupos(itens: { exerciseId: string }[]): string[] {

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ItemFicha } from './models';
-import { PlanService } from './plan.service';
+import { PlanService, dataLocal } from './plan.service';
 
 const item = (exerciseId: string, carga: number): ItemFicha => ({ exerciseId, series: 4, reps: 8, carga, descanso: 90 });
 
@@ -190,9 +190,9 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
     plans = TestBed.inject(PlanService);
   });
 
-  it('as fichas novas entram depois das atuais, sem alterar nenhuma delas', () => {
+  it('as fichas novas entram depois das atuais, sem alterar nenhuma delas (a antiga só é encerrada hoje)', () => {
     const [antiga] = plans.criarComItens([{ nome: 'Minha ficha', itens: [item('supino', 60)] }]);
-    const antes = JSON.stringify(plans.get(antiga.id));
+    const antes = JSON.stringify({ ...plans.get(antiga.id), fim: dataLocal() });
     const novas = plans.criarComItens([
       { nome: 'Peito', itens: [item('crucifixo', 10)] },
       { nome: 'Costas', itens: [item('remada', 40)] },
@@ -247,6 +247,7 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
     const [solta] = plans.criarComItens([{ nome: 'Antiga', itens: [item('supino', 60)] }]);
     const t = plans.criarConjunto('Divisão', [{ nome: 'x', itens: [] }, { nome: 'y', itens: [] }]);
     const outra = plans.criarComItens([{ nome: 'Outra', itens: [] }])[0];
+    plans.reativarBloco(t[0].conjunto!.id);
     plans.definirAtiva(t[0].id);
     const r = plans.adicionarTreino('Treino do dia · 23/10', [item('rosca', 10)]);
     expect(r.ficha).toBe('Divisão');

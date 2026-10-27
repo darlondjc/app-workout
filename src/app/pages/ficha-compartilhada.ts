@@ -49,6 +49,10 @@ import { ToastService } from '../core/toast.service';
           <p class="apoio">{{ ignorados() }} {{ ignorados() === 1 ? 'exercício não existe' : 'exercícios não existem' }} neste app e {{ ignorados() === 1 ? 'ficou de fora' : 'ficaram de fora' }}.</p>
         }
 
+        @if (plans.blocosAtivos().length > 0) {
+          <p class="apoio">Ao adicionar, a ficha atual termina hoje e vai para as vencidas; esta passa a valer por {{ plans.mesesPadrao() }} meses.</p>
+        }
+
         <div class="acoes">
           <a class="btn btn--claro" routerLink="/fichas">Agora não</a>
           <button type="button" class="btn btn--escuro" (click)="adicionar()">Adicionar às minhas fichas</button>
@@ -79,7 +83,7 @@ import { ToastService } from '../core/toast.service';
 })
 export class FichaCompartilhada {
   protected readonly ex = inject(ExerciseService);
-  private readonly plans = inject(PlanService);
+  protected readonly plans = inject(PlanService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 

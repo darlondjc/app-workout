@@ -9,7 +9,7 @@ const CHAVE_PRECARGA = 'app-workout:precarga:v1';
 /** Exercícios das fichas (e os trocados só no treino em andamento), sem repetir. */
 export function idsDasFichas(fichas: Ficha[], andamento: EmAndamento | null): string[] {
   const ids = new Set<string>();
-  for (const f of fichas) for (const i of f.itens) ids.add(i.exerciseId);
+  for (const f of fichas.filter((x) => !x.arquivada)) for (const i of f.itens) ids.add(i.exerciseId);
   for (const id of Object.values(andamento?.trocas ?? {})) ids.add(id);
   return [...ids];
 }

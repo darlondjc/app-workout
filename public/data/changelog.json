@@ -1,5 +1,17 @@
 [
   {
+    "versao": "1.24.0",
+    "data": "2026-10-27",
+    "titulo": "Ciclo das fichas",
+    "itens": [
+      "\"Nova ficha\" agora vem primeiro em Fichas e abre uma tela com três caminhos, cada um explicado: Montar do zero, Sugestão automática e Personalizada.",
+      "Toda ficha tem um prazo, de 4 meses por padrão. Dá para mudar a data de fim na própria ficha, e a duração padrão fica em Perfil.",
+      "Faltando 10 dias ou menos, a tela inicial avisa e oferece alterar o prazo ou criar uma ficha nova.",
+      "Ao criar uma ficha nova, a anterior termina hoje e fica numa seção \"Vencida\" recolhida, com Renovar ou Arquivar. Só a vencida mais recente fica à vista; as mais antigas vão para as arquivadas.",
+      "Novo botão \"Fichas arquivadas\", onde dá para consultar, reativar ou excluir. Fichas que você já tinha começam a contar o prazo a partir de hoje."
+    ]
+  },
+  {
     "versao": "1.23.1",
     "data": "2026-10-27",
     "titulo": "Acabamento do modo escuro",
