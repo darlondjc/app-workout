@@ -1,4 +1,4 @@
-import { Atividade, Evento, linkDoGrupo, timelineDoGrupo, chaveConexao, gerarCodigo, idEvento, marcoDoTreino, montarTimeline, nomeComMaiuscula, normalizarCodigo, tempoRelativo } from './social';
+import { Atividade, Evento, codigoDoConvite, linkDoGrupo, timelineDoGrupo, chaveConexao, gerarCodigo, idEvento, marcoDoTreino, montarTimeline, nomeComMaiuscula, normalizarCodigo, tempoRelativo } from './social';
 
 function evento(autor: string, id: string, criadoEm: number): Evento {
   return { id, autor, autorNome: autor, autorFoto: null, tipo: 'treino', criadoEm, sessaoId: id, data: '2026-10-20', fichaNome: 'A', exercicios: 3, volume: 1000, recordes: [] };
@@ -111,5 +111,20 @@ describe('nomeComMaiuscula', () => {
   it('ignora espaços nas pontas e aceita acento e nome vazio', () => {
     expect(nomeComMaiuscula('  érica ')).toBe('Érica');
     expect(nomeComMaiuscula('')).toBe('');
+  });
+});
+
+describe('codigoDoConvite', () => {
+  it('lê o código solto ou dentro do link de convite', () => {
+    expect(codigoDoConvite('abcd2345')).toBe('ABCD2345');
+    expect(codigoDoConvite(' https://site/app-workout/convite/ABCD2345?x=1 ')).toBe('ABCD2345');
+  });
+
+  it('recusa o que não é código de grupo', () => {
+    expect(codigoDoConvite('')).toBeNull();
+    expect(codigoDoConvite('ABC')).toBeNull();
+    expect(codigoDoConvite('ABCD0O1I')).toBeNull();
+    expect(codigoDoConvite('https://site/amigo/ABCD2345')).toBeNull();
+    expect(codigoDoConvite('zAbcDefGhIj')).toBeNull();
   });
 });

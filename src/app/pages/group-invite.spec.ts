@@ -36,7 +36,7 @@ describe('GroupInvite', () => {
     expect(botoes).not.toContain('Convidar');
   });
 
-  it('mostra o QR code do link do convite', () => {
+  it('mostra o QR code do convite (só o código do grupo)', () => {
     [...el().querySelectorAll('button')].find((b) => b.textContent?.includes('Mostrar QR code'))!.click();
     fixture.detectChanges();
     const caminho = el().querySelector('.qr svg path')?.getAttribute('d') ?? '';

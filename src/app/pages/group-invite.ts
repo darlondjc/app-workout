@@ -112,7 +112,7 @@ import { Carregando } from '../core/spinner';
                 <path [attr.d]="qr().caminho" fill="#000" />
               </svg>
             </div>
-            <p class="apoio centro">Peça para a pessoa apontar a câmera do celular para este código.</p>
+            <p class="apoio centro">Peça para a pessoa abrir a aba Social e tocar em Escanear QR code.</p>
           </app-dialogo>
         }
         @if (saindo()) {
@@ -201,10 +201,10 @@ export class GroupInvite {
     return (g.pedidos ?? []).map((uid) => this.social.perfilDe(uid) ?? { uid, nome: 'Alguém', foto: null });
   });
 
-  /** QR code do link como um único caminho SVG (um quadradinho por módulo escuro), com a margem de 4 módulos que a leitura pede. */
+  /** QR code do código do grupo como um único caminho SVG (um quadradinho por módulo escuro), com a margem de 4 módulos que a leitura pede. */
   protected readonly qr = computed(() => {
     const qr = qrcode(0, 'M');
-    qr.addData(this.link());
+    qr.addData(this.id());
     qr.make();
     const n = qr.getModuleCount();
     const margem = 4;

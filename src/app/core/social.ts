@@ -196,6 +196,17 @@ export function normalizarCodigo(texto: string): string {
   return texto.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+/**
+ * Código de grupo a partir do que um QR code ou um link trouxe: o link de convite (`…/convite/CODIGO`) ou só o código.
+ * Devolve `null` se não parecer um convite de grupo.
+ */
+export function codigoDoConvite(texto: string): string | null {
+  const t = texto.trim();
+  const m = /\/convite\/([^/?#\s]+)/.exec(t);
+  const codigo = (m ? m[1] : t).toUpperCase();
+  return new RegExp(`^[${ALFABETO}]{8}$`).test(codigo) ? codigo : null;
+}
+
 /** Link para ser adicionado como amigo: abre o app direto no pedido (`base` é o endereço do app). */
 export function linkDoAmigo(base: string, codigo: string): string {
   return `${base.replace(/\/?$/, '/')}amigo/${codigo}`;

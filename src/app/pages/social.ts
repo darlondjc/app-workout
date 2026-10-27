@@ -5,14 +5,15 @@ import { AvatarGrupo } from '../core/avatar-grupo';
 import { BarraTopo } from '../core/barra-topo';
 import { CloudService } from '../core/cloud.service';
 import { Icon } from '../core/icon';
-import { TAMANHO_NOME_GRUPO, tempoRelativo } from '../core/social';
+import { QrLeitor } from '../core/qr-leitor';
+import { TAMANHO_NOME_GRUPO, codigoDoConvite, tempoRelativo } from '../core/social';
 import { SocialService } from '../core/social.service';
 import { Carregando } from '../core/spinner';
 
 /** Aba Social: os grupos de que a pessoa faz parte e os amigos mais chegados. A timeline e o convite ficam na tela de cada grupo. */
 @Component({
   selector: 'app-social',
-  imports: [RouterLink, Avatar, AvatarGrupo, BarraTopo, Icon, Carregando],
+  imports: [RouterLink, Avatar, AvatarGrupo, BarraTopo, Icon, Carregando, QrLeitor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -39,10 +40,21 @@ import { Carregando } from '../core/spinner';
 
         <div class="secao-topo">
           <h2 class="secao">Grupos</h2>
-          <button type="button" class="novo" aria-label="Criar grupo" (click)="criando.set(true)">
-            <app-icon name="plus" [size]="20" [stroke]="2.4" />
-          </button>
+          <span class="acoes-topo">
+            <button type="button" class="novo" aria-label="Escanear QR code de um grupo" aria-haspopup="dialog" (click)="escaneando.set(true)">
+              <app-icon name="qr" [size]="20" [stroke]="2" />
+            </button>
+            <button type="button" class="novo" aria-label="Criar grupo" (click)="criando.set(true)">
+              <app-icon name="plus" [size]="20" [stroke]="2.4" />
+            </button>
+          </span>
         </div>
+        @if (erroQr()) {
+          <p class="erro" role="alert">{{ erroQr() }}</p>
+        }
+        @if (escaneando()) {
+          <app-qr-leitor (lido)="aoLer($event)" (fechar)="escaneando.set(false)" />
+        }
 
         @if (criando()) {
           <form class="card criar" (submit)="criar($event, campo)" aria-label="Novo grupo">
@@ -203,6 +215,7 @@ import { Carregando } from '../core/spinner';
     .texto { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; font-size: 14px; }
     .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .acoes-topo { display: inline-flex; gap: 8px; }
     .erro { color: var(--perigo); font-size: 14px; }
     button:disabled { opacity: 0.6; }
   `,
@@ -213,7 +226,21 @@ export class Social {
   private readonly router = inject(Router);
   protected readonly criando = signal(false);
   protected readonly salvando = signal(false);
+  protected readonly escaneando = signal(false);
+  protected readonly erroQr = signal('');
   protected readonly limiteNome = TAMANHO_NOME_GRUPO;
+
+  /** QR lido: abre o convite do grupo, o mesmo que o link abriria. */
+  protected aoLer(texto: string): void {
+    this.escaneando.set(false);
+    const codigo = codigoDoConvite(texto);
+    if (!codigo) {
+      this.erroQr.set('Esse QR code não é de um grupo do App Workout.');
+      return;
+    }
+    this.erroQr.set('');
+    void this.router.navigate(['/convite', codigo]);
+  }
 
   /** Resumo do treino mais recente de alguém do grupo, para o rodapé do card. */
   protected ultima(grupoId: string): string {
