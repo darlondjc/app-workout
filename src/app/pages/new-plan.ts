@@ -75,6 +75,7 @@ interface Caminho {
     </section>
   `,
   styles: `
+    .voltar { border: 0; background: none; padding: 0; font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--muted); }
     .page { display: flex; flex-direction: column; gap: 14px; }
     header .apoio { margin: 0; }
     .caminhos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
