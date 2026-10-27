@@ -5,6 +5,7 @@
     "titulo": "Acabamento do modo escuro",
     "itens": [
       "Modo escuro: cores no mesmo tom das telas que já eram escuras (treino e login), barras de progresso em verde-limão e medalhas ainda não conquistadas com aparência apagada, de desativadas.",
+      "Corrigido o texto claro sobre verde-limão (como o chip do músculo no detalhe do exercício) no modo escuro, e um texto cinza fraco no cartão escuro do início.",
       "O fundo atrás das fotos dos exercícios deixou de ser branco no modo escuro.",
       "As fotos de cada exercício agora trocam de posição um pouco mais devagar (1,1 s em vez de 0,8 s). Por isso o app baixa de novo as animações dos exercícios que você já tinha guardado para usar sem internet."
     ]
