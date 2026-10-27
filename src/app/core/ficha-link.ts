@@ -181,6 +181,25 @@ export function validar(bruto: unknown): FichaCompartilhada | null {
   return { nome: nome(c.n, 'Ficha compartilhada'), treinos };
 }
 
+/**
+ * Tira o código de uma ficha de um texto colado: o link inteiro (de qualquer endereço do app) ou só o código.
+ * Devolve `null` se não parecer um link de ficha.
+ */
+export function codigoDoTexto(texto: string): string | null {
+  const t = texto.trim();
+  if (!t) return null;
+  let codigo = t;
+  const m = /[?&#]d=([^&#\s]+)/.exec(t);
+  if (m) codigo = m[1];
+  else if (/[/:?]/.test(t)) return null;
+  try {
+    codigo = decodeURIComponent(codigo);
+  } catch {
+    return null;
+  }
+  return /^[zj][A-Za-z0-9_-]+$/.test(codigo) && codigo.length <= MAX_LINK ? codigo : null;
+}
+
 /** Link completo para a ficha; `base` é o endereço do app terminado em barra. */
 export function linkDaFicha(base: string, codigo: string): string {
   return `${base}ficha-compartilhada?d=${codigo}`;

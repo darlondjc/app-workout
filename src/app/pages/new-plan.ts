@@ -60,6 +60,11 @@ interface Caminho {
         </li>
       </ul>
 
+      <a class="importar" routerLink="/fichas/importar">
+        <app-icon name="link" [size]="18" [stroke]="2" />
+        <span>Recebeu o link de uma ficha? <strong>Importar</strong></span>
+      </a>
+
       <aside class="card aviso" aria-label="Como a ficha nova funciona">
         <p class="apoio">
           A ficha vale por <strong>{{ plans.mesesPadrao() }} {{ plans.mesesPadrao() === 1 ? 'mês' : 'meses' }}</strong>. Você pode mudar a data de fim
@@ -85,6 +90,8 @@ interface Caminho {
     .caminho__txt strong { font-family: var(--font-display); font-size: 18px; }
     .ideal { color: var(--muted); font-size: 13px; }
     .seta { flex: none; color: var(--muted); }
+    .importar { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 6px; color: var(--ink); text-decoration: none; font-size: 14px; }
+    .importar strong { text-decoration: underline; }
     .aviso { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
     .aviso .apoio { margin: 0; }
   `,

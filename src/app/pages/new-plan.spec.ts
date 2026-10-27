@@ -43,4 +43,8 @@ describe('NewPlan', () => {
     expect(el().textContent).toContain('"Atual"');
     expect(el().textContent).toContain('encerrada');
   });
+
+  it('tem um atalho para importar uma ficha recebida por link', () => {
+    expect(el().querySelector('a.importar')!.getAttribute('href')).toBe('/fichas/importar');
+  });
 });

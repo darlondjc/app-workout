@@ -1,5 +1,5 @@
 import { Ficha } from './models';
-import { codificarFicha, decodificarFicha, fichaParaCompartilhar, linkDaFicha, validar } from './ficha-link';
+import { codificarFicha, codigoDoTexto, decodificarFicha, fichaParaCompartilhar, linkDaFicha, validar } from './ficha-link';
 
 const treino = (nome: string, ids: string[]): Ficha => ({
   id: nome,
@@ -84,5 +84,24 @@ describe('ficha-link', () => {
     expect(validar({ v: 1, n: 'a', t: [{ n: 't', i: [['../x', 1, 1, 1, 1, 0]] }] })).toBeNull();
     expect(validar(null)).toBeNull();
     expect(validar('texto')).toBeNull();
+  });
+});
+
+describe('codigoDoTexto', () => {
+  it('tira o código de um link completo, de qualquer endereço', () => {
+    expect(codigoDoTexto('https://darlondjc.github.io/app-workout/ficha-compartilhada?d=zAbc_-12')).toBe('zAbc_-12');
+    expect(codigoDoTexto('  http://localhost:4200/ficha-compartilhada?x=1&d=jXyz  ')).toBe('jXyz');
+  });
+
+  it('aceita só o código', () => {
+    expect(codigoDoTexto('zAbc123')).toBe('zAbc123');
+  });
+
+  it('recusa o que não parece uma ficha', () => {
+    expect(codigoDoTexto('')).toBeNull();
+    expect(codigoDoTexto('https://exemplo.com/outra-coisa')).toBeNull();
+    expect(codigoDoTexto('olá, tudo bem?')).toBeNull();
+    expect(codigoDoTexto('https://x.com/?d=aBc')).toBeNull();
+    expect(codigoDoTexto('https://x.com/?d=z%')).toBeNull();
   });
 });
