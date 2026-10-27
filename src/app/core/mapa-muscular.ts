@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { CORPO, RegiaoCorpo } from './corpo-svg';
+import { ExercicioDialogo } from './exercicio-dialogo';
 import { ExerciseService } from './exercise.service';
+import { Dialogo } from './dialogo';
 import { Sessao } from './models';
-import { MUSCULOS, calcularMusculos, corDoNivel, maisEMenos, rotuloDoNivel, ultimaVez } from './musculos';
+import { MUSCULOS, calcularMusculos, corDoNivel, exerciciosDoMusculo, maisEMenos, rotuloDoNivel, ultimaVez } from './musculos';
 
 type Lado = 'frente' | 'costas';
 
@@ -16,6 +18,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
  */
 @Component({
   selector: 'app-mapa-muscular',
+  imports: [Dialogo, ExercicioDialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card" aria-labelledby="t-musculos">
@@ -99,6 +102,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
           <p>{{ e.rotulo }}</p>
           <p class="apoio">Último treino direto: {{ e.ultima }}.</p>
           <p class="apoio">Últimos 7 dias: {{ e.series7 }} {{ e.series7 === 1 ? 'série' : 'séries' }} como músculo principal.</p>
+          <button type="button" class="btn btn--claro ver-ex" aria-haspopup="dialog" (click)="abrirExercicios()">Ver exercícios para {{ e.nome.toLowerCase() }}</button>
         } @else {
           <p class="apoio">Toque num músculo para ver quando ele foi treinado pela última vez.</p>
         }
@@ -141,6 +145,31 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
             </ul>
           </section>
         </div>
+      }
+
+      @if (listaAberta(); as l) {
+        <app-dialogo [titulo]="'Exercícios: ' + l.nome" [subtitulo]="l.total + (l.total === 1 ? ' exercício' : ' exercícios') + ' em que é o músculo principal'" (fechar)="fecharExercicios()">
+          <label class="sr-only" for="busca-mm">Buscar exercício</label>
+          <input id="busca-mm" class="busca" type="search" placeholder="Buscar exercício" autocomplete="off" [value]="busca()" (input)="busca.set($any($event.target).value); mostrados.set(PAGINA)" />
+          <ul class="exs">
+            @for (x of l.itens; track x.id) {
+              <li>
+                <button type="button" class="ex" (click)="exercicioAberto.set(x.id)">
+                  <img class="ex__img" [src]="x.imagem" alt="" loading="lazy" decoding="async" />
+                  <span class="ex__txt"><strong>{{ x.nome }}</strong><span class="apoio">{{ x.equipamento }}</span></span>
+                </button>
+              </li>
+            } @empty {
+              <li class="apoio">Nenhum exercício encontrado.</li>
+            }
+          </ul>
+          @if (l.restantes > 0) {
+            <button type="button" class="btn btn--claro mais" (click)="mostrados.set(mostrados() + PAGINA)">Mostrar mais ({{ l.restantes }})</button>
+          }
+        </app-dialogo>
+      }
+      @if (exercicioAberto(); as id) {
+        <app-exercicio-dialogo [id]="id" (fechar)="exercicioAberto.set(null)" />
       }
 
       <details class="como">
@@ -194,6 +223,15 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .detalhe__nome { display: flex; align-items: center; gap: 8px; font-size: 16px; }
     .ponto { flex: none; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.25); }
 
+    .ver-ex { margin-top: 8px; min-height: 44px; font-size: 14px; }
+    .busca { width: 100%; min-height: 44px; padding: 0 12px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
+    .exs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .ex { width: 100%; min-height: 56px; padding: 6px 8px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; text-align: left; }
+    .ex__img { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #fff; }
+    .ex__txt { display: flex; flex-direction: column; min-width: 0; font-size: 14px; line-height: 1.25; }
+    .ex__txt .apoio { font-size: 12px; }
+    .mais { width: 100%; margin-top: 10px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .vazio { margin: 0; font-size: 14px; color: var(--muted); }
     .listas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .sub { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
@@ -223,6 +261,11 @@ export class MapaMuscular {
   protected readonly selecionado = signal<string | null>(null);
   protected readonly gradiente = `linear-gradient(to right, ${NIVEIS_LEGENDA.map((n) => `${corDoNivel(n)} ${n * 100}%`).join(', ')})`;
   protected readonly ultima = ultimaVez;
+  protected readonly PAGINA = 40;
+  protected readonly listaPedida = signal(false);
+  protected readonly busca = signal('');
+  protected readonly mostrados = signal(40);
+  protected readonly exercicioAberto = signal<string | null>(null);
 
   private inicioArraste: { x: number; y: number } | null = null;
   /** Depois de um arraste o navegador ainda dispara um clique; ele não deve selecionar o músculo sob o dedo. */
@@ -246,6 +289,30 @@ export class MapaMuscular {
     if (!id || !e) return null;
     return { nome: this.nome(id), cor: corDoNivel(e.nivel), rotulo: rotuloDoNivel(e), ultima: ultimaVez(e), series7: e.series7 };
   });
+
+  /** Exercícios do músculo escolhido (em ordem alfabética), filtrados pela busca e cortados em páginas. */
+  protected readonly listaAberta = computed(() => {
+    const id = this.selecionado();
+    if (!this.listaPedida() || !id) return null;
+    const norm = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const q = norm(this.busca().trim());
+    const todos = exerciciosDoMusculo(this.ex.exercises(), id)
+      .map((e) => ({ id: e.id, nome: this.ex.nome(e), equipamento: this.ex.equipamento(e.equipment), imagem: this.ex.imagem(e.id, 0) }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    const filtrados = q ? todos.filter((x) => norm(`${x.nome} ${x.equipamento}`).includes(q)) : todos;
+    return { nome: this.nome(id).toLowerCase(), total: todos.length, itens: filtrados.slice(0, this.mostrados()), restantes: Math.max(0, filtrados.length - this.mostrados()) };
+  });
+
+  protected abrirExercicios(): void {
+    this.busca.set('');
+    this.mostrados.set(this.PAGINA);
+    this.listaPedida.set(true);
+  }
+
+  protected fecharExercicios(): void {
+    this.listaPedida.set(false);
+    this.exercicioAberto.set(null);
+  }
 
   protected nome(id: string): string {
     return MUSCULOS.find((m) => m.id === id)?.nome ?? id;

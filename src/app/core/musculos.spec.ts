@@ -6,6 +6,7 @@ import {
   PESO_SECUNDARIO,
   calcularMusculos,
   corDoNivel,
+  exerciciosDoMusculo,
   haDias,
   maisEMenos,
   rotuloDoNivel,
@@ -190,3 +191,28 @@ describe('musculos', () => {
     });
   });
 });
+
+describe('exerciciosDoMusculo', () => {
+  const lista = [
+    ex('supino', ['chest'], ['triceps']),
+    ex('crucifixo', ['chest']),
+    ex('remada', ['middle back'], ['chest']),
+    ex('puxada', ['lats']),
+    ex('esteira', ['quadriceps'], [], 'cardio'),
+    ex('alongar-peito', ['chest'], [], 'stretching'),
+  ];
+
+  it('traz só os exercícios em que o músculo é o principal', () => {
+    expect(exerciciosDoMusculo(lista, 'peito').map((e) => e.id)).toEqual(['supino', 'crucifixo']);
+  });
+
+  it('um músculo que reúne várias fontes junta todas', () => {
+    expect(exerciciosDoMusculo(lista, 'costas').map((e) => e.id)).toEqual(['remada', 'puxada']);
+  });
+
+  it('ignora alongamento e cardio, e músculo desconhecido devolve vazio', () => {
+    expect(exerciciosDoMusculo(lista, 'quadriceps')).toEqual([]);
+    expect(exerciciosDoMusculo(lista, 'nao-existe')).toEqual([]);
+  });
+});
+

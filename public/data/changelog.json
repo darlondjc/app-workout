@@ -2,11 +2,12 @@
   {
     "versao": "1.23.0",
     "data": "2026-10-26",
-    "titulo": "Compartilhar ficha, modo escuro e mapa dos amigos",
+    "titulo": "Compartilhar ficha, modo escuro e mapa dos músculos",
     "itens": [
       "Compartilhar ficha: no editor da ficha e na lista de Fichas, o botão Compartilhar gera um link e um QR code. Quem abrir vê uma prévia da ficha (com as notas dos exercícios) e escolhe se quer adicionar às próprias fichas. Os seus treinos e dados não vão junto.",
       "Modo escuro: em Perfil, em Aparência, escolha Sistema, Claro ou Escuro. A escolha vale só neste aparelho; em Sistema o app acompanha o aparelho.",
       "O mapa dos músculos agora aparece também nas estatísticas dos seus amigos mais chegados e colegas de grupo, para quem já vê as estatísticas deles.",
+      "No mapa, ao tocar num músculo aparece o botão Ver exercícios: abre a lista dos exercícios em que ele é o músculo principal, com busca. Tocar num exercício mostra a demonstração.",
       "No mapa, um músculo que só foi treinado como secundário passa a dizer isso em vez de uma frase repetida."
     ]
   },

@@ -22,7 +22,25 @@ function sessao(exerciseId: string, series = 4): Sessao {
 }
 
 function montar(historico: Sessao[]) {
-  TestBed.configureTestingModule({ providers: [{ provide: ExerciseService, useValue: { get: (id: string) => BASE[id] } }] });
+  const todos = [
+    ...Object.values(BASE),
+    exercicio('crucifixo', ['chest']),
+    exercicio('puxada', ['lats']),
+  ];
+  TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: ExerciseService,
+        useValue: {
+          get: (id: string) => BASE[id],
+          exercises: () => todos,
+          nome: (e: Exercise) => (e.id === 'supino' ? 'Supino reto' : e.id === 'crucifixo' ? 'Crucifixo' : e.id),
+          equipamento: () => 'Halteres',
+          imagem: (id: string) => `exercises/${id}/0.jpg`,
+        },
+      },
+    ],
+  });
   const fixture = TestBed.createComponent(MapaMuscular);
   fixture.componentRef.setInput('historico', historico);
   fixture.detectChanges();
@@ -104,4 +122,66 @@ describe('MapaMuscular', () => {
     gesto(100, 100, 220, 100);
     expect(el.querySelector('.giro--costas')).toBeNull();
   });
+
+  it('o botão "Ver exercícios" lista, em ordem alfabética, os exercícios do músculo e filtra pela busca', () => {
+    const fixture = montar([sessao('supino')]);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.ver-ex')).toBeNull();
+    el.querySelector<SVGGElement>('g.musculo[aria-label^="Peito"]')!.dispatchEvent(new Event('click'));
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('.ver-ex')!.click();
+    fixture.detectChanges();
+    const nomes = () => Array.from(el.querySelectorAll('.ex strong')).map((e) => e.textContent);
+    expect(el.querySelector('app-dialogo')!.textContent).toContain('Exercícios: peito');
+    expect(nomes()).toEqual(['Crucifixo', 'Supino reto']);
+
+    const busca = el.querySelector<HTMLInputElement>('.busca')!;
+    busca.value = 'supi';
+    busca.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(nomes()).toEqual(['Supino reto']);
+
+    busca.value = 'zzz';
+    busca.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el.querySelector('.exs')!.textContent).toContain('Nenhum exercício encontrado');
+  });
+
+  it('tocar num exercício abre a demonstração e fechar o diálogo volta ao mapa', () => {
+    const fixture = montar([sessao('supino')]);
+    const el: HTMLElement = fixture.nativeElement;
+    el.querySelector<SVGGElement>('g.musculo[aria-label^="Peito"]')!.dispatchEvent(new Event('click'));
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('.ver-ex')!.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('.ex')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-exercicio-dialogo')).not.toBeNull();
+    el.querySelector<HTMLButtonElement>('app-exercicio-dialogo .x')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-exercicio-dialogo')).toBeNull();
+    el.querySelector<HTMLButtonElement>('app-dialogo .x')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-dialogo')).toBeNull();
+  });
+
+  it('mostra só uma página de exercícios e libera o resto em "Mostrar mais"', () => {
+    const muitos = Array.from({ length: 95 }, (_, i) => exercicio('e' + String(i).padStart(3, '0'), ['chest']));
+    muitos.forEach((e) => (BASE[e.id] = e));
+    try {
+      const fixture = montar([sessao('supino')]);
+      const el: HTMLElement = fixture.nativeElement;
+      el.querySelector<SVGGElement>('g.musculo[aria-label^="Peito"]')!.dispatchEvent(new Event('click'));
+      fixture.detectChanges();
+      el.querySelector<HTMLButtonElement>('.ver-ex')!.click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.ex').length).toBe(40);
+      el.querySelector<HTMLButtonElement>('.mais')!.click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.ex').length).toBe(80);
+    } finally {
+      muitos.forEach((e) => delete BASE[e.id]);
+    }
+  });
 });
+
