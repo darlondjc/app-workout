@@ -40,4 +40,23 @@ describe('ImportPlan', () => {
     digitar('zAbc');
     expect(el().querySelector('.erro')).toBeNull();
   });
+
+  it('o QR lido abre a prévia da ficha, aceitando o código ou um link antigo', () => {
+    (el().querySelector('button.btn--escuro') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el().querySelector('app-qr-leitor')).not.toBeNull();
+    fixture.debugElement.query((d) => d.name === 'app-qr-leitor').triggerEventHandler('lido', 'zQr123');
+    fixture.detectChanges();
+    expect(navegar).toHaveBeenCalledWith(['/ficha-compartilhada'], { queryParams: { d: 'zQr123' } });
+    expect(el().querySelector('app-qr-leitor')).toBeNull();
+  });
+
+  it('um QR que não é de ficha mostra erro e fecha o leitor', () => {
+    (el().querySelector('button.btn--escuro') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    fixture.debugElement.query((d) => d.name === 'app-qr-leitor').triggerEventHandler('lido', 'https://outro.site/');
+    fixture.detectChanges();
+    expect(navegar).not.toHaveBeenCalled();
+    expect(el().querySelector('.erro')!.textContent).toContain('não é de uma ficha');
+  });
 });

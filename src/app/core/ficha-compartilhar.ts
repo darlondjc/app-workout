@@ -30,7 +30,7 @@ import { Icon } from './icon';
               <path [attr.d]="q.caminho" fill="#000" />
             </svg>
           </div>
-          <p class="apoio centro">Ou peça para a pessoa apontar a câmera do celular para este código.</p>
+          <p class="apoio centro">Peça para a pessoa abrir o app e escolher Fichas › Nova ficha › Importar › Escanear QR code.</p>
         } @else {
           <p class="apoio">Esta ficha é grande demais para caber num QR code legível. Use o link.</p>
         }
@@ -56,6 +56,8 @@ export class FichaCompartilhar {
   readonly fechar = output<void>();
 
   protected readonly link = signal<string | null>(null);
+  /** Só o código, que é o que vai no QR: o app lê o QR e o código vale como o link. */
+  protected readonly codigo = signal<string | null>(null);
   protected readonly copiado = signal(false);
   protected readonly erro = signal('');
   protected readonly podeCompartilhar = typeof navigator !== 'undefined' && !!navigator.share;
@@ -66,12 +68,12 @@ export class FichaCompartilhar {
     return `${t.length} ${t.length === 1 ? 'treino' : 'treinos'} e ${ex} ${ex === 1 ? 'exercício' : 'exercícios'}`;
   });
 
-  /** QR code do link como um único caminho SVG, com a margem de 4 módulos que a leitura pede. */
+  /** QR code do código da ficha como um único caminho SVG, com a margem de 4 módulos que a leitura pede. */
   protected readonly qr = computed(() => {
-    const l = this.link();
-    if (!l || l.length > MAX_LINK_PARA_QR) return null;
+    const c = this.codigo();
+    if (!c || c.length > MAX_LINK_PARA_QR) return null;
     const qr = qrcode(0, 'L');
-    qr.addData(l);
+    qr.addData(c);
     qr.make();
     const n = qr.getModuleCount();
     const margem = 4;
@@ -83,7 +85,10 @@ export class FichaCompartilhar {
   constructor() {
     effect(() => {
       const f = this.ficha();
-      void codificarFicha(f).then((c) => this.link.set(linkDaFicha(document.baseURI.split(/[?#]/)[0].replace(/[^/]*$/, ''), c)));
+      void codificarFicha(f).then((c) => {
+        this.codigo.set(c);
+        this.link.set(linkDaFicha(document.baseURI.split(/[?#]/)[0].replace(/[^/]*$/, ''), c));
+      });
     });
   }
 

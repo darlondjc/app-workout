@@ -5,6 +5,7 @@
     "titulo": "Importar ficha pelo app",
     "itens": [
       "Nova opção \"Importar\" em Nova ficha: cole o link que recebeu e veja a ficha antes de adicionar, sem sair do app instalado.",
+      "Novo leitor de QR code dentro do app: em Nova ficha › Importar › Escanear QR code, aponte a câmera para o QR da ficha de outra pessoa. O QR de uma ficha agora leva só o código, ficando mais simples de ler; a câmera do celular fora do app não abre mais esse QR, use o leitor ou o link.",
       "Ao abrir um link de ficha, o app instalado agora tenta reaproveitar a janela que já está aberta (Chrome/Android e desktop; no iPhone o sistema não permite, e a opção Importar resolve)."
     ]
   },
