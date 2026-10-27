@@ -44,7 +44,7 @@ import { ChangeDetectionStrategy, Component, effect, input, signal } from '@angu
       position: relative;
       width: 100%;
       height: 100%;
-      background: #fff;
+      background: var(--img-fundo);
       overflow: hidden;
     }
     .carregando {

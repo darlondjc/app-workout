@@ -79,7 +79,7 @@ Os exercícios e as imagens vêm do [free-exercise-db](https://github.com/yuhona
 
 ### Animações
 
-Cada exercício tem um `anim.webp` (as duas fotos alternando, 800 ms, em loop). Escolhi WebP animado no lugar de GIF porque cada arquivo fica com cerca de 35 a 40 KB, contra uns 185 KB do GIF. Com a opção «reduzir movimento» ativada no sistema, o app mostra a foto estática. Para gerar de novo: `pip install pillow` e `python3 tools/gerar_animacoes.py public/exercises`.
+Cada exercício tem um `anim.webp` (as duas fotos alternando, 1100 ms cada, em loop). Escolhi WebP animado no lugar de GIF porque cada arquivo fica com cerca de 35 a 40 KB, contra uns 185 KB do GIF. Com a opção «reduzir movimento» ativada no sistema, o app mostra a foto estática. Para gerar de novo: `pip install pillow` e `python3 tools/gerar_animacoes.py public/exercises`.
 
 ## Próximos passos
 

@@ -16,7 +16,7 @@ import { ExerciseService } from './exercise.service';
   styles: `
     /* Abre por cima de outro diálogo (o do treino). */
     :host { --dialogo-z: 60; }
-    .img { height: 280px; border-radius: 16px; overflow: hidden; background: #fff; }
+    .img { height: 280px; border-radius: 16px; overflow: hidden; background: var(--img-fundo); }
   `,
 })
 export class ExercicioDialogo {

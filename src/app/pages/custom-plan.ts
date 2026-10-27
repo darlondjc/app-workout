@@ -156,7 +156,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
     .btn-mini { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--line); background: transparent; font: inherit; font-size: 13px; font-weight: 600; }
     .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
     .item { display: flex; align-items: center; gap: 12px; padding: 10px; }
-    .item__foto img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: #fff; display: block; }
+    .item__foto img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: var(--img-fundo); display: block; }
     .item__txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .item__nome { font-weight: 600; }
     .acoes { display: flex; flex-direction: column; gap: 10px; }

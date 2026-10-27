@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.23.1",
+    "data": "2026-10-27",
+    "titulo": "Acabamento do modo escuro",
+    "itens": [
+      "Modo escuro: cores no mesmo tom das telas que já eram escuras (treino e login), barras de progresso em verde-limão e medalhas ainda não conquistadas com aparência apagada, de desativadas.",
+      "O fundo atrás das fotos dos exercícios deixou de ser branco no modo escuro.",
+      "As fotos de cada exercício agora trocam de posição um pouco mais devagar (1,1 s em vez de 0,8 s). Por isso o app baixa de novo as animações dos exercícios que você já tinha guardado para usar sem internet."
+    ]
+  },
+  {
     "versao": "1.23.0",
     "data": "2026-10-26",
     "titulo": "Compartilhar ficha, modo escuro e mapa dos músculos",

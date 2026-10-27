@@ -6,7 +6,7 @@ export type PreferenciaTema = 'sistema' | 'claro' | 'escuro';
 export const CHAVE_TEMA = 'app-workout:tema:v1';
 
 /** Cor da barra de status do aparelho (`theme-color`) em cada tema. */
-const COR_BARRA = { claro: '#14171A', escuro: '#121517' } as const;
+const COR_BARRA = { claro: '#14171A', escuro: '#14171A' } as const;
 
 export function preferenciaValida(v: unknown): v is PreferenciaTema {
   return v === 'sistema' || v === 'claro' || v === 'escuro';
@@ -22,6 +22,8 @@ export class TemaService {
   private readonly consulta = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
 
   readonly preferencia = signal<PreferenciaTema>(this.ler());
+  /** `true` quando o tema em uso agora é o escuro (já resolvido, inclusive em "Sistema"). */
+  readonly escuro = signal(false);
 
   constructor() {
     this.aplicar();
@@ -56,6 +58,7 @@ export class TemaService {
 
   private aplicar(): void {
     const t = this.efetivo();
+    this.escuro.set(t === 'escuro');
     this.doc.documentElement.dataset['tema'] = t;
     this.doc.querySelector('meta[name="theme-color"]')?.setAttribute('content', COR_BARRA[t]);
   }

@@ -14,7 +14,7 @@
         var p = localStorage.getItem('app-workout:tema:v1');
         var escuro = p === 'escuro' || ((p !== 'claro') && matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.setAttribute('data-tema', escuro ? 'escuro' : 'claro');
-        if (escuro) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121517');
+        if (escuro) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#14171a');
       } catch (e) {}
     })();
   </script>

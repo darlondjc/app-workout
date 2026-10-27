@@ -112,7 +112,7 @@ import { Conquista, NOMES_NIVEL, TipoConquista, formatarProgresso, fracaoAteOPro
     .trilha__cheia {
       display: block;
       height: 100%;
-      background: var(--ink);
+      background: var(--progresso);
       border-radius: 3px;
     }
     .progresso {

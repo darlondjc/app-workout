@@ -24,6 +24,10 @@
   --perigo: #b3261e;
   --foco: #4a6a00;
   --fora: #e7e9e2;
+  /* Fundo por trás das fotos de exercício (aparece nas faixas laterais e enquanto carregam). */
+  --img-fundo: #fff;
+  /* Barras de progresso e marcas de treino cumprido. */
+  --progresso: #14171a;
   --sem-musculo: #d5d9dd;
   --dark2: #2a2f33;
   color-scheme: light;
@@ -33,23 +37,26 @@
 
 /* Tema escuro: escolhido em Ajustes (data-tema) ou, em "Sistema", o do aparelho. */
 :root[data-tema='escuro'] {
-  --bg: #121517;
-  --ink: #eceeea;
-  --muted: #a4aca7;
-  --card: #1b1f22;
-  --line: #343b40;
-  --soft: #272d31;
+  /* Mesma família das telas que já eram escuras (treino e login): fundo #14171a, cartões #1d2125, bordas #3a4046. */
+  --bg: #14171a;
+  --ink: #f3f4f0;
+  --muted: #aab1ab;
+  --card: #1d2125;
+  --line: #343a3f;
+  --soft: #2a2f33;
   --esqueleto: #262b2f;
   --esqueleto-brilho: #343a3f;
   --accent-ink: #cdeb3b;
-  --accent-soft: rgba(205, 235, 59, 0.14);
-  --accent-soft-borda: rgba(205, 235, 59, 0.35);
-  --ink-bg: #333a40;
+  --accent-soft: rgba(205, 235, 59, 0.13);
+  --accent-soft-borda: rgba(205, 235, 59, 0.32);
+  --ink-bg: #30363b;
   --perigo: #ff8a80;
   --foco: #cdeb3b;
   --fora: #0b0d0e;
+  --img-fundo: #14171a;
+  --progresso: #cdeb3b;
   --sem-musculo: #3a4147;
-  --dark2: #333a40;
+  --dark2: #343b40;
   color-scheme: dark;
 }
 

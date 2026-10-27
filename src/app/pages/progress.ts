@@ -204,7 +204,7 @@ function lerDispensadas(): string[] {
     .grande { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1; margin: 0; }
     .grande small { font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--muted); }
     .trilha { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
-    .trilha__cheia { height: 100%; background: var(--ink); border-radius: 4px; transition: width 0.25s; }
+    .trilha__cheia { height: 100%; background: var(--progresso); border-radius: 4px; transition: width 0.25s; }
     .insights { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
     .insight { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--card); border-left: 4px solid var(--line); font-size: 14px; line-height: 1.35; }
     .insight__txt { flex: 1; min-width: 0; }
@@ -223,7 +223,7 @@ function lerDispensadas(): string[] {
     .cel.feito { background: var(--ink-bg); color: var(--accent); font-weight: 700; }
     .cel.sel { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent-ink); }
     .legenda { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; }
-    .ponto { width: 10px; height: 10px; border-radius: 50%; background: var(--ink); flex: none; }
+    .ponto { width: 10px; height: 10px; border-radius: 50%; background: var(--progresso); flex: none; }
     .dia-detalhe { border-top: 1px solid var(--soft); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
     .sessao { display: flex; flex-direction: column; gap: 2px; }
     .ver-treino { align-self: flex-start; min-height: 36px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent-ink); }
@@ -235,7 +235,7 @@ function lerDispensadas(): string[] {
     .barras { list-style: none; margin: 0; padding: 0; height: 88px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; align-items: end; }
     .barras li { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; font-size: 11px; }
     .barra { width: 100%; min-height: 4px; border-radius: 6px; background: var(--line); }
-    .barra.meta-ok { background: var(--ink); }
+    .barra.meta-ok { background: var(--progresso); }
     .barra.atual { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
     .recordes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
     .recordes li { display: flex; justify-content: space-between; gap: 12px; }

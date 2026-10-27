@@ -227,7 +227,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .busca { width: 100%; min-height: 44px; padding: 0 12px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
     .exs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
     .ex { width: 100%; min-height: 56px; padding: 6px 8px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; text-align: left; }
-    .ex__img { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #fff; }
+    .ex__img { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--img-fundo); }
     .ex__txt { display: flex; flex-direction: column; min-width: 0; font-size: 14px; line-height: 1.25; }
     .ex__txt .apoio { font-size: 12px; }
     .mais { width: 100%; margin-top: 10px; }

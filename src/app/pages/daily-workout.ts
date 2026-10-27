@@ -181,7 +181,7 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
       height: 56px;
       border-radius: 10px;
       object-fit: cover;
-      background: #fff;
+      background: var(--img-fundo);
       display: block;
     }
     .item__txt {

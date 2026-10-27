@@ -123,7 +123,7 @@ export interface RecordeNaGaleria {
     .rot { margin: 0; font-size: 14px; font-weight: 500; color: var(--muted); }
     .caminho { display: flex; flex-direction: column; gap: 6px; }
     .trilha { display: block; height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
-    .trilha__cheia { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
+    .trilha__cheia { display: block; height: 100%; background: var(--progresso); border-radius: 4px; }
     .degraus { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .degrau { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 12px; text-align: center; }
     .degrau--atual { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent-ink); }

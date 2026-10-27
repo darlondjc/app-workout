@@ -40,7 +40,7 @@ describe('TemaService', () => {
     meta.content = '#14171A';
     document.head.appendChild(meta);
     TestBed.inject(TemaService).definir('escuro');
-    expect(meta.content).toBe('#121517');
+    expect(meta.content).toBe('#14171A');
     meta.remove();
   });
 

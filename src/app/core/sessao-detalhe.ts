@@ -105,7 +105,7 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
     .ex { display: flex; flex-direction: column; gap: 6px; }
     .ex__titulo { margin: 0; }
     .ex__topo { width: 100%; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; border-radius: 12px; }
-    .ex__img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; background: #fff; flex: none; }
+    .ex__img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; background: var(--img-fundo); flex: none; }
     .ex__nome { font-size: 15px; font-weight: 700; line-height: 1.25; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
     .series { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
     .series th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); padding: 2px 8px 2px 0; }

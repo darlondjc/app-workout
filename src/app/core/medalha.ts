@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Nivel } from './medalhas';
+import { TemaService } from './tema.service';
 
 let contador = 0;
 
@@ -19,6 +20,9 @@ const TEMAS: Record<Nivel | 'bloqueada', Tema> = {
   diamante: { claro: '#d4f6ff', escuro: '#379ae6', fita: '#2c6fbd', fitaEscura: '#1f4f8f', anel: '#ffffff', estrela: '#ffffff' },
   bloqueada: { claro: '#eef0e9', escuro: '#e0e3da', fita: '#d6d9cf', fitaEscura: '#c9cdc3', anel: '#cfd3c8', estrela: '#cfd3c8' },
 };
+
+/** Medalha ainda não conquistada no tema escuro: tons apagados, para parecer desativada em vez de brilhar. */
+const BLOQUEADA_ESCURA: Tema = { claro: '#262b2f', escuro: '#202528', fita: '#2c3236', fitaEscura: '#24292d', anel: '#3d454b', estrela: '#3d454b' };
 
 /** Pontos de um polígono em forma de estrela: `pontas` pontas, entre o raio externo `R` e o interno `r`. */
 function estrela(cx: number, cy: number, R: number, r: number, pontas = 5): string {
@@ -122,7 +126,11 @@ export class Medalha {
   readonly size = input(56);
 
   protected readonly idDisco = `medalha-disco-${++contador}`;
-  protected readonly t = computed(() => TEMAS[this.nivel() ?? 'bloqueada']);
+  private readonly escuro = inject(TemaService).escuro;
+  protected readonly t = computed(() => {
+    const n = this.nivel();
+    return n === null && this.escuro() ? BLOQUEADA_ESCURA : TEMAS[n ?? 'bloqueada'];
+  });
 
   protected readonly estrelaPequena = ESTRELA_PEQUENA;
   protected readonly estrelaMedia = ESTRELA_MEDIA;

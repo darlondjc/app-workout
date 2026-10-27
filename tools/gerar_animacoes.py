@@ -14,7 +14,7 @@ from pathlib import Path
 from PIL import Image
 
 LARGURA_PADRAO = 560
-DURACAO_MS = 800
+DURACAO_MS = 1100
 
 
 def gerar(pasta: Path, largura: int) -> bool:
