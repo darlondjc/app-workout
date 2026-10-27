@@ -155,7 +155,7 @@ import { EventoCard } from './evento-card';
     .imagem-grande { display: flex; justify-content: center; margin-bottom: 16px; }
     .acoes-coluna { display: flex; flex-direction: column; gap: 10px; }
     .centro { text-align: center; margin: 0; }
-    .erro { color: #b3261e; font-size: 14px; }
+    .erro { color: var(--perigo); font-size: 14px; }
     button:disabled { opacity: 0.6; }
   `,
 })

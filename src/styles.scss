@@ -13,9 +13,44 @@
   --esqueleto-brilho: #f5f5f6;
   --accent: #cdeb3b;
   --accent-ink: #3f5a00;
+  /* Fundo suave de destaque (item atual, novidade) e a borda da mesma família. */
+  --accent-soft: #f1f8cf;
+  --accent-soft-borda: #d8e6a0;
+  /* Texto sobre o verde-limão e sobre fundos escuros fixos: sempre escuro / sempre claro, nos dois temas. */
+  --on-accent: #14171a;
+  --escuro-fixo: #14171a;
+  /* Fundo de botões e chips "escuros" (letra clara ou verde-limão por cima); no tema escuro vira um cinza elevado. */
+  --ink-bg: #14171a;
+  --perigo: #b3261e;
+  --foco: #4a6a00;
+  --fora: #e7e9e2;
+  --sem-musculo: #d5d9dd;
   --dark2: #2a2f33;
+  color-scheme: light;
   --font: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'DM Sans Variable', system-ui, sans-serif;
+}
+
+/* Tema escuro: escolhido em Ajustes (data-tema) ou, em "Sistema", o do aparelho. */
+:root[data-tema='escuro'] {
+  --bg: #121517;
+  --ink: #eceeea;
+  --muted: #a4aca7;
+  --card: #1b1f22;
+  --line: #343b40;
+  --soft: #272d31;
+  --esqueleto: #262b2f;
+  --esqueleto-brilho: #343a3f;
+  --accent-ink: #cdeb3b;
+  --accent-soft: rgba(205, 235, 59, 0.14);
+  --accent-soft-borda: rgba(205, 235, 59, 0.35);
+  --ink-bg: #333a40;
+  --perigo: #ff8a80;
+  --foco: #cdeb3b;
+  --fora: #0b0d0e;
+  --sem-musculo: #3a4147;
+  --dark2: #333a40;
+  color-scheme: dark;
 }
 
 *,
@@ -33,7 +68,7 @@ body {
 }
 
 body {
-  background: #e7e9e2;
+  background: var(--fora);
   color: var(--ink);
   font-family: var(--font);
   -webkit-tap-highlight-color: transparent;
@@ -76,7 +111,7 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid #4a6a00;
+  outline: 3px solid var(--foco);
   outline-offset: 2px;
 }
 
@@ -166,13 +201,13 @@ p {
 }
 
 .btn--escuro {
-  background: var(--ink);
+  background: var(--ink-bg);
   color: #fff;
 }
 
 .btn--destaque {
   background: var(--accent);
-  color: var(--ink);
+  color: var(--on-accent);
 }
 
 .btn--claro {
@@ -194,7 +229,7 @@ p {
   border-radius: 22px;
   border: none;
   background: var(--accent);
-  color: var(--ink);
+  color: var(--on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -232,7 +267,7 @@ p {
 }
 
 .chip[aria-pressed='true'] {
-  background: var(--ink);
+  background: var(--ink-bg);
   color: #fff;
   font-weight: 700;
 }

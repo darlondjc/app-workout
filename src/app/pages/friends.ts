@@ -100,7 +100,7 @@ import { baseDoApp } from './group-invite';
     .pessoa { padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
     .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mini { min-height: 40px; padding: 0 14px; font-size: 14px; flex: none; }
-    .erro { color: #b3261e; }
+    .erro { color: var(--perigo); }
     button:disabled { opacity: 0.6; }
   `,
 })

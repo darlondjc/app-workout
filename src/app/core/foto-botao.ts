@@ -26,7 +26,7 @@ import { Icon } from './icon';
     /* Só o ícone: o botão entra direto numa linha de ações. */
     :host(.so-icone) { display: contents; }
     :host(.so-icone) button { width: auto; }
-    .erro { margin: 0; font-size: 13px; color: #b3261e; }
+    .erro { margin: 0; font-size: 13px; color: var(--perigo); }
   `,
 })
 export class FotoBotao {

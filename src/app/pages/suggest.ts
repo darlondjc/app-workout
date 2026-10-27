@@ -173,7 +173,7 @@ import { ToastService } from '../core/toast.service';
     }
     .opcao[aria-pressed='true'] {
       border-color: var(--ink);
-      background: #f1f8cf;
+      background: var(--accent-soft);
     }
     .chips-linha {
       display: flex;
@@ -205,7 +205,7 @@ import { ToastService } from '../core/toast.service';
       width: 32px;
       height: 32px;
       border-radius: 10px;
-      background: #e8f3b8;
+      background: var(--accent-soft);
       display: flex;
       align-items: center;
       justify-content: center;

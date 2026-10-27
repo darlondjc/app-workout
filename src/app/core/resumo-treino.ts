@@ -82,7 +82,7 @@ export interface DadosResumo {
   `,
   styles: `
     :host { display: contents; }
-    .selo { width: 56px; height: 56px; margin: 4px auto 10px; border-radius: 50%; background: var(--accent); color: var(--ink); display: flex; align-items: center; justify-content: center; animation: selo 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .selo { width: 56px; height: 56px; margin: 4px auto 10px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; animation: selo 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     @keyframes selo { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
     .parabens { margin: 0 0 14px; text-align: center; color: var(--muted); }
     .numeros { display: flex; justify-content: center; gap: 8px; margin: 0 0 18px; }
@@ -96,7 +96,7 @@ export interface DadosResumo {
     /* "safe center": centraliza quando cabe e, quando passa, deixa rolar desde a primeira medalha. */
     .faixa { list-style: none; margin: 0 -20px; padding: 6px 20px 10px; display: flex; justify-content: safe center; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 20px; scrollbar-width: none; overscroll-behavior-x: contain; }
     .faixa::-webkit-scrollbar { display: none; }
-    .item { flex: none; width: 100px; padding: 12px 6px; border-radius: 16px; background: #f6fbdc; box-shadow: inset 0 0 0 2px var(--accent-ink); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; scroll-snap-align: center; animation: chega 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .item { flex: none; width: 100px; padding: 12px 6px; border-radius: 16px; background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-ink); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; scroll-snap-align: center; animation: chega 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     .item:nth-child(2) { animation-delay: 0.1s; }
     .item:nth-child(3) { animation-delay: 0.2s; }
     .item:nth-child(n + 4) { animation-delay: 0.3s; }

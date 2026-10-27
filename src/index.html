@@ -6,6 +6,18 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#14171A">
+  <meta name="color-scheme" content="light dark">
+  <!-- Aplica o tema escolhido antes de o app carregar, para a tela não piscar em claro. Mantém em sincronia com core/tema.service.ts. -->
+  <script>
+    (function () {
+      try {
+        var p = localStorage.getItem('app-workout:tema:v1');
+        var escuro = p === 'escuro' || ((p !== 'claro') && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-tema', escuro ? 'escuro' : 'claro');
+        if (escuro) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121517');
+      } catch (e) {}
+    })();
+  </script>
   <meta name="description" content="Monte suas fichas de treino com uma biblioteca de exercícios em português.">
   <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="48x48">
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">

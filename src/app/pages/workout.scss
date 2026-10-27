@@ -1,6 +1,6 @@
 .treino {
   min-height: 100dvh;
-  background: var(--ink);
+  background: var(--escuro-fixo);
   color: #fff;
   padding: 12px 20px 0;
   display: flex;
@@ -185,7 +185,7 @@ h1 {
 }
 .chave input:checked + .trilho::after {
   transform: translateX(18px);
-  background: var(--ink);
+  background: var(--escuro-fixo);
 }
 .chave input:focus-visible + .trilho {
   outline: 2px solid #fff;
@@ -278,7 +278,7 @@ h1 {
 .marca[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--ink);
+  color: var(--on-accent);
 }
 .descanso {
   background: var(--dark2);
@@ -304,8 +304,8 @@ h1 {
   z-index: 5;
   margin: auto -20px 0;
   padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
-  background: var(--ink);
-  box-shadow: 0 -8px 12px -4px var(--ink);
+  background: var(--escuro-fixo);
+  box-shadow: 0 -8px 12px -4px var(--escuro-fixo);
   display: flex;
   gap: 10px;
 }
@@ -390,7 +390,7 @@ h1 {
   border: 0;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--ink);
+  color: var(--on-accent);
   font: inherit;
   font-size: 14px;
   font-weight: 700;

@@ -8,6 +8,7 @@ import { FotoBotao } from '../core/foto-botao';
 import { Icon } from '../core/icon';
 import { PesoRegistro } from '../core/peso-registro';
 import { SocialService } from '../core/social.service';
+import { PreferenciaTema, TemaService } from '../core/tema.service';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
 
@@ -91,6 +92,16 @@ import { UpdateService } from '../core/update.service';
           </div>
         </article>
       }
+
+      <article class="card bloco" aria-labelledby="t-tema">
+        <h2 id="t-tema" class="sub">Aparência</h2>
+        <div class="temas" role="radiogroup" aria-label="Tema do app">
+          @for (o of temas; track o.valor) {
+            <button type="button" role="radio" class="tema" [attr.aria-checked]="tema.preferencia() === o.valor" (click)="tema.definir(o.valor)">{{ o.rotulo }}</button>
+          }
+        </div>
+        <p class="apoio">“Sistema” acompanha o modo claro ou escuro do aparelho. A escolha vale só neste aparelho.</p>
+      </article>
 
       <article class="card bloco" aria-labelledby="t-versao">
         <h2 id="t-versao" class="sub">Versão do app</h2>
@@ -242,6 +253,9 @@ import { UpdateService } from '../core/update.service';
       flex-direction: column;
       gap: 16px;
     }
+    .temas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .tema { min-height: 44px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; }
+    .tema[aria-checked='true'] { border-color: var(--ink); background: var(--soft); }
     .bloco {
       padding: 16px;
       display: flex;
@@ -270,7 +284,7 @@ import { UpdateService } from '../core/update.service';
     .status--nova {
       padding: 10px 12px;
       border-radius: 12px;
-      background: #f1f8cf;
+      background: var(--accent-soft);
     }
     .novidades {
       margin: 0;
@@ -394,7 +408,7 @@ import { UpdateService } from '../core/update.service';
       transition: transform 0.2s;
     }
     .chave[aria-checked='true'] {
-      background: var(--ink);
+      background: var(--ink-bg);
     }
     .chave[aria-checked='true']::after {
       transform: translateX(20px);
@@ -409,7 +423,7 @@ import { UpdateService } from '../core/update.service';
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: var(--ink);
+      background: var(--ink-bg);
       color: #fff;
       display: flex;
       align-items: center;
@@ -454,7 +468,7 @@ import { UpdateService } from '../core/update.service';
       gap: 12px;
     }
     .erro {
-      color: #b3261e;
+      color: var(--perigo);
     }
     .acoes-linha {
       display: flex;
@@ -470,6 +484,12 @@ import { UpdateService } from '../core/update.service';
   `,
 })
 export class Settings {
+  protected readonly tema = inject(TemaService);
+  protected readonly temas: { valor: PreferenciaTema; rotulo: string }[] = [
+    { valor: 'sistema', rotulo: 'Sistema' },
+    { valor: 'claro', rotulo: 'Claro' },
+    { valor: 'escuro', rotulo: 'Escuro' },
+  ];
   protected readonly up = inject(UpdateService);
   protected readonly log = inject(ChangelogService);
   protected readonly nuvem = inject(CloudService);

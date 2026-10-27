@@ -169,8 +169,9 @@ function lerDispensadas(): string[] {
         <p class="apoio">Barras cheias indicam semanas em que você bateu a meta.</p>
       </article>
 
+      <app-mapa-muscular [historico]="historico()" />
+
       @if (editavel()) {
-        <app-mapa-muscular [historico]="historico()" />
         <app-peso-grafico />
       } @else if (pesos(); as p) {
         <app-peso-grafico [registros]="p" [somenteLeitura]="true" />
@@ -208,7 +209,7 @@ function lerDispensadas(): string[] {
     .insight { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--card); border-left: 4px solid var(--line); font-size: 14px; line-height: 1.35; }
     .insight__txt { flex: 1; min-width: 0; }
     .insight__x { flex: none; width: 32px; height: 32px; margin: -4px -8px -4px 0; border: 0; border-radius: 50%; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
-    .insight--conquista { border-left-color: var(--accent); background: #f6fadf; }
+    .insight--conquista { border-left-color: var(--accent); background: var(--accent-soft); }
     .insight--incentivo { border-left-color: var(--ink); }
     .cal__topo { display: flex; align-items: center; justify-content: space-between; }
     .mes { font-family: var(--font-display); font-size: 18px; margin: 0; }
@@ -219,7 +220,7 @@ function lerDispensadas(): string[] {
     .cel { width: 36px; height: 36px; justify-self: center; border-radius: 50%; border: 1.5px solid transparent; background: transparent; font: inherit; font-size: 14px; color: var(--ink); padding: 0; }
     .cel--vazia { pointer-events: none; }
     .cel.hoje { border-color: var(--ink); }
-    .cel.feito { background: var(--ink); color: var(--accent); font-weight: 700; }
+    .cel.feito { background: var(--ink-bg); color: var(--accent); font-weight: 700; }
     .cel.sel { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent-ink); }
     .legenda { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; }
     .ponto { width: 10px; height: 10px; border-radius: 50%; background: var(--ink); flex: none; }

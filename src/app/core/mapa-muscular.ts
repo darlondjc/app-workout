@@ -6,7 +6,7 @@ import { MUSCULOS, calcularMusculos, corDoNivel, maisEMenos, rotuloDoNivel, ulti
 
 type Lado = 'frente' | 'costas';
 
-const COR_SEM_MUSCULO = '#d5d9dd';
+const COR_SEM_MUSCULO = 'var(--sem-musculo)';
 const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
 
 /**
@@ -133,7 +133,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
                     <span class="ponto" [style.background]="cor(e.id)"></span>
                     <span class="linha__txt">
                       <strong>{{ nome(e.id) }}</strong>
-                      <span class="apoio">{{ e.series7 > 0 ? e.series7 + (e.series7 === 1 ? ' série' : ' séries') + ' em 7 dias' : 'último treino ' + ultima(e) }}</span>
+                      <span class="apoio">{{ e.series7 > 0 ? e.series7 + (e.series7 === 1 ? ' série' : ' séries') + ' em 7 dias' : e.diasDesdeUltimo === null ? 'só como músculo secundário' : 'último treino ' + ultima(e) }}</span>
                     </span>
                   </button>
                 </li>
@@ -161,7 +161,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .titulo { margin: 0; font-size: 14px; font-weight: 500; color: var(--muted); }
     .lados { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--soft); }
     .lados button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; }
-    .lados button[aria-pressed='true'] { background: var(--ink); color: var(--accent); }
+    .lados button[aria-pressed='true'] { background: var(--ink-bg); color: var(--accent); }
 
     .palco { perspective: 1000px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
     .giro { position: relative; width: 100%; max-width: 440px; margin: 0 auto; aspect-ratio: 1 / 1; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1); }
@@ -176,7 +176,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .neutro { fill: ${COR_SEM_MUSCULO}; stroke: #8a93a0; stroke-width: 0.25; stroke-linejoin: round; }
     .seta { cursor: pointer; }
     .seta line { stroke: #6b7280; stroke-width: 0.3; pointer-events: none; }
-    .seta circle { fill: var(--ink); stroke: #fff; stroke-width: 0.3; }
+    .seta circle { fill: var(--ink); stroke: var(--card); stroke-width: 0.3; }
     .seta text { font-size: 6.2px; fill: var(--ink); }
     .seta--sel text { font-weight: 700; }
 

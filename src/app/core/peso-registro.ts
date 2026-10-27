@@ -90,7 +90,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
     .data { position: relative; display: flex; align-items: center; height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
     .data:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
     .data input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
-    .erro { color: #b3261e; }
+    .erro { color: var(--perigo); }
     .historico summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; font-size: 14px; cursor: pointer; }
     .historico ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .historico li { display: flex; align-items: center; gap: 12px; padding: 4px 0; border-top: 1px solid var(--soft); font-size: 14px; }

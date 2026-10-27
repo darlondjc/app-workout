@@ -77,13 +77,13 @@ import { SocialService } from './social.service';
     .opcoes .rot { padding: 0; margin-bottom: 8px; }
     .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
     .chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 14px; }
-    .chip.ativo { background: var(--ink); border-color: var(--ink); color: var(--accent); font-weight: 700; }
+    .chip.ativo { background: var(--ink-bg); border-color: var(--ink); color: var(--accent); font-weight: 700; }
     .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .campo input { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; background: var(--card); color: var(--ink); }
     .foto-bloco { scroll-margin-top: 8px; }
     .foto-acoes { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
-    .erro { margin: 0; font-size: 13px; color: #b3261e; }
+    .erro { margin: 0; font-size: 13px; color: var(--perigo); }
   `,
 })
 export class AtividadeDialogo {

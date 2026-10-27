@@ -145,7 +145,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
     .dia__titulo { font-family: var(--font-display); font-size: 17px; float: left; width: 100%; margin: 0; }
     .dia__titulo + * { clear: both; }
     .dia .chip { background: var(--bg); }
-    .dia .chip[aria-pressed='true'] { background: var(--ink); }
+    .dia .chip[aria-pressed='true'] { background: var(--ink-bg); }
     .rotulo { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
     .texto { width: 100%; box-sizing: border-box; height: 44px; padding: 0 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 15px; }
     .chips-linha { display: flex; flex-wrap: wrap; gap: 8px; }
