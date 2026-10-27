@@ -158,7 +158,7 @@ import { Carregando } from '../core/spinner';
     .acesso[aria-checked='true'] { border-color: var(--ink); }
     .acesso[aria-checked='true'] app-icon { color: var(--ink); }
     .dica { margin: 0 4px; }
-    .sair { border: 0; background: none; font: inherit; color: #b3261e; min-height: 44px; }
+    .sair { border: 0; background: none; font: inherit; color: var(--perigo); min-height: 44px; }
     .pedido { padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
@@ -167,7 +167,7 @@ import { Carregando } from '../core/spinner';
     .acoes { display: flex; gap: 10px; margin-top: 16px; }
     .acoes .btn { flex: 1; }
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-    .erro { color: #b3261e; font-size: 14px; }
+    .erro { color: var(--perigo); font-size: 14px; }
     button:disabled { opacity: 0.6; }
   `,
 })

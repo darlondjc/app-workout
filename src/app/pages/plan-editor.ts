@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Confirmacao } from '../core/confirmacao';
+import { FichaCompartilhar } from '../core/ficha-compartilhar';
+import { FichaCompartilhada, fichaParaCompartilhar } from '../core/ficha-link';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { ItemFicha } from '../core/models';
@@ -12,13 +14,20 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
 
 @Component({
   selector: 'app-plan-editor',
-  imports: [Confirmacao, RouterLink, Icon],
+  imports: [Confirmacao, FichaCompartilhar, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ficha(); as f) {
       <section class="page">
         <header>
-          <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
+          <div class="topo-editor">
+            <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
+            @if (f.itens.length > 0) {
+              <button type="button" class="voltar" aria-haspopup="dialog" (click)="compartilhando.set(paraCompartilhar())">
+                <app-icon name="share" [size]="18" [stroke]="2.2" /> Compartilhar
+              </button>
+            }
+          </div>
           <p class="apoio">{{ plans.rotulo(f.id) }}</p>
           <label class="sr-only" for="nome-ficha">Nome da ficha</label>
           <input
@@ -102,6 +111,9 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
         @if (excluindo()) {
           <app-confirmacao titulo="Excluir ficha?" [subtitulo]="f.nome" mensagem="Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="excluir()" (cancelar)="excluindo.set(false)" />
         }
+        @if (compartilhando(); as c) {
+          <app-ficha-compartilhar [ficha]="c" (fechar)="compartilhando.set(null)" />
+        }
         @if (removendo(); as r) {
           <app-confirmacao titulo="Remover da ficha?" [subtitulo]="r.nome" rotulo="Remover" (confirmar)="confirmarRemocao(r.indice)" (cancelar)="removendo.set(null)" />
         }
@@ -139,6 +151,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       flex-direction: column;
       gap: 10px;
     }
+    .topo-editor { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .item {
       position: relative;
       padding: 12px;
@@ -215,7 +228,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       height: 60px;
       border-radius: 50%;
       background: var(--accent);
-      color: var(--ink);
+      color: var(--on-accent);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -239,7 +252,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       padding: 0 12px;
       border: none;
       background: transparent;
-      color: #9b1c1c;
+      color: var(--perigo);
       font-weight: 700;
       font-size: 14px;
     }
@@ -263,6 +276,14 @@ export class PlanEditor {
   protected readonly anuncio = signal('');
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
+  protected readonly compartilhando = signal<FichaCompartilhada | null>(null);
+
+  /** Se o treino faz parte de uma ficha com vários, vai a ficha inteira; senão, só este treino. */
+  protected paraCompartilhar(): FichaCompartilhada {
+    const f = this.ficha()!;
+    const treinos = f.conjunto ? this.plans.fichas().filter((x) => x.conjunto?.id === f.conjunto?.id) : [f];
+    return fichaParaCompartilhar(f.conjunto?.nome ?? f.nome, treinos);
+  }
   /** Ficha ainda vazia e não gravada: em vez de excluir, só dá para cancelar. */
   protected readonly rascunho = computed(() => this.plans.rascunho()?.id === this.id());
   protected readonly excluindo = signal(false);

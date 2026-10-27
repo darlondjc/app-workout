@@ -76,6 +76,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/group-invite').then((m) => m.GroupInvite),
   },
   {
+    path: 'ficha-compartilhada',
+    canActivate: [logado],
+    title: 'Ficha compartilhada · App Workout',
+    loadComponent: () => import('./pages/ficha-compartilhada').then((m) => m.FichaCompartilhada),
+  },
+  {
     path: 'convite/:codigo',
     canActivate: [logado],
     title: 'Convite · App Workout',

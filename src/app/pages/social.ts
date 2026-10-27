@@ -168,7 +168,7 @@ import { Carregando } from '../core/spinner';
     .secao-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
     .secao-topo--amigos { margin-top: 14px; }
     .secao { margin: 0; font-size: 20px; }
-    .novo { position: relative; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+    .novo { position: relative; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--ink-bg); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
     .sub { font-size: 18px; margin: 0 0 8px; }
     .rot { font-size: 15px; font-weight: 500; color: var(--muted); }
     .criar { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -181,7 +181,7 @@ import { Carregando } from '../core/spinner';
     .gc__titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
     .gc__nome { font-family: var(--font-display); font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gc__meta { font-size: 13px; color: var(--muted); }
-    .gc__novo { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--ink); font-size: 12px; font-weight: 700; }
+    .gc__novo { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; }
     .gc--pendente .gc__rodape { flex-wrap: wrap; }
     .gc--pendente { border-style: dashed; border-color: var(--line); box-shadow: none; background: transparent; }
     .gc__novo--espera { background: var(--soft); color: var(--muted); }
@@ -203,7 +203,7 @@ import { Carregando } from '../core/spinner';
     .texto { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; font-size: 14px; }
     .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-    .erro { color: #b3261e; font-size: 14px; }
+    .erro { color: var(--perigo); font-size: 14px; }
     button:disabled { opacity: 0.6; }
   `,
 })

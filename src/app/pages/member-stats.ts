@@ -157,7 +157,7 @@ type Aba = 'timeline' | 'estatisticas';
     .medalhas { display: flex; flex-direction: column; gap: 10px; }
     .medalhas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .ver-todas { min-height: 32px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--accent-ink); }
-    .desfazer { border: 0; background: none; font: inherit; color: #b3261e; min-height: 44px; }
+    .desfazer { border: 0; background: none; font: inherit; color: var(--perigo); min-height: 44px; }
     .fim-lista { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0 16px; min-height: 64px; }
     .fim-lista .btn { min-height: 40px; font-size: 14px; }
     /* Abas sempre à vista, coladas acima da barra de navegação (73 px + a área segura do aparelho). Ficam coladas na rolagem (sticky) em vez de fixas: com pouco conteúdo ficam no pé da tela e no fim da página sentam no lugar delas, sem cobrir nada (11 px = folga que o <main> deixa acima da barra de navegação). */
@@ -166,8 +166,8 @@ type Aba = 'timeline' | 'estatisticas';
     .abas-sociais { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
     .abas-sociais button { min-height: 38px; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; background: var(--soft); font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
     /* A aba escolhida fica escura, com letra branca: aparece bem mesmo de relance. */
-    .abas-sociais button[aria-selected='true'] { background: var(--ink); color: #fff; }
-    .erro { color: #b3261e; font-size: 14px; }
+    .abas-sociais button[aria-selected='true'] { background: var(--ink-bg); color: #fff; }
+    .erro { color: var(--perigo); font-size: 14px; }
     button:disabled { opacity: 0.6; }
   `,
 })

@@ -168,20 +168,20 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
     .resumo { font-size: 13px; }
     .nota { font-size: 14px; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
     .selos { display: flex; flex-wrap: wrap; gap: 4px 6px; }
-    .selo { padding: 2px 8px; border-radius: 999px; background: #f1f8cf; font-size: 12px; line-height: 1.5; }
-    .selo--marco { background: var(--ink); color: var(--accent); font-weight: 700; }
+    .selo { padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); font-size: 12px; line-height: 1.5; }
+    .selo--marco { background: var(--ink-bg); color: var(--accent); font-weight: 700; }
     .foto { position: relative; border-radius: 12px; overflow: hidden; background: var(--soft); }
     .foto--carregando { height: 180px; background: linear-gradient(100deg, var(--esqueleto) 30%, var(--esqueleto-brilho) 50%, var(--esqueleto) 70%) 0 0 / 200% 100%; animation: brilho 1.4s linear infinite; }
     @keyframes brilho { to { background-position: -200% 0; } }
     @media (prefers-reduced-motion: reduce) { .foto--carregando { animation: none; } }
     .foto img { display: block; width: 100%; max-height: 260px; object-fit: cover; }
     .foto__x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; display: flex; align-items: center; justify-content: center; }
-    .erro-foto { margin: 0; font-size: 13px; color: #b3261e; }
+    .erro-foto { margin: 0; font-size: 13px; color: var(--perigo); }
     .acoes { display: flex; gap: 6px; }
     .acao { min-height: 40px; min-width: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
     .previa { margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid var(--line); background: var(--soft); border-radius: 0 10px 10px 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
     .acao--texto { margin-left: auto; font-weight: 600; font-size: 13px; }
-    .acao.ativa { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+    .acao.ativa { background: var(--ink-bg); color: var(--accent); border-color: var(--ink); }
     .comentarios { border-top: 1px solid var(--soft); padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
     .comentario { display: flex; align-items: flex-start; gap: 8px; }
     .comentario p { margin: 0; flex: 1; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }

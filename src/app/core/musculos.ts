@@ -147,6 +147,16 @@ export function corDoNivel(nivel: number): string {
   return `rgb(${r}, ${g}, ${bl})`;
 }
 
+/**
+ * Exercícios que trabalham o músculo como principal, para a pessoa escolher o que treinar. Alongamentos e cardio ficam
+ * de fora, como na conta do mapa. A ordem é a recebida (quem chama ordena pelo nome em português).
+ */
+export function exerciciosDoMusculo(exercicios: readonly Exercise[], musculoId: string): Exercise[] {
+  const fontes = MUSCULOS.find((m) => m.id === musculoId)?.fontes;
+  if (!fontes) return [];
+  return exercicios.filter((e) => e.category !== 'cardio' && e.category !== 'stretching' && e.primaryMuscles.some((m) => fontes.includes(m)));
+}
+
 /** Descrição em palavras do estado do músculo, para quem não enxerga as cores. */
 export function rotuloDoNivel(e: EstadoMusculo): string {
   if (e.pontos === 0) return 'Sem treino nas últimas 8 semanas';

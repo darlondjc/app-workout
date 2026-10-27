@@ -86,7 +86,7 @@ export interface RecordeNaGaleria {
       padding: 2px 7px;
       border-radius: 999px;
       background: var(--accent);
-      color: var(--ink);
+      color: var(--on-accent);
       font-size: 11px;
       font-weight: 700;
       vertical-align: 1px;
@@ -126,7 +126,7 @@ export interface RecordeNaGaleria {
     .trilha__cheia { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
     .degraus { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .degrau { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 12px; text-align: center; }
-    .degrau--atual { background: #f1f8cf; box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
+    .degrau--atual { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
     .degrau__nivel { margin-top: 4px; font-size: 13px; font-weight: 700; }
     .degrau--bloqueado .degrau__nivel { color: var(--muted); font-weight: 500; }
     .degrau__alvo { font-size: 11px; line-height: 1.25; }

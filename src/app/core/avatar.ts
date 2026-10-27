@@ -21,7 +21,7 @@ import { Usuario } from './sync';
       border-radius: 50%;
       overflow: hidden;
       background: var(--accent);
-      color: var(--ink);
+      color: var(--on-accent);
       font-family: var(--font-display);
       font-weight: 700;
       width: var(--avatar, 40px);

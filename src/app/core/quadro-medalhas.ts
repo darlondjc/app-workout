@@ -63,7 +63,7 @@ import { Conquista, NOMES_NIVEL, TipoConquista, formatarProgresso, fracaoAteOPro
       color: inherit;
     }
     .medalha-card--nova {
-      background: #f6fbdc;
+      background: var(--accent-soft);
       box-shadow: inset 0 0 0 2px var(--accent-ink);
       animation: chegou 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
@@ -95,7 +95,7 @@ import { Conquista, NOMES_NIVEL, TipoConquista, formatarProgresso, fracaoAteOPro
       padding: 2px 7px;
       border-radius: 999px;
       background: var(--accent);
-      color: var(--ink);
+      color: var(--on-accent);
       font-family: var(--font);
       font-size: 11px;
       font-weight: 700;

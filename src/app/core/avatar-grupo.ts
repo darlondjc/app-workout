@@ -21,7 +21,7 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
       width: var(--tamanho, 48px);
       height: var(--tamanho, 48px);
       border-radius: calc(var(--tamanho, 48px) * 0.29);
-      background: var(--ink);
+      background: var(--ink-bg);
       color: var(--accent);
       font-family: var(--font-display);
       font-weight: 700;

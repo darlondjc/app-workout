@@ -132,7 +132,7 @@ const ESTADO = {
       color: var(--ink);
     }
     .busca:focus-within {
-      outline: 3px solid #4a6a00;
+      outline: 3px solid var(--foco);
     }
     .filtros {
       display: flex;

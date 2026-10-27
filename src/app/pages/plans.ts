@@ -3,13 +3,15 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, i
 import { Router, RouterLink } from '@angular/router';
 import { Confirmacao } from '../core/confirmacao';
 import { ExerciseService } from '../core/exercise.service';
+import { FichaCompartilhar } from '../core/ficha-compartilhar';
+import { FichaCompartilhada, fichaParaCompartilhar } from '../core/ficha-link';
 import { Icon } from '../core/icon';
 import { Ficha } from '../core/models';
 import { PlanService } from '../core/plan.service';
 
 @Component({
   selector: 'app-plans',
-  imports: [Confirmacao, RouterLink, Icon, NgTemplateOutlet],
+  imports: [Confirmacao, FichaCompartilhar, RouterLink, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -37,9 +39,14 @@ import { PlanService } from '../core/plan.service';
                     <ng-container [ngTemplateOutlet]="linha" [ngTemplateOutletContext]="{ $implicit: f }" />
                   }
                 </ul>
-                <button type="button" class="conjunto__excluir" aria-haspopup="dialog" (click)="excluindoConjunto.set({ id: c.id, nome: c.nome, treinos: b.fichas.length })">
-                  <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
-                </button>
+                <div class="conjunto__acoes">
+                  <button type="button" class="conjunto__compartilhar" aria-haspopup="dialog" (click)="compartilhar(c.nome, b.fichas)">
+                    <app-icon name="share" [size]="18" [stroke]="2" /> Compartilhar
+                  </button>
+                  <button type="button" class="conjunto__excluir" aria-haspopup="dialog" (click)="excluindoConjunto.set({ id: c.id, nome: c.nome, treinos: b.fichas.length })">
+                    <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
+                  </button>
+                </div>
               }
             </li>
           } @else {
@@ -115,6 +122,9 @@ import { PlanService } from '../core/plan.service';
         <app-icon name="plus" [size]="18" [stroke]="2.5" /> Nova ficha
       </button>
 
+      @if (compartilhando(); as c) {
+        <app-ficha-compartilhar [ficha]="c" (fechar)="compartilhando.set(null)" />
+      }
       @if (excluindoConjunto(); as c) {
         <app-confirmacao titulo="Excluir ficha?" [subtitulo]="c.nome" [mensagem]="'Os ' + c.treinos + ' treinos dela também serão excluídos. Essa ação não pode ser desfeita.'" rotulo="Excluir" (confirmar)="confirmarExclusaoConjunto(c.id)" (cancelar)="excluindoConjunto.set(null)" />
       }
@@ -135,7 +145,7 @@ import { PlanService } from '../core/plan.service';
     .chip-proximo {
       background: var(--accent);
       border-color: transparent;
-      color: var(--ink);
+      color: var(--on-accent);
       font-weight: 700;
     }
     .item {
@@ -180,6 +190,20 @@ import { PlanService } from '../core/plan.service';
       font-family: var(--font-display);
       font-size: 17px;
     }
+    .conjunto__acoes { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+    .conjunto__compartilhar {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 10px;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+    }
     .conjunto__excluir {
       align-self: flex-start;
       display: inline-flex;
@@ -189,14 +213,14 @@ import { PlanService } from '../core/plan.service';
       padding: 0 10px;
       border: 0;
       background: transparent;
-      color: #b3261e;
+      color: var(--perigo);
       font: inherit;
       font-size: 14px;
       font-weight: 600;
     }
     .conjunto .lista {
       padding-left: 10px;
-      border-left: 3px solid #d8e6a0;
+      border-left: 3px solid var(--accent-soft-borda);
     }
     .lixeira {
       position: absolute;
@@ -232,7 +256,7 @@ import { PlanService } from '../core/plan.service';
       width: 40px;
       height: 40px;
       border-radius: 12px;
-      background: #e8f3b8;
+      background: var(--accent-soft);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -245,6 +269,8 @@ import { PlanService } from '../core/plan.service';
   `,
 })
 export class Plans {
+  protected readonly compartilhando = signal<FichaCompartilhada | null>(null);
+
   protected readonly plans = inject(PlanService);
   private readonly exercicios = inject(ExerciseService);
   private readonly router = inject(Router);
@@ -270,6 +296,10 @@ export class Plans {
   });
   /** Fichas que a pessoa abriu ou fechou à mão; as demais seguem o padrão: só a ficha atual fica aberta. */
   private readonly manual = signal<Record<string, boolean>>({});
+
+  protected compartilhar(nome: string, treinos: Ficha[]): void {
+    this.compartilhando.set(fichaParaCompartilhar(nome, treinos));
+  }
 
   protected aberto(b: { chave: string; fichas: Ficha[] }): boolean {
     const escolha = this.manual()[b.chave];

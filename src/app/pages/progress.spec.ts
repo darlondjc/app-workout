@@ -92,3 +92,23 @@ describe('Progress — mensagens de incentivo dispensáveis', () => {
     expect(xs().length).toBe(0);
   });
 });
+
+describe('Progress — mapa dos músculos', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SocialService, useValue: { publicarMeta: () => undefined } }],
+    });
+  });
+
+  for (const editavel of [true, false]) {
+    it(`aparece ${editavel ? 'nas minhas estatísticas' : 'nas de um amigo ou colega'}`, () => {
+      const fixture = TestBed.createComponent(Progress);
+      fixture.componentRef.setInput('historico', [sessao('a')]);
+      fixture.componentRef.setInput('editavel', editavel);
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelector('app-mapa-muscular')).not.toBeNull();
+    });
+  }
+});
+

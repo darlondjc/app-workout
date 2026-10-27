@@ -15,6 +15,7 @@ import { Avatar } from './core/avatar';
 import { CloudService } from './core/cloud.service';
 import { Icon } from './core/icon';
 import { NavegacaoService } from './core/navegacao.service';
+import { TemaService } from './core/tema.service';
 import { SocialService } from './core/social.service';
 import { LoadingService } from './core/loading.service';
 import { PrecargaService } from './core/precarga.service';
@@ -34,6 +35,7 @@ export class App {
   protected readonly update = inject(UpdateService);
   protected readonly nuvem = inject(CloudService);
   protected readonly social = inject(SocialService); // acompanha a timeline desde o início, para avisar na aba Social
+  private readonly tema = inject(TemaService); // aplica o tema escolhido e acompanha o do aparelho
   private readonly navegacao = inject(NavegacaoService); // começa a contar as telas desde a primeira
   private readonly precarga = inject(PrecargaService); // guarda as imagens das fichas para treinar sem internet
 
