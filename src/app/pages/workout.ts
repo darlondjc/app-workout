@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TituloEmDuasLinhas } from '../core/ajuste-titulo';
 import { ConcluirTreino } from '../core/concluir-treino';
@@ -151,7 +151,21 @@ export class Workout {
   constructor() {
     // A tela fica acesa enquanto o treino está aberto, para não apagar entre as séries.
     this.tela.ligar();
+    // Treino retomado depois de uma pausa: o cronômetro continua de onde estava.
+    effect(() => {
+      const d = this.estado()?.descanso;
+      if (!d || this.descansando()) return;
+      untracked(() => {
+        this.plans.andamento(this.id(), ({ descanso: _, ...a }) => a);
+        this.iniciarDescanso(d.decorrido, d.limite);
+      });
+    });
     inject(DestroyRef).onDestroy(() => {
+      // Saiu com o treino ainda em andamento (pausa): guarda o cronômetro para retomar.
+      if (this.descansando() && this.estado()) {
+        const descanso = { decorrido: this.descansoAtivo(), limite: this.limiteAtivo() };
+        this.plans.andamento(this.id(), (a) => ({ ...a, descanso }));
+      }
       this.pararDescanso();
       this.tela.desligar();
     });
@@ -397,11 +411,12 @@ export class Workout {
   }
 
   /** Cronômetro progressivo: conta a partir de zero e não para sozinho. Usa a hora real para não atrasar com a tela apagada. */
-  private iniciarDescanso(): void {
+  private iniciarDescanso(decorrido = 0, limite = this.limiteDescanso()): void {
     this.pararDescanso();
-    this.descansoDesde = Date.now();
+    this.descansoDesde = Date.now() - decorrido * 1000;
     // O limite é o do exercício em que a série foi marcada, mesmo que a pessoa já esteja em outro.
-    this.limiteAtivo.set(this.limiteDescanso());
+    this.limiteAtivo.set(limite);
+    this.descansoAtivo.set(decorrido);
     this.descansando.set(true);
     this.intervalo = setInterval(() => {
       const antes = this.descansoAtivo();

@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.25.2",
+    "data": "2026-10-28",
+    "titulo": "Cronômetro continua depois de pausar",
+    "itens": [
+      "Ao pausar um treino e continuar depois, o cronômetro de descanso segue de onde estava, em vez de voltar para zero."
+    ]
+  },
+  {
     "versao": "1.25.1",
     "data": "2026-10-28",
     "titulo": "Exercícios do treino de hoje na tela inicial",

@@ -198,6 +198,20 @@ describe('Workout — marcar séries em bloco', () => {
       passar(1000);
       expect(tempo()).toBe('00:05');
     });
+
+    it('depois de pausar e continuar, o cronômetro segue de onde estava', () => {
+      marcas().forEach((m) => clicar(m));
+      passar(7000);
+      fixture.destroy(); // pausar: sai da tela com o treino em andamento
+      jasmine.clock().tick(60000); // o tempo parado não conta
+      fixture = TestBed.createComponent(Workout);
+      fixture.componentRef.setInput('id', fichaId);
+      fixture.detectChanges();
+      fixture.detectChanges();
+      expect(tempo()).toBe('00:07');
+      passar(2000);
+      expect(tempo()).toBe('00:09');
+    });
   });
 
   describe('linhas copiadas piscam', () => {

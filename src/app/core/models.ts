@@ -126,4 +126,6 @@ export interface EmAndamento {
   nota?: string;
   /** Exercícios trocados só neste treino: posição na ficha → exercício que entra no lugar. */
   trocas?: Record<string, string>;
+  /** Cronômetro de descanso no momento em que o treino foi pausado; ao continuar, ele segue daí. */
+  descanso?: { decorrido: number; limite: number };
 }

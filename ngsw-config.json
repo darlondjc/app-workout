@@ -38,10 +38,10 @@
     }
   ],
   "appData": {
-    "versao": "1.25.1",
-    "titulo": "Exercícios do treino de hoje na tela inicial",
+    "versao": "1.25.2",
+    "titulo": "Cronômetro continua depois de pausar",
     "novidades": [
-      "Tocar nas miniaturas do treino de hoje, na tela inicial, abre uma folha com todos os exercícios (séries, repetições e carga). Dá para tocar em um exercício para ver a imagem e iniciar o treino dali."
+      "Ao pausar um treino e continuar depois, o cronômetro de descanso segue de onde estava, em vez de voltar para zero."
     ]
   }
 }
