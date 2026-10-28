@@ -95,14 +95,14 @@
           </ul>
         }
       }
-      <div class="miniaturas">
+      <button type="button" class="miniaturas" aria-haspopup="dialog" aria-label="Ver exercícios do treino de hoje" (click)="exerciciosAbertos.set(true)">
         @for (item of ficha.itens.slice(0, 3); track item.exerciseId) {
           <img [src]="exercicios.imagem(item.exerciseId, 0)" alt="" loading="lazy" />
         }
         @if (ficha.itens.length > 3) {
           <span class="mais">+{{ ficha.itens.length - 3 }}</span>
         }
-      </div>
+      </button>
       <a class="btn btn--destaque" [routerLink]="['/treino', ficha.id]">
         <app-icon name="play" [size]="18" /> {{ plans.emAndamento()?.fichaId === ficha.id ? 'Continuar treino' : 'Iniciar treino' }}
       </a>
@@ -208,6 +208,28 @@
   @if (galeriaAberta()) {
     <app-dialogo titulo="Medalhas" [subtitulo]="resumoConquistas()" (fechar)="fecharGaleria()">
       <app-medalhas-galeria [conquistas]="conquistas()" [recordes]="recordesRecentes()" [foco]="focoGaleria()" [novas]="novasNaGaleria()" />
+    </app-dialogo>
+  }
+
+  @if (exerciciosAbertos() && plans.proxima(); as ficha) {
+    <app-dialogo [folha]="true" [titulo]="ficha.nome" [subtitulo]="'Treino de hoje · ' + plans.rotulo(ficha.id)" (fechar)="exerciciosAbertos.set(false); exercicioAberto.set(null)">
+      <ul class="exercicios" aria-label="Exercícios do treino">
+        @for (item of ficha.itens; track $index) {
+          <li>
+            <button type="button" class="exercicio" aria-haspopup="dialog" [attr.aria-label]="'Ver imagem de ' + nomeExercicio(item.exerciseId)" (click)="exercicioAberto.set(item.exerciseId)">
+              <img [src]="exercicios.imagem(item.exerciseId, 0)" alt="" loading="lazy" />
+              <span class="exercicio__texto">
+                <span class="exercicio__nome">{{ nomeExercicio(item.exerciseId) }}</span>
+                <span class="apoio">{{ prescricao(item) }}</span>
+              </span>
+              <app-icon name="chevron" [size]="18" />
+            </button>
+          </li>
+        }
+      </ul>
+      <a class="btn btn--destaque" [routerLink]="['/treino', ficha.id]">
+        <app-icon name="play" [size]="18" /> {{ plans.emAndamento()?.fichaId === ficha.id ? 'Continuar treino' : 'Iniciar treino' }}
+      </a>
     </app-dialogo>
   }
 

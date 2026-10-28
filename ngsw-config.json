@@ -38,11 +38,10 @@
     }
   ],
   "appData": {
-    "versao": "1.19.0",
-    "titulo": "Grupo aguardando aprovação",
+    "versao": "1.25.1",
+    "titulo": "Exercícios do treino de hoje na tela inicial",
     "novidades": [
-      "Quem pede para entrar em um grupo com aprovação passa a ver o grupo na aba Social como Aguardando aprovação, com a opção de cancelar o pedido. Quando o dono aceita, ele vira um grupo normal.",
-      "Importante: publique o firestore.rules novo no Console do Firebase."
+      "Tocar nas miniaturas do treino de hoje, na tela inicial, abre uma folha com todos os exercícios (séries, repetições e carga). Dá para tocar em um exercício para ver a imagem e iniciar o treino dali."
     ]
   }
 }

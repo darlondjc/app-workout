@@ -8,6 +8,7 @@ const abertos: object[] = [];
 /**
  * Janela de diálogo: título, botão de fechar e o conteúdo projetado, com rolagem própria.
  * Fecha com o X, tocando fora ou com Esc; o foco entra na janela e volta para quem a abriu.
+ * Com `folha`, sobe de baixo da tela ocupando 85% da altura (bottom sheet), em vez de abrir no centro.
  */
 @Component({
   selector: 'app-dialogo',
@@ -15,7 +16,7 @@ const abertos: object[] = [];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button type="button" class="fundo" tabindex="-1" aria-label="Fechar" (click)="fechar.emit()"></button>
-    <div #caixa class="caixa" role="dialog" aria-modal="true" [attr.aria-labelledby]="idTitulo" (keydown.tab)="prenderFoco($event, false)" (keydown.shift.tab)="prenderFoco($event, true)">
+    <div #caixa class="caixa" [class.caixa--folha]="folha()" role="dialog" aria-modal="true" [attr.aria-labelledby]="idTitulo" (keydown.tab)="prenderFoco($event, false)" (keydown.shift.tab)="prenderFoco($event, true)">
       <header class="topo">
         <div class="topo__txt">
           <h2 class="titulo" [id]="idTitulo">{{ titulo() }}</h2>
@@ -37,6 +38,13 @@ const abertos: object[] = [];
       width: min(94%, 440px); max-height: 86dvh; box-sizing: border-box;
       display: flex; flex-direction: column; border-radius: 24px; background: var(--card, #fff); color: var(--ink);
     }
+    .caixa--folha {
+      top: auto; bottom: 0; transform: translateX(-50%); width: min(100%, 560px);
+      height: 85dvh; max-height: 85dvh; border-radius: 24px 24px 0 0;
+      animation: sobe 0.25s ease-out;
+    }
+    @keyframes sobe { from { transform: translate(-50%, 100%); } }
+    @media (prefers-reduced-motion: reduce) { .caixa--folha { animation: none; } }
     .topo { display: flex; align-items: flex-start; gap: 12px; padding: 18px 16px 12px 20px; border-bottom: 1px solid var(--soft); }
     .topo__txt { flex: 1; min-width: 0; }
     .titulo { margin: 0; font-family: var(--font-display); font-size: 20px; line-height: 1.2; overflow-wrap: anywhere; }
@@ -48,6 +56,8 @@ const abertos: object[] = [];
 export class Dialogo {
   readonly titulo = input.required<string>();
   readonly subtitulo = input<string>('');
+  /** Abre como folha de baixo para cima (85% da altura) em vez de janela centralizada. */
+  readonly folha = input(false);
   readonly fechar = output<void>();
 
   protected readonly idTitulo = `dialogo-titulo-${++contador}`;

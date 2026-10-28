@@ -18,7 +18,7 @@ import { lerMeta, metaPadrao } from '../core/meta';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { SocialService } from '../core/social.service';
 import { PlanService, dataLocal } from '../core/plan.service';
-import { AtividadeRegistro, Sessao } from '../core/models';
+import { AtividadeRegistro, ItemFicha, Sessao } from '../core/models';
 import { ToastService } from '../core/toast.service';
 import { caloriasDaSessao, kcalNumero } from '../core/calorias';
 import { PesoService } from '../core/peso.service';
@@ -206,7 +206,15 @@ export class Home {
   }
   protected readonly exercicioAberto = signal<string | null>(null);
 
-  private nomeExercicio(id: string): string {
+  protected readonly exerciciosAbertos = signal(false);
+
+  /** "3 × 12 · 20 kg", ou "1 × 20 min" no cardio. */
+  protected prescricao(i: ItemFicha): string {
+    if (i.unidade === 'min') return `${i.series} × ${i.reps} min`;
+    return `${i.series} × ${i.reps}${i.carga > 0 ? ` · ${i.carga.toLocaleString('pt-BR')} kg` : ''}`;
+  }
+
+  protected nomeExercicio(id: string): string {
     const e = this.exercicios.get(id);
     return e ? this.exercicios.nome(e) : id;
   }

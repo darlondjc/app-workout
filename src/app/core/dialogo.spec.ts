@@ -7,7 +7,7 @@ import { Dialogo } from './dialogo';
   template: `
     <button id="abre" type="button" (click)="aberto.set(true)">abrir</button>
     @if (aberto()) {
-      <app-dialogo titulo="Peito" subtitulo="Quinta" (fechar)="aberto.set(false); fechou = fechou + 1">
+      <app-dialogo titulo="Peito" subtitulo="Quinta" [folha]="folha()" (fechar)="aberto.set(false); fechou = fechou + 1">
         <button id="dentro" type="button">dentro</button>
       </app-dialogo>
     }
@@ -15,6 +15,7 @@ import { Dialogo } from './dialogo';
 })
 class Anfitriao {
   readonly aberto = signal(false);
+  readonly folha = signal(false);
   fechou = 0;
 }
 
@@ -46,6 +47,14 @@ describe('Dialogo', () => {
     expect(d.textContent).toContain('Quinta');
     expect(d.querySelector('#dentro')).not.toBeNull();
     expect(d.getAttribute('aria-labelledby')).toBe(d.querySelector('h2')!.id);
+  });
+
+  it('abre no centro por padrão e como folha de baixo quando pedido', async () => {
+    await abrir();
+    expect(el().querySelector('.caixa--folha')).toBeNull();
+    fixture.componentInstance.folha.set(true);
+    fixture.detectChanges();
+    expect(el().querySelector('.caixa--folha')).not.toBeNull();
   });
 
   it('leva o foco para o botão de fechar ao abrir e devolve para quem abriu ao fechar', async () => {
