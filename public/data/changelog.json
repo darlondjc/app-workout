@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.25.3",
+    "data": "2026-10-29",
+    "titulo": "Cronômetro e instruções do exercício",
+    "itens": [
+      "Ao abrir as instruções de um exercício durante o treino e voltar, o cronômetro de descanso continua contando (inclusive o tempo que você ficou na outra tela). Ao pausar o treino, ele continua parado onde estava."
+    ]
+  },
+  {
     "versao": "1.25.2",
     "data": "2026-10-28",
     "titulo": "Cronômetro continua depois de pausar",

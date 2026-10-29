@@ -157,13 +157,14 @@ export class Workout {
       if (!d || this.descansando()) return;
       untracked(() => {
         this.plans.andamento(this.id(), ({ descanso: _, ...a }) => a);
-        this.iniciarDescanso(d.decorrido, d.limite);
+        const fora = d.pausado ? 0 : Math.max(0, Math.floor((Date.now() - d.saiuEm) / 1000));
+        this.iniciarDescanso(d.decorrido + fora, d.limite);
       });
     });
     inject(DestroyRef).onDestroy(() => {
-      // Saiu com o treino ainda em andamento (pausa): guarda o cronômetro para retomar.
+      // Saiu com o treino ainda em andamento (pausa, ou ver as instruções de um exercício): guarda o cronômetro para retomar.
       if (this.descansando() && this.estado()) {
-        const descanso = { decorrido: this.descansoAtivo(), limite: this.limiteAtivo() };
+        const descanso = { decorrido: this.descansoAtivo(), limite: this.limiteAtivo(), saiuEm: Date.now(), pausado: this.pausado };
         this.plans.andamento(this.id(), (a) => ({ ...a, descanso }));
       }
       this.pararDescanso();
@@ -271,7 +272,11 @@ export class Workout {
     else this.nav.voltar('/');
   }
 
+  /** Pausar para o cronômetro; sair por outro caminho (ver instruções) deixa o descanso correr. */
+  private pausado = false;
+
   protected pausar(): void {
+    this.pausado = true;
     this.confirmandoSaida.set(false);
     this.toast.mostrar('Treino pausado. Continue quando quiser.');
     this.nav.voltar('/');

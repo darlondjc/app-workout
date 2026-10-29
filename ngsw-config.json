@@ -38,10 +38,10 @@
     }
   ],
   "appData": {
-    "versao": "1.25.2",
-    "titulo": "Cronômetro continua depois de pausar",
+    "versao": "1.25.3",
+    "titulo": "Cronômetro e instruções do exercício",
     "novidades": [
-      "Ao pausar um treino e continuar depois, o cronômetro de descanso segue de onde estava, em vez de voltar para zero."
+      "Ao abrir as instruções de um exercício durante o treino e voltar, o cronômetro de descanso continua contando (inclusive o tempo que você ficou na outra tela). Ao pausar o treino, ele continua parado onde estava."
     ]
   }
 }

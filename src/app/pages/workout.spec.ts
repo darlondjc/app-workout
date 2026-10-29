@@ -199,10 +199,23 @@ describe('Workout — marcar séries em bloco', () => {
       expect(tempo()).toBe('00:05');
     });
 
+    it('ao ver as instruções de um exercício e voltar, o cronômetro seguiu contando', () => {
+      marcas().forEach((m) => clicar(m));
+      passar(7000);
+      fixture.destroy(); // vai para a tela do exercício, sem pausar
+      jasmine.clock().tick(10000);
+      fixture = TestBed.createComponent(Workout);
+      fixture.componentRef.setInput('id', fichaId);
+      fixture.detectChanges();
+      fixture.detectChanges();
+      expect(tempo()).toBe('00:17');
+    });
+
     it('depois de pausar e continuar, o cronômetro segue de onde estava', () => {
       marcas().forEach((m) => clicar(m));
       passar(7000);
-      fixture.destroy(); // pausar: sai da tela com o treino em andamento
+      (fixture.componentInstance as unknown as { pausar(): void }).pausar();
+      fixture.destroy();
       jasmine.clock().tick(60000); // o tempo parado não conta
       fixture = TestBed.createComponent(Workout);
       fixture.componentRef.setInput('id', fichaId);
