@@ -127,8 +127,8 @@ export interface EmAndamento {
   /** Exercícios trocados só neste treino: posição na ficha → exercício que entra no lugar. */
   trocas?: Record<string, string>;
   /**
-   * Cronômetro de descanso no momento em que a tela do treino foi fechada. Ao voltar ele segue daí:
-   * parado se o treino foi pausado, ou contando o tempo fora (ex.: vendo as instruções de um exercício).
+   * Cronômetro de descanso, guardado quando começa e de novo ao fechar a tela do treino. Ao voltar ele segue daí:
+   * parado se o treino foi pausado, ou contando o tempo fora (instruções do exercício, app fechado ou reiniciado).
    */
   descanso?: { decorrido: number; limite: number; saiuEm: number; pausado: boolean };
 }

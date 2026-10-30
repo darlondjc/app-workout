@@ -211,6 +211,19 @@ describe('Workout — marcar séries em bloco', () => {
       expect(tempo()).toBe('00:17');
     });
 
+    it('se o app fechar ou reiniciar sem sair da tela, o cronômetro retoma contando o tempo fora', () => {
+      marcas().forEach((m) => clicar(m));
+      passar(7000);
+      // Sem destroy: a tela some de uma vez (app encerrado), só o que foi guardado sobrevive.
+      jasmine.clock().tick(20000);
+      const nova = TestBed.createComponent(Workout);
+      nova.componentRef.setInput('id', fichaId);
+      nova.detectChanges();
+      nova.detectChanges();
+      expect((nova.nativeElement as HTMLElement).querySelector('.tempo')?.textContent?.trim()).toBe('00:27');
+      nova.destroy();
+    });
+
     it('depois de pausar e continuar, o cronômetro segue de onde estava', () => {
       marcas().forEach((m) => clicar(m));
       passar(7000);

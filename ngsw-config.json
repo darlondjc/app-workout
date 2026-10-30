@@ -38,10 +38,10 @@
     }
   ],
   "appData": {
-    "versao": "1.25.6",
-    "titulo": "Ver instruções na demonstração do exercício",
+    "versao": "1.25.7",
+    "titulo": "Cronômetro sobrevive ao app fechado",
     "novidades": [
-      "A janela de demonstração de um exercício (no mapa dos músculos, no início, no progresso e nos cards de treino) ganhou o botão Ver instruções, que abre a tela completa do exercício."
+      "Se você sair do app sem querer, ou o sistema reiniciá-lo ao trocar de app, o cronômetro de descanso do treino em andamento continua de onde estava ao tocar em Continuar treino, contando o tempo que você ficou fora."
     ]
   }
 }

@@ -156,7 +156,6 @@ export class Workout {
       const d = this.estado()?.descanso;
       if (!d || this.descansando()) return;
       untracked(() => {
-        this.plans.andamento(this.id(), ({ descanso: _, ...a }) => a);
         const fora = d.pausado ? 0 : Math.max(0, Math.floor((Date.now() - d.saiuEm) / 1000));
         this.iniciarDescanso(d.decorrido + fora, d.limite);
       });
@@ -423,6 +422,9 @@ export class Workout {
     this.limiteAtivo.set(limite);
     this.descansoAtivo.set(decorrido);
     this.descansando.set(true);
+    // Guardado desde o início: se o app for fechado ou reiniciado, o cronômetro retoma de onde estava (com o tempo fora).
+    const descanso = { decorrido, limite, saiuEm: Date.now(), pausado: false };
+    this.plans.andamento(this.id(), (a) => ({ ...a, descanso }));
     this.intervalo = setInterval(() => {
       const antes = this.descansoAtivo();
       const agora = Math.floor((Date.now() - this.descansoDesde) / 1000);

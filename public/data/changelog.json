@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.25.7",
+    "data": "2026-10-30",
+    "titulo": "Cronômetro sobrevive ao app fechado",
+    "itens": [
+      "Se você sair do app sem querer, ou o sistema reiniciá-lo ao trocar de app, o cronômetro de descanso do treino em andamento continua de onde estava ao tocar em Continuar treino, contando o tempo que você ficou fora."
+    ]
+  },
+  {
     "versao": "1.25.6",
     "data": "2026-10-30",
     "titulo": "Ver instruções na demonstração do exercício",
