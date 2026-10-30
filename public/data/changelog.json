@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.25.8",
+    "data": "2026-10-30",
+    "titulo": "Câmera dentro do app: selfie sem espelhar",
+    "itens": [
+      "Ao adicionar uma foto (treino, perfil, grupo), o app agora abre a própria câmera, com a frontal ligada. A imagem aparece espelhada enquanto você se enquadra, como num espelho, mas a foto sai sem espelhar, como as outras pessoas te veem. Há botões para virar a câmera e para escolher da galeria.",
+      "Se o aparelho não deixar usar a câmera dentro do app, ele abre o seletor de fotos como antes."
+    ]
+  },
+  {
     "versao": "1.25.7",
     "data": "2026-10-30",
     "titulo": "Cronômetro sobrevive ao app fechado",

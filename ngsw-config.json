@@ -38,10 +38,11 @@
     }
   ],
   "appData": {
-    "versao": "1.25.7",
-    "titulo": "Cronômetro sobrevive ao app fechado",
+    "versao": "1.25.8",
+    "titulo": "Câmera dentro do app: selfie sem espelhar",
     "novidades": [
-      "Se você sair do app sem querer, ou o sistema reiniciá-lo ao trocar de app, o cronômetro de descanso do treino em andamento continua de onde estava ao tocar em Continuar treino, contando o tempo que você ficou fora."
+      "Ao adicionar uma foto (treino, perfil, grupo), o app agora abre a própria câmera, com a frontal ligada. A imagem aparece espelhada enquanto você se enquadra, como num espelho, mas a foto sai sem espelhar, como as outras pessoas te veem. Há botões para virar a câmera e para escolher da galeria.",
+      "Se o aparelho não deixar usar a câmera dentro do app, ele abre o seletor de fotos como antes."
     ]
   }
 }
