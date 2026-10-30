@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { ExerciseService } from './exercise.service';
 import { MapaMuscular } from './mapa-muscular';
 import { Exercise, Sessao } from './models';
@@ -29,6 +30,7 @@ function montar(historico: Sessao[]) {
   ];
   TestBed.configureTestingModule({
     providers: [
+      provideRouter([]),
       {
         provide: ExerciseService,
         useValue: {
@@ -166,6 +168,9 @@ describe('MapaMuscular', () => {
     el.querySelector<HTMLButtonElement>('.ex')!.click();
     fixture.detectChanges();
     expect(el.querySelector('app-exercicio-dialogo')).not.toBeNull();
+    const instrucoes = el.querySelector<HTMLAnchorElement>('app-exercicio-dialogo a.instrucoes')!;
+    expect(instrucoes.textContent).toContain('Ver instruções');
+    expect(instrucoes.getAttribute('href')).toBe('/exercicio/supino');
     el.querySelector<HTMLButtonElement>('app-exercicio-dialogo .x')!.click();
     fixture.detectChanges();
     expect(el.querySelector('app-exercicio-dialogo')).toBeNull();
