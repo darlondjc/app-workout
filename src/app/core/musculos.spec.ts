@@ -6,6 +6,7 @@ import {
   PESO_SECUNDARIO,
   calcularMusculos,
   corDoNivel,
+  exerciciosFeitos,
   exerciciosDoMusculo,
   haDias,
   maisEMenos,
@@ -216,3 +217,41 @@ describe('exerciciosDoMusculo', () => {
   });
 });
 
+
+describe('exerciciosFeitos', () => {
+  it('lista os exercícios do período que dão a cor do músculo, do que mais pesa ao que menos pesa', () => {
+    const h = [treino(0, reg('supino', 4)), treino(7, reg('supino', 4)), treino(1, reg('remada', 3))];
+    const r = exerciciosFeitos(h, HOJE, exercicioDe, 'peito');
+    expect(r.map((x) => x.id)).toEqual(['supino']);
+    expect(r[0]).toEqual(jasmine.objectContaining({ papel: 'principal', series: 8, treinos: 2, ultimo: atras(0), diasDesdeUltimo: 0 }));
+    expect(r[0].parte).toBeCloseTo(1);
+  });
+
+  it('o que vem do exercício bate com os pontos do músculo e a fatia é descontada pela idade', () => {
+    const h = [treino(0, reg('supino', 4)), treino(7, reg('supino', 4))];
+    const ombros = exerciciosFeitos(h, HOJE, exercicioDe, 'ombros');
+    expect(ombros[0].papel).toBe('secundario');
+    const total = calcularMusculos(h, HOJE, exercicioDe).find((e) => e.id === 'ombros')!.pontos;
+    expect(total).toBeCloseTo(4 * PESO_SECUNDARIO * 1.5);
+  });
+
+  it('divide a fatia entre os exercícios e ignora o que passou do período, o cardio e o alongamento', () => {
+    const outro = ex('crucifixo', ['chest']);
+    BASE['crucifixo'] = outro;
+    try {
+      const h = [treino(0, reg('supino', 2), reg('crucifixo', 2)), treino(LOOKBACK_DIAS + 1, reg('supino', 10)), treino(0, reg('alongar', 3))];
+      const r = exerciciosFeitos(h, HOJE, exercicioDe, 'peito');
+      expect(r.map((x) => x.id).sort()).toEqual(['crucifixo', 'supino']);
+      expect(r.reduce((t, x) => t + x.parte, 0)).toBeCloseTo(1);
+      expect(r[0].parte).toBeCloseTo(0.5);
+      expect(exerciciosFeitos(h, HOJE, exercicioDe, 'posteriores')).toEqual([]);
+    } finally {
+      delete BASE['crucifixo'];
+    }
+  });
+
+  it('músculo desconhecido ou sem treino dá lista vazia', () => {
+    expect(exerciciosFeitos([], HOJE, exercicioDe, 'peito')).toEqual([]);
+    expect(exerciciosFeitos([treino(0, reg('supino', 4))], HOJE, exercicioDe, 'nada')).toEqual([]);
+  });
+});

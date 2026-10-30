@@ -36,6 +36,7 @@ function montar(historico: Sessao[]) {
           exercises: () => todos,
           nome: (e: Exercise) => (e.id === 'supino' ? 'Supino reto' : e.id === 'crucifixo' ? 'Crucifixo' : e.id),
           equipamento: () => 'Halteres',
+          nivel: () => 'Iniciante',
           imagem: (id: string) => `exercises/${id}/0.jpg`,
         },
       },
@@ -45,6 +46,15 @@ function montar(historico: Sessao[]) {
   fixture.componentRef.setInput('historico', historico);
   fixture.detectChanges();
   return fixture;
+}
+
+/** Abre a lista do músculo e passa dos exercícios feitos para a biblioteca inteira. */
+function abrirBiblioteca(fixture: ReturnType<typeof montar>): void {
+  const el: HTMLElement = fixture.nativeElement;
+  el.querySelector<HTMLButtonElement>('.ver-ex')!.click();
+  fixture.detectChanges();
+  el.querySelector<HTMLButtonElement>('app-dialogo .mais')!.click();
+  fixture.detectChanges();
 }
 
 describe('MapaMuscular', () => {
@@ -129,8 +139,7 @@ describe('MapaMuscular', () => {
     expect(el.querySelector('.ver-ex')).toBeNull();
     el.querySelector<SVGGElement>('g.musculo[aria-label^="Peito"]')!.dispatchEvent(new Event('click'));
     fixture.detectChanges();
-    el.querySelector<HTMLButtonElement>('.ver-ex')!.click();
-    fixture.detectChanges();
+    abrirBiblioteca(fixture);
     const nomes = () => Array.from(el.querySelectorAll('.ex strong')).map((e) => e.textContent);
     expect(el.querySelector('app-dialogo')!.textContent).toContain('Exercícios: peito');
     expect(nomes()).toEqual(['Crucifixo', 'Supino reto']);
@@ -173,15 +182,38 @@ describe('MapaMuscular', () => {
       const el: HTMLElement = fixture.nativeElement;
       el.querySelector<SVGGElement>('g.musculo[aria-label^="Peito"]')!.dispatchEvent(new Event('click'));
       fixture.detectChanges();
-      el.querySelector<HTMLButtonElement>('.ver-ex')!.click();
-      fixture.detectChanges();
+      abrirBiblioteca(fixture);
       expect(el.querySelectorAll('.ex').length).toBe(40);
-      el.querySelector<HTMLButtonElement>('.mais')!.click();
+      el.querySelector<HTMLButtonElement>('app-dialogo .mais:not(.voltar)')!.click();
       fixture.detectChanges();
       expect(el.querySelectorAll('.ex').length).toBe(80);
     } finally {
       muitos.forEach((e) => delete BASE[e.id]);
     }
+  });
+
+  it('"Ver exercícios" abre primeiro os exercícios feitos que dão a cor, com a explicação do esfriamento', () => {
+    const fixture = montar([sessao('supino', 4), sessao('remada', 2)]);
+    const el: HTMLElement = fixture.nativeElement;
+    el.querySelector<SVGGElement>('g.musculo[aria-label^="Peito"]')!.dispatchEvent(new Event('click'));
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('.ver-ex')!.click();
+    fixture.detectChanges();
+    const d = el.querySelector('app-dialogo')!;
+    expect(d.textContent).toContain('Treinados: peito');
+    expect(d.textContent).toContain('metade do peso a cada 7 dias');
+    const itens = Array.from(d.querySelectorAll('.ex'));
+    expect(itens.length).toBe(1);
+    expect(itens[0].textContent).toContain('Supino reto');
+    expect(itens[0].textContent).toContain('4 séries em 1 treino');
+    expect(itens[0].textContent).toContain('100% da cor');
+
+    d.querySelector<HTMLButtonElement>('.mais')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-dialogo')!.textContent).toContain('Exercícios: peito');
+    el.querySelector<HTMLButtonElement>('app-dialogo .voltar')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-dialogo')!.textContent).toContain('Treinados: peito');
   });
 });
 

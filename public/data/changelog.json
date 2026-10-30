@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.25.5",
+    "data": "2026-10-30",
+    "titulo": "Mapa dos músculos: exercícios que dão a cor",
+    "itens": [
+      "No mapa, Ver exercícios para um músculo agora mostra primeiro os exercícios que você fez nos últimos 56 dias e que deixaram o músculo com aquela cor, com séries, treinos, último treino e a fatia de cada um na cor. A lista de todos os exercícios do músculo continua em Ver todos os exercícios.",
+      "A tela explica o esfriamento: cada série perde metade do peso a cada 7 dias, e depois de 56 dias deixa de contar."
+    ]
+  },
+  {
     "versao": "1.25.4",
     "data": "2026-10-30",
     "titulo": "Notas e Marcar todos na mesma linha",

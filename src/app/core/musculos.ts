@@ -58,6 +58,91 @@ export interface EstadoMusculo {
   series7: number;
 }
 
+/** Um exercício feito em um treino do período da conta, com a idade do treino e o quanto ela desconta. */
+interface SeriesFeitas {
+  data: string;
+  idade: number;
+  decaimento: number;
+  series: number;
+  exercicio: Exercise;
+}
+
+/** Os exercícios que entram na conta do mapa: treinos dos últimos `LOOKBACK_DIAS`, sem cardio, alongamento ou atividades. */
+function* seriesNoPeriodo(historico: Sessao[], base: Date, exercicioDe: (id: string) => Exercise | undefined): Generator<SeriesFeitas> {
+  for (const s of historico) {
+    if (s.atividade || !s.registros?.length) continue;
+    const idade = dias(deIso(s.data), base);
+    if (idade < 0 || idade > LOOKBACK_DIAS) continue;
+    const decaimento = Math.pow(0.5, idade / MEIA_VIDA_DIAS);
+    for (const r of s.registros) {
+      if (r.unidade === 'min' || r.series.length === 0) continue;
+      const e = exercicioDe(r.exerciseId);
+      if (!e || e.category === 'cardio' || e.category === 'stretching') continue;
+      yield { data: s.data, idade, decaimento, series: r.series.length, exercicio: e };
+    }
+  }
+}
+
+function papelNoMusculo(e: Exercise, m: Musculo): 'principal' | 'secundario' | null {
+  if (e.primaryMuscles.some((x) => m.fontes.includes(x))) return 'principal';
+  return e.secondaryMuscles.some((x) => m.fontes.includes(x)) ? 'secundario' : null;
+}
+
+export interface ExercicioFeito {
+  id: string;
+  papel: 'principal' | 'secundario';
+  /** Séries feitas no período (56 dias). */
+  series: number;
+  treinos: number;
+  /** Data (yyyy-mm-dd) do treino mais recente. */
+  ultimo: string;
+  diasDesdeUltimo: number;
+  /** Fatia (0 a 1) dos pontos do músculo que vem deste exercício, já com o desconto pelo tempo. */
+  parte: number;
+}
+
+/**
+ * Os exercícios feitos no período da conta que dão a cor do músculo, do que mais pesa para o que menos pesa.
+ * É a mesma conta de `calcularMusculos`, aberta por exercício.
+ */
+export function exerciciosFeitos(
+  historico: Sessao[],
+  hoje: Date,
+  exercicioDe: (id: string) => Exercise | undefined,
+  musculoId: string,
+): ExercicioFeito[] {
+  const musculo = MUSCULOS.find((m) => m.id === musculoId);
+  if (!musculo) return [];
+  const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const por = new Map<string, { papel: 'principal' | 'secundario'; series: number; datas: Set<string>; ultimo: string; pontos: number }>();
+  let total = 0;
+  for (const f of seriesNoPeriodo(historico, base, exercicioDe)) {
+    const papel = papelNoMusculo(f.exercicio, musculo);
+    if (!papel) continue;
+    const pontos = f.series * (papel === 'principal' ? 1 : PESO_SECUNDARIO) * f.decaimento;
+    total += pontos;
+    const x = por.get(f.exercicio.id) ?? { papel, series: 0, datas: new Set<string>(), ultimo: f.data, pontos: 0 };
+    x.series += f.series;
+    x.datas.add(f.data);
+    x.pontos += pontos;
+    if (f.data > x.ultimo) x.ultimo = f.data;
+    por.set(f.exercicio.id, x);
+  }
+  return [...por.entries()]
+    .map(([id, x]) => ({
+      id,
+      papel: x.papel,
+      series: x.series,
+      treinos: x.datas.size,
+      ultimo: x.ultimo,
+      diasDesdeUltimo: dias(deIso(x.ultimo), base),
+      parte: total > 0 ? x.pontos / total : 0,
+      pontos: x.pontos,
+    }))
+    .sort((a, b) => b.pontos - a.pontos)
+    .map(({ pontos: _, ...resto }) => resto);
+}
+
 /**
  * Estado de cada músculo (na ordem de `MUSCULOS`) a partir do histórico. Alongamentos e cardio ficam de fora, assim
  * como atividades sem exercícios (corrida, esporte): não há como saber que músculos trabalharam.
@@ -70,27 +155,14 @@ export function calcularMusculos(
   const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   const estados = MUSCULOS.map((m) => ({ musculo: m, pontos: 0, ultimo: null as string | null, series7: 0 }));
 
-  for (const s of historico) {
-    if (s.atividade || !s.registros?.length) continue;
-    const idade = dias(deIso(s.data), base);
-    if (idade < 0 || idade > LOOKBACK_DIAS) continue;
-    const decaimento = Math.pow(0.5, idade / MEIA_VIDA_DIAS);
-
-    for (const r of s.registros) {
-      if (r.unidade === 'min' || r.series.length === 0) continue;
-      const e = exercicioDe(r.exerciseId);
-      if (!e || e.category === 'cardio' || e.category === 'stretching') continue;
-
-      for (const est of estados) {
-        const { fontes } = est.musculo;
-        const principal = e.primaryMuscles.some((m) => fontes.includes(m));
-        const secundario = !principal && e.secondaryMuscles.some((m) => fontes.includes(m));
-        if (!principal && !secundario) continue;
-        est.pontos += r.series.length * (principal ? 1 : PESO_SECUNDARIO) * decaimento;
-        if (principal) {
-          if (!est.ultimo || s.data > est.ultimo) est.ultimo = s.data;
-          if (idade <= 6) est.series7 += r.series.length;
-        }
+  for (const { data, idade, decaimento, series, exercicio: e } of seriesNoPeriodo(historico, base, exercicioDe)) {
+    for (const est of estados) {
+      const papel = papelNoMusculo(e, est.musculo);
+      if (!papel) continue;
+      est.pontos += series * (papel === 'principal' ? 1 : PESO_SECUNDARIO) * decaimento;
+      if (papel === 'principal') {
+        if (!est.ultimo || data > est.ultimo) est.ultimo = data;
+        if (idade <= 6) est.series7 += series;
       }
     }
   }

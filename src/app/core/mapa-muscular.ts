@@ -4,7 +4,7 @@ import { ExercicioDialogo } from './exercicio-dialogo';
 import { ExerciseService } from './exercise.service';
 import { Dialogo } from './dialogo';
 import { Sessao } from './models';
-import { MUSCULOS, calcularMusculos, corDoNivel, exerciciosDoMusculo, maisEMenos, rotuloDoNivel, ultimaVez } from './musculos';
+import { LOOKBACK_DIAS, MEIA_VIDA_DIAS, MUSCULOS, calcularMusculos, corDoNivel, exerciciosDoMusculo, exerciciosFeitos, haDias, maisEMenos, rotuloDoNivel, ultimaVez } from './musculos';
 
 type Lado = 'frente' | 'costas';
 
@@ -148,23 +148,52 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
       }
 
       @if (listaAberta(); as l) {
-        <app-dialogo [titulo]="'Exercícios: ' + l.nome" [subtitulo]="l.total + (l.total === 1 ? ' exercício' : ' exercícios') + ' em que é o músculo principal'" (fechar)="fecharExercicios()">
-          <label class="sr-only" for="busca-mm">Buscar exercício</label>
-          <input id="busca-mm" class="busca" type="search" placeholder="Buscar exercício" autocomplete="off" [value]="busca()" (input)="busca.set($any($event.target).value); mostrados.set(PAGINA)" />
-          <ul class="exs">
-            @for (x of l.itens; track x.id) {
-              <li>
-                <button type="button" class="ex" (click)="exercicioAberto.set(x.id)">
-                  <img class="ex__img" [src]="x.imagem" alt="" loading="lazy" decoding="async" />
-                  <span class="ex__txt"><strong>{{ x.nome }}</strong><span class="apoio">{{ x.equipamento }}</span></span>
-                </button>
-              </li>
-            } @empty {
-              <li class="apoio">Nenhum exercício encontrado.</li>
+        <app-dialogo
+          [titulo]="(l.modo === 'feitos' ? 'Treinados: ' : 'Exercícios: ') + l.nome"
+          [subtitulo]="l.modo === 'feitos' ? 'Feitos nos últimos ' + LOOKBACK + ' dias' : l.total + (l.total === 1 ? ' exercício' : ' exercícios') + ' em que é o músculo principal'"
+          (fechar)="fecharExercicios()"
+        >
+          @if (l.modo === 'feitos') {
+            <p class="apoio nota-resfria">
+              A cor vem destes exercícios. Cada série perde metade do peso a cada {{ MEIA_VIDA }} dias, por isso a cor
+              esfria com o tempo; depois de {{ LOOKBACK }} dias ela já não conta.
+            </p>
+            <ul class="exs">
+              @for (x of l.feitos; track x.id) {
+                <li>
+                  <button type="button" class="ex" (click)="exercicioAberto.set(x.id)">
+                    <img class="ex__img" [src]="x.imagem" alt="" loading="lazy" decoding="async" />
+                    <span class="ex__txt">
+                      <strong>{{ x.nome }}</strong>
+                      <span class="apoio">{{ x.series }} {{ x.series === 1 ? 'série' : 'séries' }} em {{ x.treinos }} {{ x.treinos === 1 ? 'treino' : 'treinos' }} · último {{ x.quando }}</span>
+                      <span class="apoio">{{ x.papel === 'secundario' ? 'Músculo secundário · ' : '' }}{{ x.parte }}% da cor</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+            <button type="button" class="btn btn--claro mais" (click)="verBiblioteca.set(true)">Ver todos os exercícios para {{ l.nome }}</button>
+          } @else {
+            @if (l.temFeitos) {
+              <button type="button" class="btn btn--claro mais voltar" (click)="verBiblioteca.set(false)">‹ Voltar aos exercícios feitos</button>
             }
-          </ul>
-          @if (l.restantes > 0) {
-            <button type="button" class="btn btn--claro mais" (click)="mostrados.set(mostrados() + PAGINA)">Mostrar mais ({{ l.restantes }})</button>
+            <label class="sr-only" for="busca-mm">Buscar exercício</label>
+            <input id="busca-mm" class="busca" type="search" placeholder="Buscar exercício" autocomplete="off" [value]="busca()" (input)="busca.set($any($event.target).value); mostrados.set(PAGINA)" />
+            <ul class="exs">
+              @for (x of l.itens; track x.id) {
+                <li>
+                  <button type="button" class="ex" (click)="exercicioAberto.set(x.id)">
+                    <img class="ex__img" [src]="x.imagem" alt="" loading="lazy" decoding="async" />
+                    <span class="ex__txt"><strong>{{ x.nome }}</strong><span class="apoio">{{ x.equipamento }}</span></span>
+                  </button>
+                </li>
+              } @empty {
+                <li class="apoio">Nenhum exercício encontrado.</li>
+              }
+            </ul>
+            @if (l.restantes > 0) {
+              <button type="button" class="btn btn--claro mais" (click)="mostrados.set(mostrados() + PAGINA)">Mostrar mais ({{ l.restantes }})</button>
+            }
           }
         </app-dialogo>
       }
@@ -231,6 +260,8 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .ex__txt { display: flex; flex-direction: column; min-width: 0; font-size: 14px; line-height: 1.25; }
     .ex__txt .apoio { font-size: 12px; }
     .mais { width: 100%; margin-top: 10px; }
+    .voltar { margin: 0 0 10px; }
+    .nota-resfria { margin: 0 0 10px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .vazio { margin: 0; font-size: 14px; color: var(--muted); }
     .listas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -262,6 +293,10 @@ export class MapaMuscular {
   protected readonly gradiente = `linear-gradient(to right, ${NIVEIS_LEGENDA.map((n) => `${corDoNivel(n)} ${n * 100}%`).join(', ')})`;
   protected readonly ultima = ultimaVez;
   protected readonly PAGINA = 40;
+  protected readonly LOOKBACK = LOOKBACK_DIAS;
+  protected readonly MEIA_VIDA = MEIA_VIDA_DIAS;
+  /** Na lista do músculo, mostra a biblioteca inteira em vez dos exercícios feitos. */
+  protected readonly verBiblioteca = signal(false);
   protected readonly listaPedida = signal(false);
   protected readonly busca = signal('');
   protected readonly mostrados = signal(40);
@@ -294,18 +329,33 @@ export class MapaMuscular {
   protected readonly listaAberta = computed(() => {
     const id = this.selecionado();
     if (!this.listaPedida() || !id) return null;
+    const feitos = exerciciosFeitos(this.historico(), this.hoje, (x) => this.ex.get(x), id).map((f) => {
+      const e = this.ex.get(f.id);
+      return {
+        id: f.id,
+        nome: e ? this.ex.nome(e) : f.id,
+        imagem: this.ex.imagem(f.id, 0),
+        series: f.series,
+        treinos: f.treinos,
+        quando: haDias(f.diasDesdeUltimo),
+        papel: f.papel,
+        parte: Math.max(1, Math.round(f.parte * 100)),
+      };
+    });
+    const modo = feitos.length > 0 && !this.verBiblioteca() ? 'feitos' : 'biblioteca';
     const norm = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const q = norm(this.busca().trim());
     const todos = exerciciosDoMusculo(this.ex.exercises(), id)
       .map((e) => ({ id: e.id, nome: this.ex.nome(e), equipamento: this.ex.equipamento(e.equipment), imagem: this.ex.imagem(e.id, 0) }))
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     const filtrados = q ? todos.filter((x) => norm(`${x.nome} ${x.equipamento}`).includes(q)) : todos;
-    return { nome: this.nome(id).toLowerCase(), total: todos.length, itens: filtrados.slice(0, this.mostrados()), restantes: Math.max(0, filtrados.length - this.mostrados()) };
+    return { modo, feitos, temFeitos: feitos.length > 0, nome: this.nome(id).toLowerCase(), total: todos.length, itens: filtrados.slice(0, this.mostrados()), restantes: Math.max(0, filtrados.length - this.mostrados()) };
   });
 
   protected abrirExercicios(): void {
     this.busca.set('');
     this.mostrados.set(this.PAGINA);
+    this.verBiblioteca.set(false);
     this.listaPedida.set(true);
   }
 
