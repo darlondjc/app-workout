@@ -127,9 +127,11 @@ h1 {
   flex-direction: column;
   gap: 6px;
 }
-.todos {
+.acoes {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 .todos__botao {
   display: inline-flex;
@@ -137,6 +139,7 @@ h1 {
   gap: 6px;
   min-height: 32px;
   padding: 0 14px;
+  white-space: nowrap;
   border-radius: 999px;
   border: 1.5px solid #8a918c;
   background: transparent;
@@ -337,9 +340,9 @@ h1 {
   letter-spacing: 0.04em;
 }
 .nota-botao {
-  align-self: flex-start;
   min-height: 32px;
   padding: 0 14px;
+  white-space: nowrap;
   border: 1px solid #3a4046;
   border-radius: 999px;
   background: transparent;

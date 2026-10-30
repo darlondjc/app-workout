@@ -76,17 +76,17 @@
       @if (notaTreino(); as n) {
         <p class="nota-fixa"><span class="nota-fixa__rotulo">Hoje</span> {{ n }}</p>
       }
-      <button type="button" class="nota-botao" aria-haspopup="dialog" (click)="abrirNotas()">
-        {{ notaExercicio() || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}
-      </button>
+      <div class="acoes">
+        <button type="button" class="nota-botao" aria-haspopup="dialog" (click)="abrirNotas()">
+          {{ notaExercicio() || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}
+        </button>
+        <button type="button" class="todos__botao" (click)="marcarTodos()">
+          <app-icon name="check" [size]="16" [stroke]="3" />
+          {{ feitas() === series().length ? 'Desmarcar todos' : 'Marcar todos' }}
+        </button>
+      </div>
 
       <div class="tabela" role="group" aria-label="Séries">
-        <div class="todos">
-          <button type="button" class="todos__botao" (click)="marcarTodos()">
-            <app-icon name="check" [size]="16" [stroke]="3" />
-            {{ feitas() === series().length ? 'Desmarcar todos' : 'Marcar todos' }}
-          </button>
-        </div>
         <div class="lista">
           <div class="cabecalho" aria-hidden="true">
             <span>Série</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Carga (kg)</span><span>Feito</span>
