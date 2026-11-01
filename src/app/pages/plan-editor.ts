@@ -98,7 +98,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
           }
         </ul>
 
-        <a class="btn btn--tracejado" routerLink="/biblioteca" (click)="plans.definirAtiva(f.id)">
+        <a class="btn btn--tracejado" routerLink="/biblioteca" [queryParams]="{ ficha: f.id }" (click)="plans.definirAtiva(f.id)">
           <app-icon name="plus" [size]="18" [stroke]="2.5" /> Adicionar exercício
         </a>
 

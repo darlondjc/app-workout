@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { NavegacaoService } from '../core/navegacao.service';
 import { RouterLink } from '@angular/router';
 import { Exercise } from '../core/models';
 import { ExerciseService, FILTRO_CARDIO, GRUPOS } from '../core/exercise.service';
@@ -24,6 +25,11 @@ const ESTADO = {
   template: `
     <section class="page">
       <header>
+        @if (ficha()) {
+          <button type="button" class="voltar" (click)="nav.voltar('/ficha/' + ficha())">
+            <app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar
+          </button>
+        }
         <h1 class="titulo">Biblioteca</h1>
         <p class="apoio">
           @if (ex.ready()) {
@@ -112,6 +118,7 @@ const ESTADO = {
     </section>
   `,
   styles: `
+    .voltar { border: 0; background: none; padding: 0; font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--muted); }
     .busca {
       display: flex;
       align-items: center;
@@ -160,6 +167,10 @@ const ESTADO = {
   `,
 })
 export class Library {
+  /** Ficha de onde a pessoa veio (vem do endereço): mostra o botão de voltar. */
+  readonly ficha = input<string>();
+
+  protected readonly nav = inject(NavegacaoService);
   protected readonly ex = inject(ExerciseService);
   private readonly plans = inject(PlanService);
   private readonly toast = inject(ToastService);
