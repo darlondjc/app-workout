@@ -90,6 +90,9 @@ import { PlanService } from '../core/plan.service';
                 }
               </ul>
               <div class="conjunto__acoes">
+                <a class="conjunto__compartilhar" routerLink="/fichas/treino-novo" [queryParams]="{ conjunto: c.id }">
+                  <app-icon name="plus" [size]="18" [stroke]="2.5" /> Adicionar treino
+                </a>
                 <button type="button" class="conjunto__compartilhar" aria-haspopup="dialog" (click)="compartilhar(c.nome, b.fichas)">
                   <app-icon name="share" [size]="18" [stroke]="2" /> Compartilhar
                 </button>

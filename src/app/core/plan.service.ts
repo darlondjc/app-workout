@@ -126,6 +126,7 @@ export class PlanService {
   /** "Ficha A" para um treino solto; "Minha divisão · Treino B" para um treino de uma ficha com vários. */
   rotulo(id: string): string {
     const f = this.get(id);
+    if (f?.conjunto && this.rascunho()?.id === id) return `${f.conjunto.nome} · Novo treino`;
     return f?.conjunto ? `${f.conjunto.nome} · Treino ${this.letra(id)}` : `Ficha ${this.letra(id)}`;
   }
 
@@ -173,9 +174,10 @@ export class PlanService {
   }
 
   /** Começa uma ficha nova sem gravá-la: ela só é salva ao receber o primeiro exercício. */
-  criarRascunho(nome: string): Ficha {
+  criarRascunho(nome: string, conjunto?: { id: string; nome: string }): Ficha {
     // O período começa quando a ficha passa a existir de verdade (ao receber o primeiro exercício), não agora.
-    const ficha: Ficha = { id: crypto.randomUUID(), nome, itens: [] };
+    // Com `conjunto`, é um treino novo de uma ficha que já existe: entra nela, com o período dela.
+    const ficha: Ficha = { id: crypto.randomUUID(), nome, itens: [], ...(conjunto ? { conjunto } : {}) };
     this.rascunho.set(ficha);
     this.alvoRascunho.set(false);
     return ficha;
@@ -210,29 +212,36 @@ export class PlanService {
   }
 
   /**
-   * Acrescenta um treino à ficha atual (a ativa): ele entra como o próximo treino dela, depois dos que já tem.
-   * Se a ficha atual tinha um treino só, ela passa a ser uma ficha com dois. Sem nenhuma ficha, o treino vira a primeira.
+   * Acrescenta um treino a uma ficha: a indicada por `conjuntoId` ou, sem ela, a ficha atual (a ativa). Ele entra como o
+   * último treino da ficha. Se a ficha tinha um treino só, ela passa a ser uma ficha com dois. Sem nenhuma ficha, o treino vira a primeira.
    */
-  adicionarTreino(nome: string, itens: ItemFicha[]): { treino: Ficha; ficha: string } {
+  adicionarTreino(nome: string, itens: ItemFicha[], conjuntoId?: string): { treino: Ficha; ficha: string } {
+    const doConjunto = conjuntoId ? this.fichas().find((f) => f.conjunto?.id === conjuntoId) : undefined;
     const emUso = this.fichasEmUso();
-    const atual = emUso.find((f) => f.id === this.ativaId()) ?? emUso[0];
+    const atual = doConjunto ?? emUso.find((f) => f.id === this.ativaId()) ?? emUso[0];
     if (!atual) {
       const [primeiro] = this.criarComItens([{ nome, itens }]);
       return { treino: primeiro, ficha: nome };
     }
     const conjunto = atual.conjunto ?? { id: crypto.randomUUID(), nome: atual.nome };
-    // O treino novo entra na ficha atual e segue o período dela.
-    const periodo = atual.fim ? { inicio: atual.inicio ?? this.novoPeriodo().inicio, fim: atual.fim } : this.novoPeriodo();
-    const treino: Ficha = { id: crypto.randomUUID(), nome, itens, conjunto, ...periodo };
+    const treino: Ficha = { id: crypto.randomUUID(), nome, itens, conjunto };
+    this.inserirNoConjunto(treino, atual);
+    return { treino: this.fichas().find((f) => f.id === treino.id)!, ficha: conjunto.nome };
+  }
+
+  /** Põe o treino depois dos que a ficha já tem, com o período dela. `membro` é um treino que já está na ficha. */
+  private inserirNoConjunto(treino: Ficha, membro: Ficha): void {
+    const conjunto = treino.conjunto!;
+    const periodo = membro.fim ? { inicio: membro.inicio ?? this.novoPeriodo().inicio, fim: membro.fim } : this.novoPeriodo();
+    const novo: Ficha = { ...treino, ...periodo };
     this.fichas.update((l) => {
-      const marcada = l.map((f) => (f.id === atual.id ? { ...f, conjunto } : f));
+      const marcada = l.map((f) => (f.id === membro.id ? { ...f, conjunto } : f));
       let ultimo = -1;
       marcada.forEach((f, i) => {
         if (f.conjunto?.id === conjunto.id) ultimo = i;
       });
-      return [...marcada.slice(0, ultimo + 1), treino, ...marcada.slice(ultimo + 1)];
+      return [...marcada.slice(0, ultimo + 1), novo, ...marcada.slice(ultimo + 1)];
     });
-    return { treino, ficha: conjunto.nome };
   }
 
   /** Duração padrão das fichas novas, em meses (1 a 12). */
@@ -302,8 +311,15 @@ export class PlanService {
     if (rascunho && this.alvoRascunho()) {
       // Primeiro exercício: a ficha passa a existir de verdade.
       this.descartarRascunho();
-      this.vencerAtivas();
-      this.fichas.update((l) => [...l, { ...rascunho, ...this.novoPeriodo() }]);
+      const membro = rascunho.conjunto ? this.fichas().find((f) => f.conjunto?.id === rascunho.conjunto!.id) : undefined;
+      if (membro) {
+        // Treino novo de uma ficha que já existe: não encerra as outras fichas.
+        this.inserirNoConjunto(rascunho, membro);
+      } else {
+        this.vencerAtivas();
+        const { conjunto: _conjunto, ...solto } = rascunho;
+        this.fichas.update((l) => [...l, { ...solto, ...this.novoPeriodo() }]);
+      }
       this.ativaId.set(rascunho.id);
     }
     let ficha = this.fichas().find((f) => f.id === this.ativaId()) ?? this.fichas()[0];

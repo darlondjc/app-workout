@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ExerciseService, GRUPOS } from '../core/exercise.service';
 import { Icon } from '../core/icon';
@@ -112,7 +112,7 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
           </div>
           <p class="apoio nota">
             @if (fichaAtual(); as f) {
-              Ao aceitar, o treino é adicionado à sua ficha atual ({{ f }}) e você já pode começar.
+              Ao aceitar, o treino é adicionado à sua ficha {{ conjunto() ? '' : 'atual ' }}({{ f }}) e você já pode começar.
             } @else {
               Ao aceitar, o treino vira sua primeira ficha e você já pode começar.
             } Ajuste as cargas na hora; na dúvida, consulte um profissional.
@@ -213,9 +213,15 @@ export class DailyWorkout {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
+  /** Vem do endereço quando a pessoa pediu o treino para uma ficha em particular; sem ele, vale a ficha atual. */
+  readonly conjunto = input<string>();
+
   protected readonly grupos = GRUPOS;
   /** Nome da ficha que recebe o treino do dia: a atual (a ativa). */
   protected readonly fichaAtual = computed(() => {
+    const c = this.conjunto();
+    const alvo = c ? this.plans.fichas().find((f) => f.conjunto?.id === c) : undefined;
+    if (alvo) return alvo.conjunto!.nome;
     const a = this.plans.fichas().find((f) => f.id === this.plans.ativaId()) ?? this.plans.fichas()[0];
     return a ? (a.conjunto?.nome ?? a.nome) : '';
   });
@@ -280,7 +286,7 @@ export class DailyWorkout {
     const r = this.resultado();
     if (!r || r.itens.length === 0) return;
     const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const { treino, ficha } = this.plans.adicionarTreino(`Treino do dia · ${hoje}`, r.itens);
+    const { treino, ficha } = this.plans.adicionarTreino(`Treino do dia · ${hoje}`, r.itens, this.conjunto());
     this.toast.mostrar(`Treino adicionado à ficha ${ficha}`);
     this.router.navigate(['/treino', treino.id], { replaceUrl: true });
   }

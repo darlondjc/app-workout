@@ -95,9 +95,15 @@ const ESTADO = {
                 <span class="apoio">{{ subtitulo(e) }}</span>
               </span>
             </a>
-            <button type="button" class="btn-icone" [attr.aria-label]="'Adicionar ' + ex.nome(e) + ' à ficha'" (click)="adicionar(e)">
-              <app-icon name="plus" [size]="20" [stroke]="2.5" />
-            </button>
+            @if (naFicha().has(e.id)) {
+              <span class="btn-icone btn-icone--feito" role="img" [attr.aria-label]="ex.nome(e) + ' já está na ficha'">
+                <app-icon name="check" [size]="20" [stroke]="2.5" />
+              </span>
+            } @else {
+              <button type="button" class="btn-icone" [attr.aria-label]="'Adicionar ' + ex.nome(e) + ' à ficha'" (click)="adicionar(e)">
+                <app-icon name="plus" [size]="20" [stroke]="2.5" />
+              </button>
+            }
           </li>
         } @empty {
           @if (ex.ready()) {
@@ -119,6 +125,7 @@ const ESTADO = {
   `,
   styles: `
     .voltar { border: 0; background: none; padding: 0; font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--muted); }
+    .btn-icone--feito { color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
     .busca {
       display: flex;
       align-items: center;
@@ -183,6 +190,12 @@ export class Library {
   private readonly equip = ESTADO.equip;
   private readonly nivel = ESTADO.nivel;
   private readonly limite = ESTADO.limite;
+
+  /** Exercícios que já estão na ficha que recebe o que for adicionado (a ativa): no lugar do + eles mostram um visto. */
+  protected readonly naFicha = computed(() => {
+    const f = this.plans.fichas().find((x) => x.id === this.plans.ativaId()) ?? this.plans.fichas()[0];
+    return new Set(f?.itens.map((i) => i.exerciseId) ?? []);
+  });
 
   protected readonly resultados = computed(() =>
     this.ex.buscar(this.consulta(), this.grupo(), this.equip(), this.nivel()),

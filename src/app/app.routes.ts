@@ -40,6 +40,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/import-plan').then((m) => m.ImportPlan),
   },
   {
+    path: 'fichas/treino-novo',
+    canActivate: [logado],
+    title: 'Adicionar treino · App Workout',
+    loadComponent: () => import('./pages/new-workout').then((m) => m.NewWorkout),
+  },
+  {
     path: 'fichas/arquivadas',
     canActivate: [logado],
     title: 'Fichas arquivadas · App Workout',

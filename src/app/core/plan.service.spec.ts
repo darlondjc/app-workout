@@ -267,6 +267,28 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
     expect(plans.fichas().length).toBe(2);
   });
 
+  it('adicionarTreino com a ficha indicada entra nela, mesmo que a ativa seja outra', () => {
+    const t = plans.criarConjunto('Divisão', [{ nome: 'x', itens: [] }, { nome: 'y', itens: [] }]);
+    const outra = plans.criarComItens([{ nome: 'Outra', itens: [] }])[0];
+    const r = plans.adicionarTreino('Novo', [item('rosca', 10)], t[0].conjunto!.id);
+    expect(r.ficha).toBe('Divisão');
+    expect(plans.fichas().map((f) => f.nome)).toEqual(['x', 'y', 'Novo', 'Outra']);
+    expect(plans.get(outra.id)!.conjunto).toBeUndefined();
+  });
+
+  it('treino em rascunho de uma ficha só é gravado no primeiro exercício, dentro dela e sem encerrar as outras', () => {
+    const t = plans.criarConjunto('Divisão', [{ nome: 'x', itens: [] }, { nome: 'y', itens: [] }]);
+    const r = plans.criarRascunho('Treino C', t[0].conjunto);
+    expect(plans.fichas().length).toBe(2);
+    expect(plans.rotulo(r.id)).toBe('Divisão · Novo treino');
+    plans.definirAtiva(r.id);
+    plans.adicionar('rosca');
+    expect(plans.fichas().map((f) => f.nome)).toEqual(['x', 'y', 'Treino C']);
+    expect(plans.letra(r.id)).toBe('C');
+    expect(plans.get(r.id)!.fim).toBe(plans.get(t[0].id)!.fim);
+    expect(plans.blocosAtivos().length).toBe(1);
+  });
+
   it('adicionarTreino sem nenhuma ficha cria a primeira', () => {
     plans.adicionarTreino('Treino do dia', [item('rosca', 10)]);
     expect(plans.fichas().map((f) => f.nome)).toEqual(['Treino do dia']);
