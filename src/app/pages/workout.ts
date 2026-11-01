@@ -294,12 +294,23 @@ export class Workout {
     const marcar = this.feitas() < this.series().length;
     const base = this.series().map((s) => this.paraSalvar({ ...s, feita: marcar, descanso: marcar ? s.descanso : undefined }));
     this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
-    if (marcar) this.iniciarDescansoSeFizerSentido();
+    // Exercício terminado: o cronômetro zera e fica parado até a primeira série do próximo.
+    if (marcar) this.zerarDescanso();
   }
 
-  /** O descanso só conta com várias séries: com uma só (como o cardio) não há descanso entre séries. */
-  private iniciarDescansoSeFizerSentido(): void {
-    if (this.series().length > 1) this.iniciarDescanso();
+  /** Terminado o exercício, o tempo até a próxima série (água, banheiro, esperar o aparelho) não conta como descanso: zera e para. */
+  private zerarDescanso(): void {
+    this.pararDescanso();
+    this.plans.andamento(this.id(), (a) => {
+      const { descanso: _, ...resto } = a;
+      return resto;
+    });
+  }
+
+  /** O descanso só conta entre séries do mesmo exercício: ao marcar a última (ou com uma só, como o cardio) o cronômetro zera. */
+  private iniciarDescansoSeFizerSentido(ultimaDoExercicio: boolean): void {
+    if (ultimaDoExercicio || this.series().length <= 1) this.zerarDescanso();
+    else this.iniciarDescanso();
   }
 
   protected alternar(k: number): void {
@@ -308,10 +319,11 @@ export class Workout {
     const ficouFeita = !this.series()[k].feita;
     // O descanso desta série é o tempo corrido desde a anterior; sem timer rodando (primeira série), não há o que guardar.
     const descanso = ficouFeita && this.descansando() ? Math.round((Date.now() - this.descansoDesde) / 1000) : undefined;
+    const ultimaDoExercicio = ficouFeita && this.feitas() + 1 === this.series().length;
     this.gravarSerie(k, { feita: ficouFeita, descanso });
-    // Marcar uma série (inclusive a última do exercício) reinicia o cronômetro. Ele não depende do exercício:
-    // segue contando ao trocar de tela. Desmarcar não mexe nele.
-    if (ficouFeita) this.iniciarDescansoSeFizerSentido();
+    // Marcar uma série reinicia o cronômetro, que segue contando ao trocar de tela; a última do exercício o zera.
+    // Desmarcar não mexe nele.
+    if (ficouFeita) this.iniciarDescansoSeFizerSentido(ultimaDoExercicio);
   }
 
   private irPara(indice: number): void {

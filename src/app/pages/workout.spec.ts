@@ -159,14 +159,34 @@ describe('Workout — marcar séries em bloco', () => {
     beforeEach(() => jasmine.clock().install().mockDate(new Date(2026, 9, 23, 10, 0, 0)));
     afterEach(() => jasmine.clock().uninstall());
 
-    it('marcar a última série do exercício também inicia o cronômetro', () => {
-      marcas().forEach((m) => clicar(m));
+    it('marcar uma série que não é a última inicia o cronômetro', () => {
+      clicar(marcas()[0]);
       passar(3000);
       expect(tempo()).toBe('00:03');
     });
 
-    it('trocar de exercício não interrompe nem reinicia o cronômetro', () => {
+    it('marcar a última série do exercício zera o cronômetro e o deixa parado', () => {
+      marcas().slice(0, 2).forEach((m) => clicar(m));
+      passar(3000);
+      clicar(marcas()[2]);
+      passar(5000);
+      expect(tempo()).toBe('00:00');
+      clicar(botao('Próximo exercício'));
+      passar(5000);
+      expect(tempo()).toBe('00:00');
+    });
+
+    it('a primeira série do exercício seguinte não guarda descanso', () => {
       marcas().forEach((m) => clicar(m));
+      passar(5000);
+      clicar(botao('Próximo exercício'));
+      clicar(marcas()[0]);
+      const salvo = plans.emAndamento()?.series[1][0];
+      expect(salvo?.descanso).toBeUndefined();
+    });
+
+    it('trocar de exercício não interrompe nem reinicia o cronômetro', () => {
+      marcas().slice(0, 2).forEach((m) => clicar(m));
       passar(5000);
       clicar(botao('Próximo exercício'));
       expect(tempo()).toBe('00:05');
@@ -178,17 +198,17 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('marcar uma série no exercício seguinte reinicia a contagem', () => {
-      marcas().forEach((m) => clicar(m));
+      marcas().slice(0, 2).forEach((m) => clicar(m));
       passar(5000);
       clicar(botao('Próximo exercício'));
       clicar(marcas()[0]);
       expect(tempo()).toBe('00:00');
     });
 
-    it('"Marcar todos" também inicia o cronômetro', () => {
+    it('"Marcar todos" zera o cronômetro', () => {
       clicar(botao('Marcar todos'));
       passar(2000);
-      expect(tempo()).toBe('00:02');
+      expect(tempo()).toBe('00:00');
     });
 
     it('desmarcar uma série não mexe no cronômetro', () => {
@@ -200,7 +220,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('ao ver as instruções de um exercício e voltar, o cronômetro seguiu contando', () => {
-      marcas().forEach((m) => clicar(m));
+      marcas().slice(0, 2).forEach((m) => clicar(m));
       passar(7000);
       fixture.destroy(); // vai para a tela do exercício, sem pausar
       jasmine.clock().tick(10000);
@@ -212,7 +232,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('se o app fechar ou reiniciar sem sair da tela, o cronômetro retoma contando o tempo fora', () => {
-      marcas().forEach((m) => clicar(m));
+      marcas().slice(0, 2).forEach((m) => clicar(m));
       passar(7000);
       // Sem destroy: a tela some de uma vez (app encerrado), só o que foi guardado sobrevive.
       jasmine.clock().tick(20000);
@@ -225,7 +245,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('depois de pausar e continuar, o cronômetro segue de onde estava', () => {
-      marcas().forEach((m) => clicar(m));
+      marcas().slice(0, 2).forEach((m) => clicar(m));
       passar(7000);
       (fixture.componentInstance as unknown as { pausar(): void }).pausar();
       fixture.destroy();
