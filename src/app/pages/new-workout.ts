@@ -78,6 +78,6 @@ export class NewWorkout {
     if (!c) return;
     const n = this.plans.fichas().filter((f) => f.conjunto?.id === c.id).length;
     const ficha = this.plans.criarRascunho(`Treino ${String.fromCharCode(65 + (n % 26))}`, c);
-    void this.router.navigate(['/ficha', ficha.id], { replaceUrl: true });
+    void this.router.navigate(['/ficha', ficha.id]);
   }
 }
