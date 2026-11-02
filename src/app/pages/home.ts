@@ -144,6 +144,8 @@ export class Home {
   private readonly metaSalva = lerMeta();
   protected readonly meta = computed(() => this.metaSalva ?? metaPadrao(this.plans.fichas().length));
   protected readonly treinosSemana = computed(() => treinosNaSemana(this.plans.historico(), this.agora));
+  /** Meta da semana cumprida: a barra dos dias ganha destaque. */
+  protected readonly metaBatida = computed(() => this.treinosSemana() >= this.meta());
   protected readonly percentualMeta = computed(() => Math.min(100, Math.round((this.treinosSemana() / this.meta()) * 100)));
   protected readonly textoMeta = computed(() => {
     const faltam = this.meta() - this.treinosSemana();

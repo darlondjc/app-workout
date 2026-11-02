@@ -18,7 +18,7 @@
     }
   </header>
 
-  <ol class="semana" aria-label="Semana de treinos">
+  <ol class="semana" [class.semana--meta]="metaBatida()" [attr.aria-label]="metaBatida() ? 'Semana de treinos. Meta da semana batida' : 'Semana de treinos'">
     @for (d of semana(); track d.data) {
       <li>
         <span class="apoio" aria-hidden="true">{{ d.letra }}</span>

@@ -49,6 +49,16 @@
   border-color: var(--ink);
   color: var(--accent);
 }
+.semana--meta {
+  padding: 12px 8px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft-borda);
+}
+.semana--meta .dia.feito {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft-borda);
+}
 .destaque {
   background: var(--ink-bg);
   color: #fff;
