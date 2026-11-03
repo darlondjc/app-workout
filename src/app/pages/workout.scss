@@ -149,6 +149,16 @@ h1 {
   font-weight: 700;
   cursor: pointer;
 }
+.ajuste-series {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+.todos__botao:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 .chave {
   display: flex;
   align-items: center;

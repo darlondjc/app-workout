@@ -149,6 +149,29 @@ describe('Workout — marcar séries em bloco', () => {
     expect(chave().checked).toBeTrue();
   });
 
+  describe('séries a mais ou a menos no treino', () => {
+    it('"Série extra" acrescenta uma série só neste treino, com os valores da última', () => {
+      expect(marcas().length).toBe(3);
+      clicar(botao('Série extra'));
+      expect(marcas().length).toBe(4);
+      expect(plans.emAndamento()?.qtdSeries?.[0]).toBe(4);
+      expect(plans.get(fichaId)!.itens[0].series).toBe(3);
+    });
+
+    it('"Tirar série" remove a última e sempre deixa pelo menos uma', () => {
+      clicar(botao('Tirar série'));
+      clicar(botao('Tirar série'));
+      expect(marcas().length).toBe(1);
+      expect(botao('Tirar série')?.disabled).toBeTrue();
+    });
+
+    it('a série extra entra no que é gravado ao finalizar', () => {
+      clicar(botao('Série extra'));
+      marcas().forEach((m) => clicar(m));
+      expect(plans.emAndamento()?.series[0].filter((s) => s.feita).length).toBe(4);
+    });
+  });
+
   describe('cronômetro de descanso', () => {
     const tempo = () => el().querySelector('.tempo')?.textContent?.trim();
     const passar = (ms: number) => {

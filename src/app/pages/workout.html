@@ -110,6 +110,14 @@
             </div>
           }
         </div>
+        <div class="ajuste-series">
+          <button type="button" class="todos__botao" [disabled]="series().length <= 1" (click)="removerSerie()">
+            <app-icon name="close" [size]="14" [stroke]="3" /> Tirar série
+          </button>
+          <button type="button" class="todos__botao" [disabled]="series().length >= maxSeries" (click)="adicionarSerie()">
+            <app-icon name="plus" [size]="14" [stroke]="3" /> Série extra
+          </button>
+        </div>
       </div>
 
       @if (ultima(); as u) {

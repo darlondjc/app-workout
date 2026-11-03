@@ -20,6 +20,9 @@ import { volumeSessao } from '../core/stats';
 import { TelaLigada } from '../core/tela-ligada';
 import { ToastService } from '../core/toast.service';
 
+/** Mesmo limite do editor da ficha. */
+const SERIES_MAX = 20;
+
 const CHAVE_MARCAR_AO_FINALIZAR = 'app-workout:marcar-tudo-ao-finalizar:v1';
 
 function lerPreferencia(): boolean {
@@ -108,7 +111,8 @@ export class Workout {
     if (!it) return [];
     const salvas = this.estado()?.series[i] ?? [];
     const ant = this.plans.ultimoRegistro(it.exerciseId)?.series ?? [];
-    return Array.from({ length: it.series }, (_, k) => ({
+    const total = this.estado()?.qtdSeries?.[i] ?? it.series;
+    return Array.from({ length: total }, (_, k) => ({
       n: k + 1,
       feita: !!salvas[k]?.feita,
       carga: salvas[k]?.carga ?? ant[k]?.carga ?? ant.at(-1)?.carga ?? it.carga,
@@ -117,6 +121,7 @@ export class Workout {
     }));
   }
 
+  protected readonly maxSeries = SERIES_MAX;
   protected readonly series = computed(() => this.seriesDe(this.indice()));
 
   /** Séries de todo o treino que ainda não foram marcadas. */
@@ -262,6 +267,32 @@ export class Workout {
       ...a,
       indice: i,
       series: { ...a.series, [i]: base.map((s) => this.paraSalvar(s)) },
+    }));
+  }
+
+  /** Acrescenta uma série só neste treino (a ficha não muda), com os valores da última. */
+  protected adicionarSerie(): void {
+    const it = this.item();
+    if (!it || this.series().length >= SERIES_MAX) return;
+    const base = this.series().map((s) => this.paraSalvar(s));
+    const ultima = base.at(-1) ?? { carga: it.carga, reps: it.reps };
+    base.push(this.paraSalvar({ feita: false, carga: ultima.carga, reps: ultima.reps }));
+    this.gravarQuantidade(base);
+  }
+
+  /** Tira a última série, só neste treino. Sempre fica pelo menos uma. */
+  protected removerSerie(): void {
+    if (this.series().length <= 1) return;
+    this.gravarQuantidade(this.series().slice(0, -1).map((s) => this.paraSalvar(s)));
+  }
+
+  private gravarQuantidade(base: SerieEmAndamento[]): void {
+    const i = this.indice();
+    this.plans.andamento(this.id(), (a) => ({
+      ...a,
+      indice: i,
+      series: { ...a.series, [i]: base },
+      qtdSeries: { ...a.qtdSeries, [i]: base.length },
     }));
   }
 

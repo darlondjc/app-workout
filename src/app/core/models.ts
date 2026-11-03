@@ -124,6 +124,8 @@ export interface EmAndamento {
   iniciadoEm: number;
   /** Nota do treino, escrita enquanto ele acontece; vai para a sessão ao concluir. */
   nota?: string;
+  /** Quantidade de séries mudada só neste treino (acrescentou ou tirou uma): posição na ficha → séries. Sem isto vale a da ficha. */
+  qtdSeries?: Record<string, number>;
   /** Exercícios trocados só neste treino: posição na ficha → exercício que entra no lugar. */
   trocas?: Record<string, string>;
   /**
