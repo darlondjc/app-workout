@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { MESES_MAX, MESES_MIN } from '../core/ciclo';
 import { PlanService } from '../core/plan.service';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
@@ -16,10 +17,11 @@ import { UpdateService } from '../core/update.service';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, RouterLink],
+  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, RouterLink, BarraTopo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
+      <app-barra-topo titulo="Perfil" />
       <header class="cabeca">
         <h1 class="titulo">Perfil</h1>
         <div class="acoes-topo">

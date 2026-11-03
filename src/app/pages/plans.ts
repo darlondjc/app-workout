@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -12,10 +13,11 @@ import { PlanService } from '../core/plan.service';
 
 @Component({
   selector: 'app-plans',
-  imports: [Confirmacao, FichaCompartilhar, RouterLink, Icon, NgTemplateOutlet],
+  imports: [Confirmacao, FichaCompartilhar, RouterLink, BarraTopo, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
+      <app-barra-topo titulo="Fichas" />
       <header>
         <h1 class="titulo">Fichas</h1>
         <p class="apoio">

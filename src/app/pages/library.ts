@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NavegacaoService } from '../core/navegacao.service';
 import { RouterLink } from '@angular/router';
@@ -20,10 +21,11 @@ const ESTADO = {
 
 @Component({
   selector: 'app-library',
-  imports: [RouterLink, Icon, Carregando],
+  imports: [RouterLink, BarraTopo, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
+      <app-barra-topo titulo="Biblioteca" />
       <header>
         @if (ficha()) {
           <button type="button" class="voltar" (click)="nav.voltar('/ficha/' + ficha())">
