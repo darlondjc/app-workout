@@ -101,6 +101,27 @@
   z-index: 20;
 }
 
+/* Aviso com ação (Desfazer): o botão fica à direita do texto, com área de toque de 44px. */
+.aviso--acao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  padding: 4px 6px 4px 18px;
+}
+
+.aviso__acao {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+}
+
 /* Barra de carregamento no topo: só aparece se a espera passar de ~200 ms. */
 .progresso {
   position: fixed;

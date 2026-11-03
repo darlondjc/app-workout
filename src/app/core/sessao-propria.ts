@@ -179,9 +179,9 @@ export class SessaoPropria {
   protected excluir(): void {
     const id = this.sessao().id;
     if (!id) return;
-    this.plans.excluirSessao(id);
+    const apagada = this.plans.excluirSessao(id);
     this.confirmando.set(false);
-    this.toast.mostrar('Treino excluído do histórico');
+    if (apagada) this.toast.mostrar('Treino excluído', { rotulo: 'Desfazer', executar: () => this.plans.restaurarSessao(apagada) });
     this.excluida.emit();
   }
 }

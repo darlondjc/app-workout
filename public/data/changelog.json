@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.27.0",
+    "data": "2026-11-03",
+    "titulo": "Favoritos na conta e Desfazer ao excluir",
+    "itens": [
+      "Os exercícios favoritos da biblioteca agora ficam na sua conta e aparecem em todos os seus aparelhos.",
+      "Excluiu um treino do histórico, uma ficha ou um registro de peso sem querer? O aviso mostra Desfazer por alguns segundos.",
+      "O editor da ficha e Minhas estatísticas ganham a barra do topo ao rolar, com o botão de voltar sempre à mão."
+    ]
+  },
+  {
     "versao": "1.26.0",
     "data": "2026-11-03",
     "titulo": "Corrigir treinos, séries extras, evolução por exercício e favoritos",

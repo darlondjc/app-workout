@@ -1,6 +1,7 @@
 import { dataCurta, diasParaVencer, somarDias, textoDoPrazo } from '../core/ciclo';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { BarraTopo } from '../core/barra-topo';
 import { Confirmacao } from '../core/confirmacao';
 import { FichaCompartilhar } from '../core/ficha-compartilhar';
 import { FichaCompartilhada, fichaParaCompartilhar } from '../core/ficha-link';
@@ -15,11 +16,21 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
 
 @Component({
   selector: 'app-plan-editor',
-  imports: [Confirmacao, FichaCompartilhar, RouterLink, Icon],
+  imports: [BarraTopo, Confirmacao, FichaCompartilhar, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ficha(); as f) {
       <section class="page">
+        <app-barra-topo [titulo]="f.nome" [inicio]="110">
+          <button antes type="button" class="barra-btn" tabindex="-1" aria-label="Voltar" (click)="nav.voltar('/fichas')">
+            <app-icon name="back" [size]="18" [stroke]="2.2" />
+          </button>
+          @if (f.itens.length > 0) {
+            <button type="button" class="barra-btn" tabindex="-1" aria-label="Compartilhar" (click)="compartilhando.set(paraCompartilhar())">
+              <app-icon name="share" [size]="18" [stroke]="2.2" />
+            </button>
+          }
+        </app-barra-topo>
         <header>
           <div class="topo-editor">
             <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
@@ -137,7 +148,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
         }
 
         @if (excluindo()) {
-          <app-confirmacao titulo="Excluir ficha?" [subtitulo]="f.nome" mensagem="Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="excluir()" (cancelar)="excluindo.set(false)" />
+          <app-confirmacao titulo="Excluir ficha?" [subtitulo]="f.nome" rotulo="Excluir" (confirmar)="excluir()" (cancelar)="excluindo.set(false)" />
         }
         @if (compartilhando(); as c) {
           <app-ficha-compartilhar [ficha]="c" (fechar)="compartilhando.set(null)" />
@@ -183,6 +194,18 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+    .barra-btn {
+      flex: none;
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--soft);
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .topo-editor { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .item {
@@ -522,8 +545,7 @@ export class PlanEditor {
     const f = this.ficha();
     this.excluindo.set(false);
     if (!f) return;
-    this.plans.remover(f.id);
-    this.toast.mostrar('Ficha excluída');
+    this.toast.mostrar('Ficha excluída', { rotulo: 'Desfazer', executar: this.plans.remover(f.id) });
     this.router.navigate(['/fichas']);
   }
 

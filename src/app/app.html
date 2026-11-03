@@ -51,7 +51,12 @@
     </div>
   }
 
-  @if (toast.mensagem(); as texto) {
-    <div class="aviso" role="status">{{ texto }}</div>
+  @if (toast.aviso(); as a) {
+    <div class="aviso" [class.aviso--acao]="!!a.acao" role="status">
+      <span>{{ a.texto }}</span>
+      @if (a.acao; as acao) {
+        <button type="button" class="aviso__acao" (click)="toast.agir()">{{ acao.rotulo }}</button>
+      }
+    </div>
   }
 </div>

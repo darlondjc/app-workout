@@ -43,7 +43,7 @@ import { ToastService } from '../core/toast.service';
       </ul>
 
       @if (excluindo(); as b) {
-        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="b.nome" mensagem="Ela e seus treinos serão excluídos. Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="excluir(b)" (cancelar)="excluindo.set(null)" />
+        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="b.nome" mensagem="Ela e seus treinos serão excluídos." rotulo="Excluir" (confirmar)="excluir(b)" (cancelar)="excluindo.set(null)" />
       }
     </section>
   `,
@@ -79,7 +79,7 @@ export class ArchivedPlans {
   }
 
   protected excluir(b: BlocoFichas): void {
-    this.plans.removerBloco(b.chave);
     this.excluindo.set(null);
+    this.toast.mostrar('Ficha excluída', { rotulo: 'Desfazer', executar: this.plans.removerBloco(b.chave) });
   }
 }

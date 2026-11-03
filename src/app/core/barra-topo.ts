@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 
 /**
  * Barra que aparece no topo conforme a tela rola: título à esquerda e, à direita, o que for projetado (foto, botão).
+ * Nas telas secundárias, o que vier marcado com o atributo `antes` (o botão de voltar) entra antes do título.
  * Ocupa um ponto fixo de altura zero (sticky) na página, então não muda o layout. O quanto ela já apareceu (`--p`, de 0 a 1)
  * vem da rolagem; opacidade e transform são a única coisa animada. Fica decorativa para leitores de tela
  * (o cabeçalho grande continua lá), e só recebe toques depois de bem visível.
@@ -12,6 +13,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
   host: { 'aria-hidden': 'true' },
   template: `
     <div class="barra">
+      <span class="antes"><ng-content select="[antes]" /></span>
       <span class="nome" [class.com-icone]="!!icone()">{{ titulo() }}</span>
       @if (icone(); as src) {
         <img class="icone" [src]="src" alt="" width="30" height="30" />
@@ -59,7 +61,18 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
     :host([data-rolado]) .barra {
       pointer-events: auto;
     }
+    .antes {
+      flex: none;
+      display: flex;
+      margin-right: -4px;
+      opacity: calc((var(--p, 0) - 0.3) / 0.7);
+      will-change: opacity;
+    }
+    .antes:empty {
+      display: none;
+    }
     .nome {
+      flex: 1;
       min-width: 0;
       font-family: var(--font-display);
       font-size: 20px;

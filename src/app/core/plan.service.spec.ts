@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { FavoritosService } from './favoritos.service';
 import { ItemFicha } from './models';
 import { PlanService, dataLocal } from './plan.service';
 
@@ -358,6 +359,25 @@ describe('PlanService: corrigir e apagar treinos do histórico', () => {
     expect(plans.historico().length).toBe(0);
   });
 
+  it('restaurarSessao desfaz a exclusão com uma versão mais nova que a do marcador', () => {
+    const apagada = plans.excluirSessao(sid)!;
+    const marcador = plans.sessoesParaSincronizar()[0];
+    plans.restaurarSessao(apagada);
+    expect(plans.historico().map((s) => s.id)).toEqual([sid]);
+    const [volta] = plans.sessoesParaSincronizar();
+    expect(volta.excluida).toBeUndefined();
+    expect(volta.editadaEm!).toBeGreaterThan(marcador.editadaEm!);
+    expect(plans.ultimoRegistro('supino')).toBeDefined();
+  });
+
+  it('o eco atrasado da exclusão não apaga o treino já restaurado', () => {
+    const apagada = plans.excluirSessao(sid)!;
+    const marcador = plans.sessoesParaSincronizar()[0];
+    plans.restaurarSessao(apagada);
+    plans.mesclarSessoes([marcador]);
+    expect(plans.historico().length).toBe(1);
+  });
+
   it('a correção feita em outro aparelho vale se for mais nova; a mais velha não', () => {
     const base = plans.historico()[0];
     plans.mesclarSessoes([{ ...base, nota: 'de fora', editadaEm: 100 }]);
@@ -451,3 +471,86 @@ describe('PlanService: notas', () => {
   });
 });
 
+
+describe('PlanService: desfazer a exclusão de fichas', () => {
+  let plans: PlanService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+  });
+
+  it('remover devolve o desfazer, que põe a ficha na mesma posição e de novo como ativa', () => {
+    const [a, b, c] = plans.criarComItens([
+      { nome: 'A', itens: [item('supino', 60)] },
+      { nome: 'B', itens: [item('remada', 40)] },
+      { nome: 'C', itens: [item('agachamento', 80)] },
+    ]);
+    plans.definirAtiva(b.id);
+    const desfazer = plans.remover(b.id);
+    expect(plans.fichas().map((f) => f.nome)).toEqual(['A', 'C']);
+    expect(plans.ativaId()).not.toBe(b.id);
+    desfazer();
+    expect(plans.fichas().map((f) => f.id)).toEqual([a.id, b.id, c.id]);
+    expect(plans.ativaId()).toBe(b.id);
+  });
+
+  it('desfazer a exclusão de um conjunto devolve todos os treinos', () => {
+    const t = plans.criarConjunto('Divisão AB', [
+      { nome: 'A', itens: [item('supino', 60)] },
+      { nome: 'B', itens: [item('remada', 40)] },
+    ]);
+    const desfazer = plans.removerConjunto(t[0].conjunto!.id);
+    expect(plans.fichas().length).toBe(0);
+    desfazer();
+    expect(plans.fichas().map((f) => f.id)).toEqual(t.map((f) => f.id));
+  });
+
+  it('desfazer duas vezes não duplica a ficha', () => {
+    const [a] = plans.criarComItens([{ nome: 'A', itens: [item('supino', 60)] }]);
+    const desfazer = plans.remover(a.id);
+    desfazer();
+    desfazer();
+    expect(plans.fichas().length).toBe(1);
+  });
+});
+
+describe('PlanService: favoritos no documento da nuvem', () => {
+  let plans: PlanService;
+  let favoritos: FavoritosService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+    favoritos = TestBed.inject(FavoritosService);
+  });
+
+  const estado = (fav?: string[]) => ({ fichas: [], ativaId: null, emAndamento: null, ...(fav ? { favoritos: fav } : {}) });
+
+  it('os favoritos vão junto com as fichas', () => {
+    favoritos.alternar('supino');
+    expect(plans.estadoNuvem().favoritos).toEqual(['supino']);
+  });
+
+  it('no primeiro contato junta os da nuvem com os do aparelho; depois, vale a nuvem', () => {
+    favoritos.alternar('supino');
+    plans.aplicarEstadoNuvem(estado(['remada']), true);
+    expect([...favoritos.ids()].sort()).toEqual(['remada', 'supino']);
+    plans.aplicarEstadoNuvem(estado(['remada']), false);
+    expect([...favoritos.ids()]).toEqual(['remada']);
+  });
+
+  it('documento de versão antiga (sem favoritos) não apaga os do aparelho', () => {
+    favoritos.alternar('supino');
+    plans.aplicarEstadoNuvem(estado(), false);
+    expect([...favoritos.ids()]).toEqual(['supino']);
+  });
+
+  it('sair da conta limpa os favoritos', () => {
+    favoritos.alternar('supino');
+    plans.limparLocal();
+    expect(favoritos.ids().size).toBe(0);
+  });
+});

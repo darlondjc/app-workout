@@ -38,13 +38,12 @@
     }
   ],
   "appData": {
-    "versao": "1.26.0",
-    "titulo": "Corrigir treinos, séries extras, evolução por exercício e favoritos",
+    "versao": "1.27.0",
+    "titulo": "Favoritos na conta e Desfazer ao excluir",
     "novidades": [
-      "Treinos concluídos agora podem ser corrigidos (repetições, carga, séries e nota) ou excluídos, em Início e em Estatísticas. A correção e a exclusão valem em todos os seus aparelhos e refazem estatísticas e medalhas.",
-      "No treino, Série extra e Tirar série mudam a quantidade de séries só daquele treino; a ficha não muda.",
-      "A tela do exercício mostra a sua evolução de carga, 1RM estimado e volume a partir do histórico.",
-      "Biblioteca: estrela para favoritar e filtros Favoritos e Recentes. Na ficha, dá para arrastar pela alça para reordenar os exercícios."
+      "Os exercícios favoritos da biblioteca agora ficam na sua conta e aparecem em todos os seus aparelhos.",
+      "Excluiu um treino do histórico, uma ficha ou um registro de peso sem querer? O aviso mostra Desfazer por alguns segundos.",
+      "O editor da ficha e Minhas estatísticas ganham a barra do topo ao rolar, com o botão de voltar sempre à mão."
     ]
   }
 }
