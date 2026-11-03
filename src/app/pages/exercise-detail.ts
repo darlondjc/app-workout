@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { EvolucaoExercicio } from '../core/evolucao-exercicio';
 import { equivalentes } from '../core/equivalentes';
 import { ExerciseImage } from '../core/exercise-image';
 import { Carregando } from '../core/spinner';
@@ -11,7 +12,7 @@ import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-exercise-detail',
-  imports: [Icon, ExerciseImage, Carregando],
+  imports: [Icon, ExerciseImage, Carregando, EvolucaoExercicio],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './exercise-detail.html',
   styleUrl: './exercise-detail.scss',
