@@ -387,6 +387,17 @@ export class PlanService {
     });
   }
 
+  /** Leva o exercício da posição `de` para a posição `para` (arrastar na ficha). */
+  reordenarItem(fichaId: string, de: number, para: number): void {
+    this.atualizar(fichaId, (f) => {
+      if (de === para || de < 0 || para < 0 || de >= f.itens.length || para >= f.itens.length) return f;
+      const itens = [...f.itens];
+      const [item] = itens.splice(de, 1);
+      itens.splice(para, 0, item);
+      return { ...f, itens };
+    });
+  }
+
   /** Nota fixa do exercício na ficha; texto vazio apaga a nota. */
   definirNotaDoItem(fichaId: string, indice: number, texto: string): void {
     const nota = limparNota(texto, NOTA_EXERCICIO_MAX);

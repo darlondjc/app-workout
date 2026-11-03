@@ -57,8 +57,21 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
         <p class="sr-only" aria-live="polite">{{ anuncio() }}</p>
         <ul class="itens">
           @for (l of linhas(); track l.item.exerciseId) {
-            <li class="card item">
+            <li class="card item" [class.item--arrastando]="arrasto()?.i === l.i" [style.transform]="deslocamento(l.i)">
               <div class="item__topo">
+                <button
+                  type="button"
+                  class="alca"
+                  aria-hidden="true"
+                  tabindex="-1"
+                  title="Arraste para mudar a ordem"
+                  (pointerdown)="iniciarArrasto($event, l.i)"
+                  (pointermove)="moverArrasto($event)"
+                  (pointerup)="soltarArrasto($event)"
+                  (pointercancel)="cancelarArrasto()"
+                >
+                  <app-icon name="grip" [size]="20" [stroke]="2" />
+                </button>
                 @if (l.ex) {
                   <a [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
                     <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
@@ -172,6 +185,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     }
     .topo-editor { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .item {
+      transition: transform 0.15s ease;
       position: relative;
       padding: 12px;
       display: flex;
@@ -195,6 +209,26 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       font-size: 12px;
       font-weight: 400;
       color: var(--muted);
+    }
+    .item--arrastando {
+      transition: none;
+      z-index: 2;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+      opacity: 0.96;
+    }
+    .alca {
+      flex: none;
+      width: 28px;
+      height: 44px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      touch-action: none;
     }
     .item__topo {
       display: flex;
@@ -357,6 +391,58 @@ export class PlanEditor {
    * e, depois que a tela se reorganiza, anima cada cartão do lugar antigo até o novo. O que foi movido sobe
    * um pouco (escala e sombra) enquanto cruza o outro, e depois pousa.
    */
+  /** Arrastar pela alça: o cartão acompanha o dedo, os outros abrem espaço, e a ordem só muda ao soltar. */
+  protected readonly arrasto = signal<{ i: number; dy: number; alvo: number; passo: number } | null>(null);
+  private gestoArrasto: { y0: number; centros: number[] } | null = null;
+
+  protected iniciarArrasto(e: PointerEvent, i: number): void {
+    if (e.button > 0) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const cartoes = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('li.item')).map((c) => c.getBoundingClientRect());
+    if (!cartoes[i]) return;
+    this.gestoArrasto = { y0: e.clientY, centros: cartoes.map((r) => r.top + r.height / 2) };
+    this.arrasto.set({ i, dy: 0, alvo: i, passo: cartoes[i].height + 10 });
+  }
+
+  protected moverArrasto(e: PointerEvent): void {
+    const a = this.arrasto();
+    const g = this.gestoArrasto;
+    if (!a || !g) return;
+    const dy = e.clientY - g.y0;
+    const centro = g.centros[a.i] + dy;
+    let alvo = a.i;
+    g.centros.forEach((c, j) => {
+      if (Math.abs(c - centro) < Math.abs(g.centros[alvo] - centro)) alvo = j;
+    });
+    this.arrasto.set({ ...a, dy, alvo });
+  }
+
+  protected soltarArrasto(e: PointerEvent): void {
+    const a = this.arrasto();
+    this.cancelarArrasto();
+    if (!a || a.alvo === a.i) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    this.plans.reordenarItem(this.id(), a.i, a.alvo);
+    const nome = this.linhas()[a.alvo]?.ex;
+    this.anuncio.set(`${nome ? this.ex.nome(nome) : 'Exercício'} movido para a posição ${a.alvo + 1} de ${this.linhas().length}`);
+  }
+
+  protected cancelarArrasto(): void {
+    this.arrasto.set(null);
+    this.gestoArrasto = null;
+  }
+
+  /** Quanto cada cartão sai do lugar enquanto um deles é arrastado. */
+  protected deslocamento(j: number): string | null {
+    const a = this.arrasto();
+    if (!a) return null;
+    if (j === a.i) return `translateY(${a.dy}px)`;
+    if (a.i < a.alvo && j > a.i && j <= a.alvo) return `translateY(${-a.passo}px)`;
+    if (a.i > a.alvo && j >= a.alvo && j < a.i) return `translateY(${a.passo}px)`;
+    return null;
+  }
+
   protected mover(indice: number, direcao: -1 | 1): void {
     const cartoes = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('li.item'));
     const movido = cartoes[indice];

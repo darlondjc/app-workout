@@ -6,10 +6,15 @@ import { Exercise } from '../core/models';
 import { ExerciseService, FILTRO_CARDIO, GRUPOS } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { Carregando } from '../core/spinner';
+import { FavoritosService } from '../core/favoritos.service';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
 
 const PAGINA = 40;
+/** Atalhos do filtro de grupo (não são grupos musculares). */
+const FILTRO_FAVORITOS = '__favoritos';
+const FILTRO_RECENTES = '__recentes';
+const RECENTES_MAX = 30;
 
 const ESTADO = {
   consulta: signal(''),
@@ -58,6 +63,8 @@ const ESTADO = {
 
       <div class="chips" role="group" aria-label="Grupo muscular">
         <button type="button" class="chip" [attr.aria-pressed]="grupo() === ''" (click)="definirGrupo('')">Todos</button>
+        <button type="button" class="chip" [attr.aria-pressed]="grupo() === favoritosFiltro" (click)="definirGrupo(favoritosFiltro)">★ Favoritos</button>
+        <button type="button" class="chip" [attr.aria-pressed]="grupo() === recentesFiltro" (click)="definirGrupo(recentesFiltro)">Recentes</button>
         <button type="button" class="chip" [attr.aria-pressed]="grupo() === cardio" (click)="definirGrupo(cardio)">Cardio</button>
         @for (g of grupos; track g.key) {
           <button type="button" class="chip" [attr.aria-pressed]="grupo() === g.key" (click)="definirGrupo(g.key)">
@@ -97,6 +104,16 @@ const ESTADO = {
                 <span class="apoio">{{ subtitulo(e) }}</span>
               </span>
             </a>
+            <button
+              type="button"
+              class="btn-icone btn-icone--neutro"
+              [class.estrela--ligada]="favoritos.ids().has(e.id)"
+              [attr.aria-pressed]="favoritos.ids().has(e.id)"
+              [attr.aria-label]="'Favoritar ' + ex.nome(e)"
+              (click)="favoritar(e)"
+            >
+              <app-icon name="star" [size]="20" [stroke]="2" />
+            </button>
             @if (naFicha().has(e.id)) {
               <span class="btn-icone btn-icone--feito" role="img" [attr.aria-label]="ex.nome(e) + ' já está na ficha'">
                 <app-icon name="check" [size]="20" [stroke]="2.5" />
@@ -109,7 +126,15 @@ const ESTADO = {
           </li>
         } @empty {
           @if (ex.ready()) {
-            <li class="apoio vazio">Nenhum exercício encontrado. Tente outro termo ou limpe os filtros.</li>
+            <li class="apoio vazio">
+              @if (grupo() === favoritosFiltro) {
+                Você ainda não favoritou nenhum exercício. Toque na estrela de um exercício para guardá-lo aqui.
+              } @else if (grupo() === recentesFiltro) {
+                Os exercícios que você fizer nos treinos aparecem aqui.
+              } @else {
+                Nenhum exercício encontrado. Tente outro termo ou limpe os filtros.
+              }
+            </li>
           } @else if (ex.error()) {
             <li class="vazio">
               <button type="button" class="btn btn--escuro" (click)="ex.carregar()">Tentar de novo</button>
@@ -128,6 +153,8 @@ const ESTADO = {
   styles: `
     .voltar { border: 0; background: none; padding: 0; font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--muted); }
     .btn-icone--feito { color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
+    .estrela--ligada { color: var(--ink); }
+    .estrela--ligada app-icon { fill: currentColor; }
     .busca {
       display: flex;
       align-items: center;
@@ -184,6 +211,9 @@ export class Library {
   private readonly plans = inject(PlanService);
   private readonly toast = inject(ToastService);
 
+  protected readonly favoritos = inject(FavoritosService);
+  protected readonly favoritosFiltro = FILTRO_FAVORITOS;
+  protected readonly recentesFiltro = FILTRO_RECENTES;
   protected readonly grupos = GRUPOS;
   protected readonly cardio = FILTRO_CARDIO;
   // Busca e filtros ficam guardados fora do componente: ao voltar de um exercício, a lista continua igual.
@@ -199,9 +229,31 @@ export class Library {
     return new Set(f?.itens.map((i) => i.exerciseId) ?? []);
   });
 
-  protected readonly resultados = computed(() =>
-    this.ex.buscar(this.consulta(), this.grupo(), this.equip(), this.nivel()),
-  );
+  /** Exercícios feitos nos treinos, do mais recente para o mais antigo. */
+  private readonly recentes = computed(() => {
+    const historico = this.plans.historico();
+    const vistos = new Set<string>();
+    for (let i = historico.length - 1; i >= 0 && vistos.size < RECENTES_MAX; i--) {
+      for (const r of historico[i].registros ?? []) if (r.series.length > 0) vistos.add(r.exerciseId);
+    }
+    return [...vistos];
+  });
+
+  protected readonly resultados = computed(() => {
+    const g = this.grupo();
+    if (g === FILTRO_FAVORITOS) {
+      const favs = this.favoritos.ids();
+      return this.ex.buscar(this.consulta(), '', this.equip(), this.nivel()).filter((e) => favs.has(e.id));
+    }
+    if (g === FILTRO_RECENTES) {
+      const ordem = this.recentes();
+      return this.ex
+        .buscar(this.consulta(), '', this.equip(), this.nivel())
+        .filter((e) => ordem.includes(e.id))
+        .sort((a, b) => ordem.indexOf(a.id) - ordem.indexOf(b.id));
+    }
+    return this.ex.buscar(this.consulta(), g, this.equip(), this.nivel());
+  });
   protected readonly visiveis = computed(() => this.resultados().slice(0, this.limite()));
 
   protected definirConsulta(v: string): void {
@@ -227,6 +279,11 @@ export class Library {
   protected subtitulo(e: Exercise): string {
     const musculo = e.primaryMuscles[0] ? this.ex.musculo(e.primaryMuscles[0]) : this.ex.categoria(e.category);
     return `${musculo} · ${this.ex.equipamento(e.equipment)}`;
+  }
+
+  protected favoritar(e: Exercise): void {
+    const ficou = this.favoritos.alternar(e.id);
+    this.toast.mostrar(ficou ? `${this.ex.nome(e)} nos favoritos` : `${this.ex.nome(e)} saiu dos favoritos`);
   }
 
   protected adicionar(e: Exercise): void {

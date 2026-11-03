@@ -32,7 +32,9 @@ export type IconName =
   | 'link'
   | 'qr'
   | 'send'
-  | 'user-check';
+  | 'user-check'
+  | 'star'
+  | 'grip';
 
 @Component({
   selector: 'app-icon',
@@ -75,6 +77,17 @@ export type IconName =
         @case ('clipboard') {
           <rect x="5" y="4" width="14" height="17" rx="2" />
           <path d="M9 4V3h6v1M9 11h6M9 15h4" />
+        }
+        @case ('star') {
+          <path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z" />
+        }
+        @case ('grip') {
+          <circle cx="9" cy="7" r="1.1" />
+          <circle cx="15" cy="7" r="1.1" />
+          <circle cx="9" cy="12" r="1.1" />
+          <circle cx="15" cy="12" r="1.1" />
+          <circle cx="9" cy="17" r="1.1" />
+          <circle cx="15" cy="17" r="1.1" />
         }
         @case ('plus') {
           <path d="M12 5v14M5 12h14" />

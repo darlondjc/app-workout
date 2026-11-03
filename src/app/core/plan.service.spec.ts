@@ -289,6 +289,16 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
     expect(plans.blocosAtivos().length).toBe(1);
   });
 
+  it('reordenarItem leva o exercício para a nova posição, mantendo os demais na ordem', () => {
+    const [f] = plans.criarComItens([{ nome: 'A', itens: [item('a', 1), item('b', 1), item('c', 1), item('d', 1)] }]);
+    plans.reordenarItem(f.id, 0, 2);
+    expect(plans.get(f.id)!.itens.map((i) => i.exerciseId)).toEqual(['b', 'c', 'a', 'd']);
+    plans.reordenarItem(f.id, 3, 1);
+    expect(plans.get(f.id)!.itens.map((i) => i.exerciseId)).toEqual(['b', 'd', 'c', 'a']);
+    plans.reordenarItem(f.id, 1, 9);
+    expect(plans.get(f.id)!.itens.map((i) => i.exerciseId)).toEqual(['b', 'd', 'c', 'a']);
+  });
+
   it('adicionarTreino sem nenhuma ficha cria a primeira', () => {
     plans.adicionarTreino('Treino do dia', [item('rosca', 10)]);
     expect(plans.fichas().map((f) => f.nome)).toEqual(['Treino do dia']);
