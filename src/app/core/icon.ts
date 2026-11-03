@@ -45,7 +45,7 @@ export type IconName =
       [attr.width]="size()"
       [attr.height]="size()"
       viewBox="0 0 24 24"
-      fill="none"
+      [style.fill]="preenchido() ? 'currentColor' : 'none'"
       stroke="currentColor"
       [attr.stroke-width]="stroke()"
       stroke-linecap="round"
@@ -203,4 +203,6 @@ export class Icon {
   readonly name = input.required<IconName>();
   readonly size = input(24);
   readonly stroke = input(2);
+  /** Desenha o ícone cheio (por exemplo, a estrela de um favorito). */
+  readonly preenchido = input(false);
 }

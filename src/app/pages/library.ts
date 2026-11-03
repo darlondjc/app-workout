@@ -112,7 +112,7 @@ const ESTADO = {
               [attr.aria-label]="'Favoritar ' + ex.nome(e)"
               (click)="favoritar(e)"
             >
-              <app-icon name="star" [size]="20" [stroke]="2" />
+              <app-icon name="star" [size]="28" [stroke]="2" [preenchido]="favoritos.ids().has(e.id)" />
             </button>
             @if (naFicha().has(e.id)) {
               <span class="btn-icone btn-icone--feito" role="img" [attr.aria-label]="ex.nome(e) + ' já está na ficha'">
@@ -153,8 +153,8 @@ const ESTADO = {
   styles: `
     .voltar { border: 0; background: none; padding: 0; font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--muted); }
     .btn-icone--feito { color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
+    .estrela { width: 48px; height: 48px; }
     .estrela--ligada { color: var(--ink); }
-    .estrela--ligada app-icon { fill: currentColor; }
     .busca {
       display: flex;
       align-items: center;

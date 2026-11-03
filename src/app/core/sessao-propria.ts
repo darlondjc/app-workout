@@ -83,23 +83,24 @@ export function registrosDoRascunho(r: ExercicioRascunho[]): RegistroExercicio[]
       <app-sessao-detalhe [sessao]="sessao()" [kcal]="kcal()" (verExercicio)="verExercicio.emit($event)" />
       <div class="acoes">
         @if (!sessao().atividade && sessao().registros?.length) {
-          <button type="button" class="acao" (click)="comecarEdicao()">Corrigir treino</button>
+          <button type="button" class="btn btn--claro" (click)="comecarEdicao()">Corrigir treino</button>
         }
         @if (confirmando()) {
-          <span class="apoio">Apagar do histórico?</span>
-          <button type="button" class="acao acao--perigo" (click)="excluir()">Sim, excluir</button>
-          <button type="button" class="acao" (click)="confirmando.set(false)">Não</button>
+          <p class="apoio pergunta">Excluir este treino do histórico? Estatísticas e medalhas serão refeitas.</p>
+          <button type="button" class="btn btn--perigo" (click)="excluir()">Sim, excluir</button>
+          <button type="button" class="btn btn--claro" (click)="confirmando.set(false)">Não, manter</button>
         } @else {
-          <button type="button" class="acao acao--perigo" (click)="confirmando.set(true)">Excluir treino</button>
+          <button type="button" class="btn btn--borda-perigo" (click)="confirmando.set(true)">Excluir treino</button>
         }
       </div>
     }
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 14px; }
-    .acoes { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; }
-    .acao { min-height: 44px; padding: 0; border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-    .acao--perigo { color: var(--perigo); }
+    .acoes { display: flex; flex-direction: column; gap: 8px; }
+    .pergunta { margin: 4px 0 0; }
+    .btn--perigo { background: #b3261e; color: #fff; }
+    .btn--borda-perigo { background: transparent; border-color: var(--perigo); color: var(--perigo); }
     .editor { display: flex; flex-direction: column; gap: 14px; }
     .ex { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
     .ex__nome { padding: 0; font-size: 15px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; }

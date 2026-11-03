@@ -21,7 +21,18 @@ import { UpdateService } from '../core/update.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Perfil" />
+      <app-barra-topo titulo="Perfil">
+        <span class="barra-acoes">
+          <a class="estatisticas" routerLink="/estatisticas" tabindex="-1" aria-label="Minhas estatísticas">
+            <app-icon name="chart" [size]="20" [stroke]="2.2" />
+          </a>
+          @if (nuvem.usuario()) {
+            <button type="button" class="sair" tabindex="-1" aria-label="Sair da conta" (click)="confirmando.set(true)">
+              <app-icon name="logout" [size]="20" [stroke]="2.2" />
+            </button>
+          }
+        </span>
+      </app-barra-topo>
       <header class="cabeca">
         <h1 class="titulo">Perfil</h1>
         <div class="acoes-topo">
@@ -439,6 +450,9 @@ import { UpdateService } from '../core/update.service';
       display: flex;
       gap: 8px;
     }
+    /* Os mesmos botões na barra que aparece ao rolar, um pouco menores. */
+    .barra-acoes { display: flex; align-items: center; gap: 8px; }
+    .barra-acoes .estatisticas, .barra-acoes .sair { width: 38px; height: 38px; }
     .estatisticas {
       flex: none;
       width: 44px;
