@@ -65,6 +65,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
                   aria-hidden="true"
                   tabindex="-1"
                   title="Arraste para mudar a ordem"
+                  (mousedown)="$event.preventDefault()"
                   (pointerdown)="iniciarArrasto($event, l.i)"
                   (pointermove)="moverArrasto($event)"
                   (pointerup)="soltarArrasto($event)"
@@ -229,6 +230,8 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       justify-content: center;
       cursor: grab;
       touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .item__topo {
       display: flex;
