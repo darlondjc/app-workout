@@ -7,6 +7,7 @@ import { Icon } from '../core/icon';
 import { RegistroPeso, Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
 import { SessaoDetalhe } from '../core/sessao-detalhe';
+import { SessaoPropria } from '../core/sessao-propria';
 import { LIMITE_SESSOES_MEMBRO, SocialService } from '../core/social.service';
 import { CHAVE_META, lerMeta, metaPadrao } from '../core/meta';
 import { MapaMuscular } from '../core/mapa-muscular';
@@ -29,7 +30,7 @@ function lerDispensadas(): string[] {
 
 @Component({
   selector: 'app-progress',
-  imports: [ExercicioDialogo, Icon, SessaoDetalhe, Dialogo, PesoGrafico, MapaMuscular],
+  imports: [ExercicioDialogo, Icon, SessaoDetalhe, SessaoPropria, Dialogo, PesoGrafico, MapaMuscular],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pagina" [class.pagina--calendario-primeiro]="calendarioPrimeiro()">
@@ -128,7 +129,11 @@ function lerDispensadas(): string[] {
 
       @if (sessaoDoDialogo(); as d) {
         <app-dialogo [titulo]="d.fichaNome || 'Treino'" [subtitulo]="d.dia" (fechar)="sessaoAberta.set(null); exercicioAberto.set(null)">
-          <app-sessao-detalhe [sessao]="d.sessao" [kcal]="d.kcal" (verExercicio)="exercicioAberto.set($event)" />
+          @if (editavel()) {
+            <app-sessao-propria [sessao]="d.sessao" [kcal]="d.kcal" (verExercicio)="exercicioAberto.set($event)" (excluida)="sessaoAberta.set(null)" />
+          } @else {
+            <app-sessao-detalhe [sessao]="d.sessao" [kcal]="d.kcal" (verExercicio)="exercicioAberto.set($event)" />
+          }
         </app-dialogo>
       }
 

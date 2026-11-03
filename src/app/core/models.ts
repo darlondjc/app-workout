@@ -94,6 +94,10 @@ export interface Sessao {
   /** Minutos do começo à conclusão do treino. Ausente nos treinos anteriores à 1.20 e nas atividades (que têm os seus). */
   duracaoMin?: number;
   registros?: RegistroExercicio[];
+  /** Quando o treino foi corrigido depois de concluído (ms). Na sincronização, vale a versão mais nova. */
+  editadaEm?: number;
+  /** Marcador de treino apagado: fica na nuvem para o treino não voltar de outro aparelho. Não aparece nas telas. */
+  excluida?: true;
   /** Este treino tem uma foto guardada na nuvem (a foto em si não fica no histórico). */
   temFoto?: boolean;
 }

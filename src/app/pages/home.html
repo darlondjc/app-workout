@@ -235,7 +235,7 @@
 
   @if (sessaoAberta() && resumoHoje(); as r) {
     <app-dialogo [titulo]="r.nome" subtitulo="Treino de hoje" (fechar)="sessaoAberta.set(false); exercicioAberto.set(null)">
-      <app-sessao-detalhe [sessao]="r.sessao" [kcal]="kcalHoje()" (verExercicio)="exercicioAberto.set($event)" />
+      <app-sessao-propria [sessao]="r.sessao" [kcal]="kcalHoje()" (verExercicio)="exercicioAberto.set($event)" (excluida)="sessaoAberta.set(false)" />
     </app-dialogo>
   }
 

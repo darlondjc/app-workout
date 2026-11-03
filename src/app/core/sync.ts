@@ -55,7 +55,8 @@ export class Sincronizador {
   private primeiroSessoes = true;
   private ultimoJson = '';
   private timer?: ReturnType<typeof setTimeout>;
-  private enviadas = new Set<string>();
+  /** Treinos já enviados (ou recebidos), com a versão: um treino corrigido depois é enviado de novo. */
+  private enviadas = new Map<string, number>();
   private parado = false;
   /** Quantas gravações estão em andamento. */
   private emVoo = 0;
@@ -138,7 +139,7 @@ export class Sincronizador {
 
   private aoReceberSessoes(remotas: Sessao[]): void {
     if (this.parado) return;
-    remotas.forEach((s) => s.id && this.enviadas.add(s.id));
+    remotas.forEach((s) => s.id && this.enviadas.set(s.id, Math.max(this.enviadas.get(s.id) ?? 0, s.editadaEm ?? 0)));
     this.alvo.mesclarSessoes(remotas);
     if (this.primeiroSessoes) {
       this.primeiroSessoes = false;
@@ -161,10 +162,15 @@ export class Sincronizador {
 
   private enviarSessoes(): void {
     for (const s of this.alvo.lerSessoes()) {
-      if (!s.id || this.enviadas.has(s.id)) continue;
+      const versao = s.editadaEm ?? 0;
+      if (!s.id || this.enviadas.has(s.id) && (this.enviadas.get(s.id) as number) >= versao) continue;
       const id = s.id;
-      this.enviadas.add(id);
-      void this.gravar(() => this.nuvem.gravarSessao(this.uid, s), () => this.enviadas.delete(id));
+      const antes = this.enviadas.get(id);
+      this.enviadas.set(id, versao);
+      void this.gravar(
+        () => this.nuvem.gravarSessao(this.uid, s),
+        () => (antes === undefined ? this.enviadas.delete(id) : this.enviadas.set(id, antes)),
+      );
     }
   }
 

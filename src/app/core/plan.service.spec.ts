@@ -313,6 +313,60 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
   });
 });
 
+describe('PlanService: corrigir e apagar treinos do histórico', () => {
+  let plans: PlanService;
+  const serie = { carga: 20, reps: 10 };
+  const reg = (id: string) => ({ exerciseId: id, series: [serie, serie] });
+  let sid: string;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+    const [f] = plans.criarComItens([{ nome: 'A', itens: [] }]);
+    sid = plans.registrarSessao(f.id, [reg('supino'), reg('remada')]);
+  });
+
+  it('editarSessao troca as séries e a nota e marca a hora da correção', () => {
+    plans.editarSessao(sid, { registros: [{ exerciseId: 'supino', series: [{ carga: 30, reps: 8 }] }], nota: '  ombro ok  ' });
+    const s = plans.historico()[0];
+    expect(s.registros).toEqual([{ exerciseId: 'supino', series: [{ carga: 30, reps: 8 }] }]);
+    expect(s.nota).toBe('ombro ok');
+    expect(s.editadaEm).toBeGreaterThan(0);
+    plans.editarSessao(sid, { registros: s.registros!, nota: '' });
+    expect(plans.historico()[0].nota).toBeUndefined();
+  });
+
+  it('excluirSessao tira do histórico e deixa um marcador para sincronizar', () => {
+    plans.excluirSessao(sid);
+    expect(plans.historico().length).toBe(0);
+    const marcadores = plans.sessoesParaSincronizar();
+    expect(marcadores.length).toBe(1);
+    expect(marcadores[0]).toEqual(jasmine.objectContaining({ id: sid, excluida: true }));
+    expect(plans.ultimoRegistro('supino')).toBeUndefined();
+  });
+
+  it('um treino apagado não volta quando a nuvem ainda o tem', () => {
+    const antes = plans.historico()[0];
+    plans.excluirSessao(sid);
+    plans.mesclarSessoes([antes]);
+    expect(plans.historico().length).toBe(0);
+  });
+
+  it('o marcador de apagado vindo de outro aparelho remove o treino daqui', () => {
+    plans.mesclarSessoes([{ id: sid, data: '2026-10-20', fichaId: '', excluida: true, editadaEm: 99 }]);
+    expect(plans.historico().length).toBe(0);
+  });
+
+  it('a correção feita em outro aparelho vale se for mais nova; a mais velha não', () => {
+    const base = plans.historico()[0];
+    plans.mesclarSessoes([{ ...base, nota: 'de fora', editadaEm: 100 }]);
+    expect(plans.historico()[0].nota).toBe('de fora');
+    plans.mesclarSessoes([{ ...base, nota: 'velha', editadaEm: 50 }]);
+    expect(plans.historico()[0].nota).toBe('de fora');
+  });
+});
+
 describe('PlanService: atividade fora da ficha', () => {
   let plans: PlanService;
 

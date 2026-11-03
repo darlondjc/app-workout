@@ -22,7 +22,7 @@ describe('MyStats', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: PlanService, useValue: { historico: signal<Sessao[]>([]), fichas: () => [] } },
+        { provide: PlanService, useValue: { historico: signal<Sessao[]>([]), sessoesParaSincronizar: () => [], fichas: () => [] } },
         {
           provide: MedalhasService,
           useValue: {

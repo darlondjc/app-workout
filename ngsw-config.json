@@ -38,11 +38,13 @@
     }
   ],
   "appData": {
-    "versao": "1.25.8",
-    "titulo": "Câmera dentro do app: selfie sem espelhar",
+    "versao": "1.26.0",
+    "titulo": "Corrigir treinos, séries extras, evolução por exercício e favoritos",
     "novidades": [
-      "Ao adicionar uma foto (treino, perfil, grupo), o app agora abre a própria câmera, com a frontal ligada. A imagem aparece espelhada enquanto você se enquadra, como num espelho, mas a foto sai sem espelhar, como as outras pessoas te veem. Há botões para virar a câmera e para escolher da galeria.",
-      "Se o aparelho não deixar usar a câmera dentro do app, ele abre o seletor de fotos como antes."
+      "Treinos concluídos agora podem ser corrigidos (repetições, carga, séries e nota) ou excluídos, em Início e em Estatísticas. A correção e a exclusão valem em todos os seus aparelhos e refazem estatísticas e medalhas.",
+      "No treino, Série extra e Tirar série mudam a quantidade de séries só daquele treino; a ficha não muda.",
+      "A tela do exercício mostra a sua evolução de carga, 1RM estimado e volume a partir do histórico.",
+      "Biblioteca: estrela para favoritar e filtros Favoritos e Recentes. Na ficha, dá para arrastar pela alça para reordenar os exercícios."
     ]
   }
 }

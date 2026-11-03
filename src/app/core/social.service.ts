@@ -998,7 +998,7 @@ export class SocialService {
     if (uid && uid !== this.uid && this.nuvem && !this.ouvintesSessoes.has(uid)) {
       this.ouvintesSessoes.set(
         uid,
-        this.nuvem.ouvirSessoes(uid, (l) => this.sessoesPor.update((x) => ({ ...x, [uid]: l })), (e) => this.aoErroDe(uid, e), LIMITE_SESSOES_MEMBRO),
+        this.nuvem.ouvirSessoes(uid, (l) => this.sessoesPor.update((x) => ({ ...x, [uid]: l.filter((s) => !s.excluida) })), (e) => this.aoErroDe(uid, e), LIMITE_SESSOES_MEMBRO),
       );
     }
     return this.sessoesPor()[uid] ?? [];

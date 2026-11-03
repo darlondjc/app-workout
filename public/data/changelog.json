@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.26.0",
+    "data": "2026-11-03",
+    "titulo": "Corrigir treinos, séries extras, evolução por exercício e favoritos",
+    "itens": [
+      "Treinos concluídos agora podem ser corrigidos (repetições, carga, séries e nota) ou excluídos, em Início e em Estatísticas. A correção e a exclusão valem em todos os seus aparelhos e refazem estatísticas e medalhas.",
+      "No treino, Série extra e Tirar série mudam a quantidade de séries só daquele treino; a ficha não muda.",
+      "A tela do exercício mostra a sua evolução de carga, 1RM estimado e volume a partir do histórico.",
+      "Biblioteca: estrela para favoritar e filtros Favoritos e Recentes. Na ficha, dá para arrastar pela alça para reordenar os exercícios."
+    ]
+  },
+  {
     "versao": "1.25.8",
     "data": "2026-10-30",
     "titulo": "Câmera dentro do app: selfie sem espelhar",

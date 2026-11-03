@@ -268,6 +268,26 @@ describe('Sincronizador', () => {
       expect(nuvem.sessoesGravadas.map((s) => s.id)).toEqual(['x']);
     });
 
+    it('um treino corrigido depois de enviado é enviado de novo; sem correção, não', async () => {
+      alvo.sessoes = [sessao('x')];
+      await iniciarSemNuvem();
+      expect(nuvem.sessoesGravadas.length).toBe(1);
+      alvo.sessoes = [{ ...sessao('x'), editadaEm: 50 }];
+      sinc.sessoesMudaram();
+      sinc.sessoesMudaram();
+      await esvaziar();
+      expect(nuvem.sessoesGravadas.map((s) => s.editadaEm)).toEqual([undefined, 50]);
+    });
+
+    it('o marcador de treino apagado também é enviado', async () => {
+      alvo.sessoes = [sessao('x')];
+      await iniciarSemNuvem();
+      alvo.sessoes = [{ id: 'x', data: '2026-10-20', fichaId: '', excluida: true, editadaEm: 70 }];
+      sinc.sessoesMudaram();
+      await esvaziar();
+      expect(nuvem.sessoesGravadas.at(-1)?.excluida).toBeTrue();
+    });
+
     it('sessão sem id não é enviada', async () => {
       alvo.sessoes = [{ data: '2026-10-20', fichaId: 'f1' }];
       await iniciarSemNuvem();

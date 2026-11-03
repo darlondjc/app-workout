@@ -38,7 +38,7 @@ export class CloudService {
   private readonly alvo: AlvoLocal = {
     lerEstado: () => this.plans.estadoNuvem(),
     aplicarEstado: (e, mesclar) => this.plans.aplicarEstadoNuvem(e, mesclar),
-    lerSessoes: () => this.plans.historico(),
+    lerSessoes: () => this.plans.sessoesParaSincronizar(),
     mesclarSessoes: (s) => this.plans.mesclarSessoes(s),
   };
 
@@ -51,7 +51,7 @@ export class CloudService {
       untracked(() => this.sinc?.estadoMudou());
     });
     effect(() => {
-      this.plans.historico();
+      this.plans.sessoesParaSincronizar();
       untracked(() => this.sinc?.sessoesMudaram());
     });
     // Quem já entrou antes retoma a sincronização logo após abrir o app.

@@ -5,6 +5,7 @@ import { AtividadeDialogo } from '../core/atividade-dialogo';
 import { resumoAtividade } from '../core/atividade';
 import { Avatar } from '../core/avatar';
 import { BarraTopo } from '../core/barra-topo';
+import { SessaoPropria } from '../core/sessao-propria';
 import { CloudService } from '../core/cloud.service';
 import { Dialogo } from '../core/dialogo';
 import { ExercicioDialogo } from '../core/exercicio-dialogo';
@@ -15,7 +16,6 @@ import { NOMES_NIVEL, TipoConquista, formatarProgresso, historicoDeRecordes, ord
 import { MedalhasService } from '../core/medalhas.service';
 import { QuadroMedalhas } from '../core/quadro-medalhas';
 import { lerMeta, metaPadrao } from '../core/meta';
-import { SessaoDetalhe } from '../core/sessao-detalhe';
 import { SocialService } from '../core/social.service';
 import { PlanService, dataLocal } from '../core/plan.service';
 import { AtividadeRegistro, ItemFicha, Sessao } from '../core/models';
@@ -32,7 +32,7 @@ const DIAS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', '
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Icon, Avatar, BarraTopo, Dialogo, ExercicioDialogo, SessaoDetalhe, MedalhasGaleria, QuadroMedalhas, AtividadeDialogo],
+  imports: [RouterLink, Icon, Avatar, BarraTopo, Dialogo, ExercicioDialogo, SessaoPropria, MedalhasGaleria, QuadroMedalhas, AtividadeDialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.html',
   styleUrl: './home.scss',

@@ -8,6 +8,7 @@ import { PesoService } from './peso.service';
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
 const CHAVE_ATIVA = 'app-workout:ficha-ativa:v1';
 const CHAVE_HISTORICO = 'app-workout:historico:v1';
+const CHAVE_EXCLUIDAS = 'app-workout:sessoes-excluidas:v1';
 const CHAVE_ANDAMENTO = 'app-workout:andamento:v1';
 const CHAVE_MESES = 'app-workout:ficha-meses:v1';
 
@@ -48,6 +49,8 @@ export class PlanService {
   private readonly pesos = inject(PesoService);
   readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []));
   readonly ativaId = signal<string | null>(ler<string | null>(CHAVE_ATIVA, null));
+  /** Treinos apagados (id → dia e momento), guardados para o apagar valer também nos outros aparelhos. */
+  private readonly excluidas = signal<Record<string, { data: string; em: number }>>(ler(CHAVE_EXCLUIDAS, {}));
   readonly historico = signal<Sessao[]>(
     ler<Sessao[]>(CHAVE_HISTORICO, []).map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })),
   );
@@ -108,6 +111,7 @@ export class PlanService {
     effect(() => gravar(CHAVE_MESES, this.mesesPadrao()));
     effect(() => gravar(CHAVE_ATIVA, this.ativaId()));
     effect(() => gravar(CHAVE_HISTORICO, this.historico()));
+    effect(() => gravar(CHAVE_EXCLUIDAS, this.excluidas()));
     effect(() => gravar(CHAVE_ANDAMENTO, this.emAndamento()));
   }
 
@@ -534,16 +538,60 @@ export class PlanService {
     this.garantirPeriodos();
   }
 
-  /** Junta sessões recebidas da nuvem ao histórico (união por id, em ordem de data). */
-  mesclarSessoes(remotas: Sessao[]): void {
-    const atuais = this.historico();
-    const ids = new Set(atuais.map((s) => s.id));
-    const novas = remotas.filter((s) => s.id && !ids.has(s.id));
-    if (novas.length === 0) return;
-    const todas = [...atuais, ...novas].sort(
-      (a, b) => (a.concluidaEm ?? 0) - (b.concluidaEm ?? 0) || a.data.localeCompare(b.data),
+  /** O histórico como a nuvem o guarda: os treinos e os marcadores dos que foram apagados. */
+  readonly sessoesParaSincronizar = computed<Sessao[]>(() => [
+    ...this.historico(),
+    ...Object.entries(this.excluidas()).map(([id, x]) => ({ id, data: x.data, fichaId: '', excluida: true as const, editadaEm: x.em })),
+  ]);
+
+  /** Corrige um treino já concluído (séries e nota). Os outros aparelhos recebem a versão nova. */
+  editarSessao(id: string, mudanca: { registros: RegistroExercicio[]; nota: string }): void {
+    const nota = limparNota(mudanca.nota, NOTA_TREINO_MAX);
+    this.historico.update((h) =>
+      h.map((s) => {
+        if (s.id !== id) return s;
+        const { nota: _antes, ...resto } = s;
+        return { ...resto, registros: mudanca.registros, ...(nota ? { nota } : {}), editadaEm: Date.now() };
+      }),
     );
-    this.historico.set(todas);
+  }
+
+  /** Apaga um treino do histórico (some das estatísticas, do calendário e das medalhas) e avisa os outros aparelhos. */
+  excluirSessao(id: string): void {
+    const s = this.historico().find((x) => x.id === id);
+    if (!s) return;
+    this.historico.update((h) => h.filter((x) => x.id !== id));
+    this.excluidas.update((e) => ({ ...e, [id]: { data: s.data, em: Date.now() } }));
+  }
+
+  /**
+   * Junta sessões recebidas da nuvem ao histórico: o que falta entra, o que foi corrigido em outro aparelho
+   * substitui a versão daqui (vale a mais nova) e o que foi apagado lá sai daqui. Em ordem de data.
+   */
+  mesclarSessoes(remotas: Sessao[]): void {
+    let h = this.historico();
+    let mudou = false;
+    const apagadas = this.excluidas();
+    for (const r of remotas) {
+      if (!r.id) continue;
+      const i = h.findIndex((s) => s.id === r.id);
+      if (r.excluida) {
+        if (i >= 0) {
+          h = h.filter((s) => s.id !== r.id);
+          mudou = true;
+        }
+      } else if (apagadas[r.id]) {
+        continue;
+      } else if (i < 0) {
+        h = [...h, r];
+        mudou = true;
+      } else if ((r.editadaEm ?? 0) > (h[i].editadaEm ?? 0)) {
+        h = h.map((s, j) => (j === i ? r : s));
+        mudou = true;
+      }
+    }
+    if (!mudou) return;
+    this.historico.set([...h].sort((a, b) => (a.concluidaEm ?? 0) - (b.concluidaEm ?? 0) || a.data.localeCompare(b.data)));
   }
 
   /** Apaga os dados deste aparelho (usado ao sair da conta). */
@@ -551,6 +599,7 @@ export class PlanService {
     this.fichas.set([]);
     this.ativaId.set(null);
     this.historico.set([]);
+    this.excluidas.set({});
     this.emAndamento.set(null);
     this.pesos.limpar();
   }
