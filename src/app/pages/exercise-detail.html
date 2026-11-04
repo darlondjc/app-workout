@@ -4,20 +4,18 @@
     <button type="button" class="voltar" (click)="voltar()" aria-label="Voltar">
       <app-icon name="back" [size]="22" [stroke]="2.2" />
     </button>
+    @if (daFicha()) {
+      <button type="button" class="trocar-btn" aria-haspopup="dialog" (click)="abrirTroca()">
+        <app-icon name="refresh" [size]="18" [stroke]="2.2" /> Trocar
+      </button>
+    }
+    <header class="cabeca">
+      <h1 class="nome">{{ nome() }}</h1>
+      <p class="original">Original em inglês: {{ e.name }}</p>
+    </header>
   </div>
 
   <section class="corpo">
-    <header class="cabeca">
-      <div class="cabeca__txt">
-        <h1 class="nome">{{ nome() }}</h1>
-        <p class="apoio">Original em inglês: {{ e.name }}</p>
-      </div>
-      @if (daFicha()) {
-        <button type="button" class="btn btn--claro trocar-btn" aria-haspopup="dialog" (click)="abrirTroca()">
-          <app-icon name="refresh" [size]="18" [stroke]="2.2" /> Trocar
-        </button>
-      }
-    </header>
 
     <div class="tags" role="list" aria-label="Músculos, equipamento e nível">
       @for (m of e.primaryMuscles; track m) {
