@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.28.0",
+    "data": "2026-11-04",
+    "titulo": "Tela do exercício mais enxuta e busca na troca",
+    "itens": [
+      "A tela do exercício ficou mais curta: o nome aparece sobre a foto, as tags cabem numa linha e Como fazer e Evolução viraram abas.",
+      "Trocar exercício abre numa folha que sobe de baixo, com busca para filtrar as opções por nome ou equipamento.",
+      "O botão de cancelar ganhou cor própria em todo o app, para não ser confundido com as outras opções.",
+      "O aviso de versão nova agora aparece num card na parte de baixo da tela."
+    ]
+  },
+  {
     "versao": "1.27.0",
     "data": "2026-11-03",
     "titulo": "Favoritos na conta e Desfazer ao excluir",
