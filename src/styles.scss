@@ -223,6 +223,17 @@ p {
   color: var(--ink);
 }
 
+/*
+ * Botão de desistir (Cancelar, Não, manter): fundo cinza-esverdeado, sem borda, para não ser confundido
+ * com as opções brancas (btn--claro) ao lado. Use só para fechar uma decisão sem fazer nada;
+ * ações que cancelam algo de verdade (Cancelar pedido, Cancelar treino) seguem com o próprio estilo.
+ */
+.btn--cancelar {
+  background: var(--soft);
+  border-color: transparent;
+  color: var(--ink);
+}
+
 .btn--tracejado {
   border: 1.5px dashed #8a918c;
   background: transparent;

@@ -119,7 +119,7 @@ import { Carregando } from '../core/spinner';
           <app-dialogo titulo="Sair do grupo?" (fechar)="saindo.set(false)">
             <p class="apoio">Você deixa de ver os treinos de {{ g.nome }} e as pessoas dele deixam de ver os seus. Para voltar, precisa de um convite.</p>
             <div class="acoes">
-              <button type="button" class="btn btn--claro" (click)="saindo.set(false)">Cancelar</button>
+              <button type="button" class="btn btn--cancelar" (click)="saindo.set(false)">Cancelar</button>
               <button type="button" class="btn btn--escuro" (click)="sair()">Sair</button>
             </div>
           </app-dialogo>

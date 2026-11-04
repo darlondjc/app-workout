@@ -110,7 +110,7 @@ type Aba = 'timeline' | 'estatisticas';
               <div class="card pedir">
                 <p class="apoio">Desfazer a amizade com {{ primeiroNome() }}? Vocês deixam de ver o que só amigos veem.</p>
                 <div class="linha-botoes">
-                  <button type="button" class="btn btn--claro mini" (click)="confirmandoRemocao.set(false)">Cancelar</button>
+                  <button type="button" class="btn btn--cancelar mini" (click)="confirmandoRemocao.set(false)">Cancelar</button>
                   <button type="button" class="btn btn--escuro mini" (click)="desfazer()">Desfazer</button>
                 </div>
               </div>

@@ -41,18 +41,21 @@
   }
 
   @if (update.mostrarBotao() && mostrarAviso()) {
-    <div class="atualizacao" role="status">
-      <button type="button" class="atualizacao__botao" (click)="update.atualizar()">
-        <app-icon name="refresh" [size]="18" [stroke]="2.4" /> Atualizar
-      </button>
+    <div class="atualizacao" [class.atualizacao--sem-abas]="!mostrarAbas()" role="status" aria-labelledby="atualizacao-titulo">
+      <span class="atualizacao__icone" aria-hidden="true"><app-icon name="refresh" [size]="20" [stroke]="2.4" /></span>
+      <div class="atualizacao__txt">
+        <strong id="atualizacao-titulo">Versão nova</strong>
+        <span>{{ update.pronta()?.titulo || 'Toque em Atualizar para usar.' }}</span>
+      </div>
+      <button type="button" class="atualizacao__botao" (click)="update.atualizar()">Atualizar</button>
       <button type="button" class="atualizacao__fechar" aria-label="Agora não. Atualize depois no Perfil" (click)="update.dispensar()">
-        <app-icon name="close" [size]="16" [stroke]="2.4" />
+        <app-icon name="close" [size]="18" [stroke]="2.4" />
       </button>
     </div>
   }
 
   @if (toast.aviso(); as a) {
-    <div class="aviso" [class.aviso--acao]="!!a.acao" role="status">
+    <div class="aviso" [class.aviso--acao]="!!a.acao" [class.aviso--acima]="update.mostrarBotao() && mostrarAviso()" role="status">
       <span>{{ a.texto }}</span>
       @if (a.acao; as acao) {
         <button type="button" class="aviso__acao" (click)="toast.agir()">{{ acao.rotulo }}</button>

@@ -76,7 +76,7 @@ export function registrosDoRascunho(r: ExercicioRascunho[]): RegistroExercicio[]
         }
         <div class="botoes">
           <button type="submit" class="btn btn--escuro" [disabled]="vazio()">Salvar correção</button>
-          <button type="button" class="btn btn--claro" (click)="editando.set(false)">Cancelar</button>
+          <button type="button" class="btn btn--cancelar" (click)="editando.set(false)">Cancelar</button>
         </div>
       </form>
     } @else {
@@ -88,7 +88,7 @@ export function registrosDoRascunho(r: ExercicioRascunho[]): RegistroExercicio[]
         @if (confirmando()) {
           <p class="apoio pergunta">Excluir este treino do histórico? Estatísticas e medalhas serão refeitas.</p>
           <button type="button" class="btn btn--perigo" (click)="excluir()">Sim, excluir</button>
-          <button type="button" class="btn btn--claro" (click)="confirmando.set(false)">Não, manter</button>
+          <button type="button" class="btn btn--cancelar" (click)="confirmando.set(false)">Não, manter</button>
         } @else {
           <button type="button" class="btn btn--borda-perigo" (click)="confirmando.set(true)">Excluir treino</button>
         }
