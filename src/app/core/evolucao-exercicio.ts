@@ -29,9 +29,11 @@ const METRICAS: { valor: Metrica; rotulo: string; unidade: string; ajuda: string
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (grafico(); as g) {
-      <section class="evolucao" aria-labelledby="t-evolucao">
+      <section class="evolucao" [attr.aria-labelledby]="comTitulo() ? 't-evolucao' : null">
         <div class="topo">
-          <h2 id="t-evolucao" class="sub">Sua evolução</h2>
+          @if (comTitulo()) {
+            <h2 id="t-evolucao" class="sub">Sua evolução</h2>
+          }
           @if (!dados().minutos && dados().pontos.length > 0) {
             <div class="periodos" role="radiogroup" aria-label="O que mostrar no gráfico">
               @for (m of metricas; track m.valor) {
@@ -187,6 +189,8 @@ const METRICAS: { valor: Metrica; rotulo: string; unidade: string; ajuda: string
 })
 export class EvolucaoExercicio {
   readonly exerciseId = input.required<string>();
+  /** Desligado quando o gráfico já fica numa aba chamada "Evolução" (o título repetiria). */
+  readonly comTitulo = input(true);
 
   private readonly plans = inject(PlanService);
   protected readonly metricas = METRICAS;
