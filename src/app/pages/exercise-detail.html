@@ -45,12 +45,18 @@
               <app-icon name="search" [size]="20" />
               <span class="sr-only">Buscar entre os equivalentes</span>
               <input
+                #campoBusca
                 type="search"
                 placeholder="Filtrar opções (ex.: halter, polia)"
                 autocomplete="off"
                 [value]="busca()"
                 (input)="busca.set($any($event.target).value)"
               />
+              @if (busca()) {
+                <button type="button" class="busca__limpar" aria-label="Limpar a busca" (click)="limparBusca(campoBusca)">
+                  <app-icon name="close" [size]="18" [stroke]="2.5" />
+                </button>
+              }
             </label>
             @if (opcoesFiltradas().length === 0) {
               <p class="apoio sem-resultado">Nenhuma opção com “{{ busca() }}”.</p>

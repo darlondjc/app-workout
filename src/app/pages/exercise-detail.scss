@@ -90,6 +90,25 @@
 .busca:focus-within {
   outline: 3px solid var(--foco);
 }
+/* O x nativo do campo de busca varia por navegador; usamos o nosso. */
+.busca input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.busca__limpar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-right: -8px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .sem-resultado {
   margin: 12px 0 0;
 }

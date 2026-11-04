@@ -98,6 +98,13 @@ export class ExerciseDetail {
     return lista.filter((o) => normalizar(`${this.ex.nome(o)} ${o.name} ${this.ex.equipamento(o.equipment)}`).includes(q));
   });
 
+  /** Apaga o texto da busca e devolve o foco ao campo, para a pessoa já digitar de novo. */
+  protected limparBusca(campo: HTMLInputElement): void {
+    this.busca.set('');
+    campo.value = '';
+    campo.focus();
+  }
+
   protected alternarOpcoes(): void {
     this.trocando.update((v) => !v);
     this.busca.set('');
