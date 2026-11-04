@@ -28,7 +28,7 @@ export const GRUPOS: GrupoMuscular[] = [
 /** Chave do filtro de cardio: não é um músculo, então fica fora de `GRUPOS` e filtra pela categoria do exercício. */
 export const FILTRO_CARDIO = 'cardio';
 
-const normalizar = (s: string) =>
+export const normalizar = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
 @Injectable({ providedIn: 'root' })

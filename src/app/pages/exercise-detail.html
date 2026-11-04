@@ -30,7 +30,7 @@
       <section aria-labelledby="trocar">
         <h2 id="trocar" class="sub">Trocar por equivalente</h2>
         <p class="apoio">Mesmo grupo muscular e mesmo efeito, fora das suas fichas.</p>
-        <button type="button" class="btn btn--claro trocar-btn" (click)="trocando.set(!trocando())" [attr.aria-expanded]="trocando()">
+        <button type="button" class="btn btn--claro trocar-btn" (click)="alternarOpcoes()" [attr.aria-expanded]="trocando()">
           @if (trocando()) {
             <app-icon name="close" [size]="20" [stroke]="2.5" /> Cancelar
           } @else {
@@ -40,9 +40,24 @@
         @if (trocando()) {
           @if (opcoes().length === 0) {
             <p class="apoio">Nenhum exercício equivalente disponível.</p>
+          } @else {
+            <label class="busca">
+              <app-icon name="search" [size]="20" />
+              <span class="sr-only">Buscar entre os equivalentes</span>
+              <input
+                type="search"
+                placeholder="Filtrar opções (ex.: halter, polia)"
+                autocomplete="off"
+                [value]="busca()"
+                (input)="busca.set($any($event.target).value)"
+              />
+            </label>
+            @if (opcoesFiltradas().length === 0) {
+              <p class="apoio sem-resultado">Nenhuma opção com “{{ busca() }}”.</p>
+            }
           }
           <ul class="opcoes">
-            @for (o of opcoes(); track o.id) {
+            @for (o of opcoesFiltradas(); track o.id) {
               <li class="opcao-linha" [class.selecionada]="pendente() === o.id">
                 <button type="button" class="opcao" [attr.aria-pressed]="pendente() === o.id" (click)="trocar(o.id)">
                   <img class="opcao__img" [src]="ex.imagem(o.id, 0)" alt="" loading="lazy" />

@@ -4,7 +4,7 @@ import { EvolucaoExercicio } from '../core/evolucao-exercicio';
 import { equivalentes } from '../core/equivalentes';
 import { ExerciseImage } from '../core/exercise-image';
 import { Carregando } from '../core/spinner';
-import { ExerciseService } from '../core/exercise.service';
+import { ExerciseService, normalizar } from '../core/exercise.service';
 import { NavegacaoService } from '../core/navegacao.service';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
@@ -87,6 +87,22 @@ export class ExerciseDetail {
     );
   });
 
+  /** Texto digitado na busca da lista de equivalentes. */
+  protected readonly busca = signal('');
+
+  /** Equivalentes filtrados pela busca (nome traduzido, nome original e equipamento; ignora acento e caixa). */
+  protected readonly opcoesFiltradas = computed(() => {
+    const q = normalizar(this.busca());
+    const lista = this.opcoes();
+    if (!q) return lista;
+    return lista.filter((o) => normalizar(`${this.ex.nome(o)} ${o.name} ${this.ex.equipamento(o.equipment)}`).includes(q));
+  });
+
+  protected alternarOpcoes(): void {
+    this.trocando.update((v) => !v);
+    this.busca.set('');
+  }
+
   protected nomeDe(id: string): string {
     const e = this.ex.get(id);
     return e ? this.ex.nome(e) : id;
@@ -133,6 +149,7 @@ export class ExerciseDetail {
     this.toast.mostrar(onde === 'treino' ? `Trocado só neste treino por “${this.nomeDe(novoId)}”` : `Trocado por “${this.nomeDe(novoId)}”`);
     this.pendente.set(null);
     this.trocando.set(false);
+    this.busca.set('');
     void this.router.navigate(['/exercicio', novoId], { queryParams: { ficha: f.id, ...(this.treino() ? { treino: this.treino() } : {}) }, replaceUrl: true });
   }
 
