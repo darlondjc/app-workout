@@ -266,7 +266,7 @@ import { UpdateService } from '../core/update.service';
         <app-dialogo titulo="Sair da conta?" (fechar)="confirmando.set(false)">
           <p class="apoio">Ao sair, os dados saem deste aparelho, mas continuam na sua conta. Entre de novo para recuperá-los.</p>
           <div class="acoes-linha confirma">
-            <button type="button" class="btn btn--claro" (click)="confirmando.set(false)">Cancelar</button>
+            <button type="button" class="btn btn--cancelar" (click)="confirmando.set(false)">Cancelar</button>
             <button type="button" class="btn btn--escuro" [disabled]="nuvem.ocupado()" (click)="sair()">
               {{ nuvem.ocupado() ? 'Saindo…' : 'Sair' }}
             </button>

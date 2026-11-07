@@ -1,4 +1,3 @@
-import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
@@ -22,11 +21,10 @@ type Aba = 'timeline' | 'estatisticas';
  */
 @Component({
   selector: 'app-member-stats',
-  imports: [BarraTopo, RouterLink, Avatar, Dialogo, Icon, MedalhasGaleria, MedalhasFaixa, Carregando, EventoCard, Progress],
+  imports: [RouterLink, Avatar, Dialogo, Icon, MedalhasGaleria, MedalhasFaixa, Carregando, EventoCard, Progress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page" [class.page--abas]="amigo()">
-      <app-barra-topo [titulo]="perfil()?.nome ?? 'Perfil'" />
       <header class="cabeca">
         <button type="button" class="voltar" aria-label="Voltar" (click)="nav.voltar('/social')"><app-icon name="back" [size]="20" [stroke]="2.2" /></button>
         @if (perfil(); as p) {
@@ -112,7 +110,7 @@ type Aba = 'timeline' | 'estatisticas';
               <div class="card pedir">
                 <p class="apoio">Desfazer a amizade com {{ primeiroNome() }}? Vocês deixam de ver o que só amigos veem.</p>
                 <div class="linha-botoes">
-                  <button type="button" class="btn btn--claro mini" (click)="confirmandoRemocao.set(false)">Cancelar</button>
+                  <button type="button" class="btn btn--cancelar mini" (click)="confirmandoRemocao.set(false)">Cancelar</button>
                   <button type="button" class="btn btn--escuro mini" (click)="desfazer()">Desfazer</button>
                 </div>
               </div>

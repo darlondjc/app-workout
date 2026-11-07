@@ -61,7 +61,7 @@ import { Carregando } from '../core/spinner';
             <label class="rot" for="nome-grupo">Nome do grupo</label>
             <input #campo id="nome-grupo" class="campo" type="text" autocomplete="off" [attr.maxlength]="limiteNome" placeholder="Ex.: Grupo do Trabalho" />
             <div class="botoes">
-              <button type="button" class="btn btn--claro" (click)="criando.set(false)">Cancelar</button>
+              <button type="button" class="btn btn--cancelar" (click)="criando.set(false)">Cancelar</button>
               <button type="submit" class="btn btn--escuro" [disabled]="salvando()">{{ salvando() ? 'Criando…' : 'Criar grupo' }}</button>
             </div>
           </form>

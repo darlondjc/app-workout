@@ -1,4 +1,3 @@
-import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ExerciseService, GRUPOS } from '../core/exercise.service';
@@ -12,11 +11,10 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
 
 @Component({
   selector: 'app-daily-workout',
-  imports: [BarraTopo, RouterLink, Icon, Carregando],
+  imports: [RouterLink, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Treino do dia" />
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Treino do dia</h1>

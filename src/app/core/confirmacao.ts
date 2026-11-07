@@ -17,7 +17,7 @@ import { Dialogo } from './dialogo';
       }
       <div class="confirma">
         <button type="button" class="btn" [class.btn--perigo]="perigo()" [class.btn--escuro]="!perigo()" (click)="confirmar.emit()">{{ rotulo() }}</button>
-        <button type="button" class="btn btn--claro" (click)="cancelar.emit()">{{ rotuloCancelar() }}</button>
+        <button type="button" class="btn btn--cancelar" (click)="cancelar.emit()">{{ rotuloCancelar() }}</button>
       </div>
     </app-dialogo>
   `,

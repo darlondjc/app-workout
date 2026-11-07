@@ -1,4 +1,3 @@
-import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Avatar } from '../core/avatar';
 import { Icon } from '../core/icon';
@@ -11,11 +10,10 @@ import { baseDoApp } from './group-invite';
 /** Adicionar um amigo mais chegado (de um grupo ou de fora): seu link e código, e o campo para colar o de outra pessoa. */
 @Component({
   selector: 'app-friends',
-  imports: [BarraTopo, Avatar, Icon, Carregando],
+  imports: [Avatar, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Amigos mais chegados" />
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/social')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Amigos mais chegados</h1>

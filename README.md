@@ -105,7 +105,7 @@ O workflow `.github/workflows/pages.yml` roda o lint, os testes e o build em tod
 
 ## Conta, backup e sincronização (Firebase)
 
-No **Perfil → Conta** a pessoa entra com o Google. A partir daí fichas, ficha ativa, treino em andamento e histórico (com carga e repetições de cada série) são enviados para o Firestore e voltam sozinhos em outro aparelho ou após reinstalar. Sem login, tudo continua funcionando só no aparelho.
+No **Perfil → Conta** a pessoa entra com o Google. A partir daí fichas, ficha ativa, treino em andamento, peso, exercícios favoritos e histórico (com carga e repetições de cada série) são enviados para o Firestore e voltam sozinhos em outro aparelho ou após reinstalar. Sem login, tudo continua funcionando só no aparelho.
 
 Como funciona (`src/app/core/sync.ts`): o app lê e grava primeiro no aparelho, então funciona sem internet; o Firestore guarda as gravações pendentes e envia quando a conexão volta. No primeiro login os dados do aparelho e os da conta são unidos (nada se perde). Depois, vale a última gravação nas fichas e a união nas sessões concluídas. Ao sair da conta, os dados saem do aparelho e permanecem na nuvem.
 

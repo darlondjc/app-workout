@@ -38,8 +38,16 @@ export class PesoService {
     this.registros.update((l) => registrarPeso(l, { data, kg, em: Date.now() }));
   }
 
-  remover(data: string): void {
-    this.registros.update((l) => l.filter((r) => r.data !== data));
+  remover(data: string): RegistroPeso | undefined {
+    const r = this.registros().find((x) => x.data === data);
+    this.registros.update((l) => l.filter((x) => x.data !== data));
+    return r;
+  }
+
+  /** Desfaz `remover`, a não ser que o dia já tenha ganhado outro registro nesse meio tempo. */
+  restaurar(r: RegistroPeso): void {
+    if (this.registros().some((x) => x.data === r.data)) return;
+    this.registros.update((l) => registrarPeso(l, r));
   }
 
   /** Aplica o que veio da nuvem. Sem `remotos` (documento de uma versão antiga), mantém o que há no aparelho. */

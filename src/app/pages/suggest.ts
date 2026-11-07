@@ -1,4 +1,3 @@
-import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ExerciseService } from '../core/exercise.service';
@@ -18,11 +17,10 @@ import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-suggest',
-  imports: [BarraTopo, RouterLink, Icon, Carregando],
+  imports: [RouterLink, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Sugerir ficha" />
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Sugerir ficha</h1>

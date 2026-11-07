@@ -1,5 +1,5 @@
-import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { BarraTopo } from '../core/barra-topo';
 import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
 import { TipoConquista, ordenarPorNivel } from '../core/medalhas';
@@ -17,7 +17,11 @@ import { Progress } from './progress';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Minhas estatísticas" />
+      <app-barra-topo titulo="Minhas estatísticas">
+        <button antes type="button" class="voltar voltar--barra" tabindex="-1" aria-label="Voltar" (click)="nav.voltar('/perfil')">
+          <app-icon name="back" [size]="18" [stroke]="2.2" />
+        </button>
+      </app-barra-topo>
       <header class="cabeca">
         <button type="button" class="voltar" aria-label="Voltar" (click)="nav.voltar('/perfil')"><app-icon name="back" [size]="20" [stroke]="2.2" /></button>
         <h1 class="titulo">Minhas estatísticas</h1>
@@ -43,6 +47,7 @@ import { Progress } from './progress';
     .page { display: flex; flex-direction: column; gap: 16px; }
     .cabeca { display: flex; align-items: center; gap: 10px; }
     .voltar { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--soft); color: var(--ink); display: flex; align-items: center; justify-content: center; }
+    .voltar--barra { width: 38px; height: 38px; }
     .titulo { margin: 0; font-size: 24px; }
     .medalhas { display: flex; flex-direction: column; gap: 10px; }
     .medalhas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

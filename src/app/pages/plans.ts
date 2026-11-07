@@ -10,6 +10,7 @@ import { FichaCompartilhada, fichaParaCompartilhar } from '../core/ficha-link';
 import { Icon } from '../core/icon';
 import { Ficha } from '../core/models';
 import { PlanService } from '../core/plan.service';
+import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-plans',
@@ -162,10 +163,10 @@ import { PlanService } from '../core/plan.service';
         <app-ficha-compartilhar [ficha]="c" (fechar)="compartilhando.set(null)" />
       }
       @if (excluindoConjunto(); as c) {
-        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="c.nome" [mensagem]="'Os ' + c.treinos + ' treinos dela também serão excluídos. Essa ação não pode ser desfeita.'" rotulo="Excluir" (confirmar)="confirmarExclusaoConjunto(c.id)" (cancelar)="excluindoConjunto.set(null)" />
+        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="c.nome" [mensagem]="'Os ' + c.treinos + ' treinos dela também serão excluídos.'" rotulo="Excluir" (confirmar)="confirmarExclusaoConjunto(c.id)" (cancelar)="excluindoConjunto.set(null)" />
       }
       @if (excluindo(); as f) {
-        <app-confirmacao [titulo]="f.treino ? 'Excluir treino?' : 'Excluir ficha?'" [subtitulo]="f.nome" mensagem="Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="confirmarExclusao(f)" (cancelar)="excluindo.set(null); aberta.set(null)" />
+        <app-confirmacao [titulo]="f.treino ? 'Excluir treino?' : 'Excluir ficha?'" [subtitulo]="f.nome" rotulo="Excluir" (confirmar)="confirmarExclusao(f)" (cancelar)="excluindo.set(null); aberta.set(null)" />
       }
     </section>
   `,
@@ -315,6 +316,7 @@ export class Plans {
 
   protected readonly plans = inject(PlanService);
   private readonly exercicios = inject(ExerciseService);
+  private readonly toast = inject(ToastService);
 
   protected readonly vencidasAbertas = signal(false);
 
@@ -393,8 +395,8 @@ export class Plans {
   }
 
   protected confirmarExclusaoConjunto(id: string): void {
-    this.plans.removerConjunto(id);
     this.excluindoConjunto.set(null);
+    this.toast.mostrar('Ficha excluída', { rotulo: 'Desfazer', executar: this.plans.removerConjunto(id) });
   }
 
   protected grupos(itens: { exerciseId: string }[]): string[] {
@@ -441,9 +443,9 @@ export class Plans {
 
   protected readonly excluindo = signal<{ id: string; nome: string; treino: boolean } | null>(null);
 
-  protected confirmarExclusao(f: { id: string }): void {
+  protected confirmarExclusao(f: { id: string; treino?: boolean }): void {
     this.excluindo.set(null);
     this.aberta.set(null);
-    this.plans.remover(f.id);
+    this.toast.mostrar(f.treino ? 'Treino excluído' : 'Ficha excluída', { rotulo: 'Desfazer', executar: this.plans.remover(f.id) });
   }
 }

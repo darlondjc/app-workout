@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Dialogo } from '../core/dialogo';
 import { EvolucaoExercicio } from '../core/evolucao-exercicio';
+import { evolucaoDoExercicio } from '../core/evolucao';
 import { equivalentes } from '../core/equivalentes';
 import { ExerciseImage } from '../core/exercise-image';
 import { Carregando } from '../core/spinner';
-import { ExerciseService } from '../core/exercise.service';
+import { ExerciseService, normalizar } from '../core/exercise.service';
 import { NavegacaoService } from '../core/navegacao.service';
 import { Icon } from '../core/icon';
 import { PlanService } from '../core/plan.service';
@@ -12,7 +14,7 @@ import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-exercise-detail',
-  imports: [Icon, ExerciseImage, Carregando, EvolucaoExercicio],
+  imports: [Icon, ExerciseImage, Carregando, EvolucaoExercicio, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './exercise-detail.html',
   styleUrl: './exercise-detail.scss',
@@ -30,7 +32,10 @@ export class ExerciseDetail {
   private readonly nav = inject(NavegacaoService);
   private readonly router = inject(Router);
 
+  /** Folha (de baixo para cima) com os equivalentes para a troca. */
   protected readonly trocando = signal(false);
+  /** Aba aberta embaixo das tags. */
+  protected readonly aba = signal<'como' | 'evolucao'>('como');
   /** Exercício escolhido para a troca, esperando a confirmação (e, em treino, "só neste treino ou na ficha"). */
   protected readonly pendente = signal<string | null>(null);
 
@@ -87,6 +92,36 @@ export class ExerciseDetail {
     );
   });
 
+  /** Texto digitado na busca da lista de equivalentes. */
+  protected readonly busca = signal('');
+
+  /** Equivalentes filtrados pela busca (nome traduzido, nome original e equipamento; ignora acento e caixa). */
+  protected readonly opcoesFiltradas = computed(() => {
+    const q = normalizar(this.busca());
+    const lista = this.opcoes();
+    if (!q) return lista;
+    return lista.filter((o) => normalizar(`${this.ex.nome(o)} ${o.name} ${this.ex.equipamento(o.equipment)}`).includes(q));
+  });
+
+  /** Apaga o texto da busca e devolve o foco ao campo, para a pessoa já digitar de novo. */
+  protected limparBusca(campo: HTMLInputElement): void {
+    this.busca.set('');
+    campo.value = '';
+    campo.focus();
+  }
+
+  protected abrirTroca(): void {
+    this.busca.set('');
+    this.pendente.set(null);
+    this.trocando.set(true);
+  }
+
+  protected fecharTroca(): void {
+    this.trocando.set(false);
+    this.pendente.set(null);
+    this.previa.set(null);
+  }
+
   protected nomeDe(id: string): string {
     const e = this.ex.get(id);
     return e ? this.ex.nome(e) : id;
@@ -104,11 +139,9 @@ export class ExerciseDetail {
     const id = this.previa();
     return id ? this.ex.get(id) : undefined;
   });
-  private readonly botaoFechar = viewChild<ElementRef<HTMLButtonElement>>('fecharBtn');
 
   protected verImagem(id: string): void {
     this.previa.set(id);
-    setTimeout(() => this.botaoFechar()?.nativeElement.focus());
   }
 
   protected fecharImagem(): void {
@@ -120,10 +153,8 @@ export class ExerciseDetail {
     this.pendente.set(id);
   }
 
-  @HostListener('document:keydown.escape')
-  protected aoApertarEsc(): void {
-    if (this.previa()) this.previa.set(null);
-  }
+  /** Há treino registrado com este exercício (sem isso, a aba Evolução mostra só um aviso). */
+  protected readonly temEvolucao = computed(() => evolucaoDoExercicio(this.plans.historico(), this.id()).pontos.length > 0);
 
   protected aplicar(novoId: string, onde: 'treino' | 'ficha'): void {
     const f = this.daFicha();
@@ -133,6 +164,7 @@ export class ExerciseDetail {
     this.toast.mostrar(onde === 'treino' ? `Trocado só neste treino por “${this.nomeDe(novoId)}”` : `Trocado por “${this.nomeDe(novoId)}”`);
     this.pendente.set(null);
     this.trocando.set(false);
+    this.busca.set('');
     void this.router.navigate(['/exercicio', novoId], { queryParams: { ficha: f.id, ...(this.treino() ? { treino: this.treino() } : {}) }, replaceUrl: true });
   }
 

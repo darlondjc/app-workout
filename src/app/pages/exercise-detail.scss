@@ -25,17 +25,104 @@
   flex-direction: column;
   gap: 16px;
 }
+/* Nome sobre a parte de baixo da foto, num degradê escuro para o texto branco ler bem sobre qualquer imagem. */
+.cabeca {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 48px 20px 14px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.5) 55%, transparent 100%);
+  color: #fff;
+  pointer-events: none;
+}
 .nome {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1.15;
   letter-spacing: -0.3px;
-  margin-bottom: 6px;
+  margin: 0 0 2px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
+.original {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.82);
+}
+.trocar-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: 0 1px 4px rgba(20, 23, 26, 0.25);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Tags numa linha só: o que não couber rola para o lado, até a borda da tela. */
 .tags {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+  overflow-x: auto;
+  margin: 0 -20px;
+  padding: 0 20px;
+  scrollbar-width: none;
+}
+.tags::-webkit-scrollbar {
+  display: none;
+}
+.tags .tag {
+  flex: none;
+  white-space: nowrap;
+}
+.abas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 14px;
+  background: var(--soft);
+}
+.abas button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.abas button[aria-selected='true'] {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(20, 23, 26, 0.15);
+}
+.vazio {
+  margin: 4px 0 0;
+}
+/* A imagem ampliada abre por cima da folha de troca. */
+.previa {
+  --dialogo-z: 60;
+}
+.previa__img {
+  height: 260px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--img-fundo);
+}
+.previa__escolher {
+  width: 100%;
+  margin-top: 12px;
 }
 .sub {
   font-size: 18px;
@@ -52,10 +139,6 @@
   font-size: 15px;
   line-height: 1.45;
 }
-.trocar-btn {
-  width: 100%;
-  margin-top: 8px;
-}
 .pergunta {
   margin-top: 12px;
   padding: 14px;
@@ -65,6 +148,51 @@
 }
 .pergunta p {
   margin: 0 0 4px;
+}
+.busca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line, rgba(20, 23, 26, 0.12));
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--muted);
+}
+.busca input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--ink);
+}
+.busca:focus-within {
+  outline: 3px solid var(--foco);
+}
+/* O x nativo do campo de busca varia por navegador; usamos o nosso. */
+.busca input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.busca__limpar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-right: -8px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sem-resultado {
+  margin: 12px 0 0;
 }
 .opcoes {
   list-style: none;
@@ -112,45 +240,9 @@
 }
 .pergunta--fixa {
   position: sticky;
-  bottom: calc(12px + env(safe-area-inset-bottom));
+  bottom: 0;
   z-index: 5;
   box-shadow: 0 8px 24px rgba(20, 23, 26, 0.22);
-}
-.fundo {
-  position: fixed;
-  inset: 0;
-  border: 0;
-  padding: 0;
-  cursor: default;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 30;
-}
-.dialogo {
-  position: fixed;
-  z-index: 31;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(92%, 440px);
-  max-height: 90vh;
-  overflow: auto;
-  box-sizing: border-box;
-  padding: 16px;
-  border-radius: 24px;
-  background: var(--card, #fff);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.dialogo__img {
-  height: 260px;
-  border-radius: 16px;
-  overflow: hidden;
-}
-.dialogo__nome {
-  font-family: var(--font-display);
-  font-size: 20px;
-  margin: 4px 0 0;
 }
 .opcao {
   width: 100%;

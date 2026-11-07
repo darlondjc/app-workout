@@ -38,13 +38,13 @@
     }
   ],
   "appData": {
-    "versao": "1.26.0",
-    "titulo": "Corrigir treinos, séries extras, evolução por exercício e favoritos",
+    "versao": "1.28.0",
+    "titulo": "Tela do exercício mais enxuta e busca na troca",
     "novidades": [
-      "Treinos concluídos agora podem ser corrigidos (repetições, carga, séries e nota) ou excluídos, em Início e em Estatísticas. A correção e a exclusão valem em todos os seus aparelhos e refazem estatísticas e medalhas.",
-      "No treino, Série extra e Tirar série mudam a quantidade de séries só daquele treino; a ficha não muda.",
-      "A tela do exercício mostra a sua evolução de carga, 1RM estimado e volume a partir do histórico.",
-      "Biblioteca: estrela para favoritar e filtros Favoritos e Recentes. Na ficha, dá para arrastar pela alça para reordenar os exercícios."
+      "A tela do exercício ficou mais curta: o nome aparece sobre a foto, as tags cabem numa linha e Como fazer e Evolução viraram abas.",
+      "Trocar exercício abre numa folha que sobe de baixo, com busca para filtrar as opções por nome ou equipamento.",
+      "O botão de cancelar ganhou cor própria em todo o app, para não ser confundido com as outras opções.",
+      "O aviso de versão nova agora aparece num card na parte de baixo da tela."
     ]
   }
 }

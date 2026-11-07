@@ -6,8 +6,8 @@ import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX, limparNota } from './notas';
 import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
 import { PesoService } from './peso.service';
-import { deIso } from './stats';
 import { escolherProximaFicha } from './proximo-treino';
+import { deIso } from './stats';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
 const CHAVE_ATIVA = 'app-workout:ficha-ativa:v1';
@@ -23,7 +23,7 @@ export interface EstadoNuvem {
   emAndamento: EmAndamento | null;
   /** Registros de peso corporal. Ausente em documentos gravados por versões antigas do app. */
   pesos?: RegistroPeso[];
-  /** Exercícios favoritados na biblioteca. Ausente em documentos gravados por versões antigas do app. */
+  /** Exercícios favoritos da biblioteca. Ausente em documentos gravados por versões antigas do app. */
   favoritos?: string[];
 }
 
@@ -93,7 +93,7 @@ export class PlanService {
     ativaId: this.ativaId(),
     emAndamento: this.emAndamento(),
     pesos: this.pesos.registros(),
-    favoritos: this.favoritos.lista(),
+    favoritos: [...this.favoritos.ids()],
   }));
 
   /** Base de exercícios, buscada só na hora de sugerir (ausente onde não há HTTP, como em alguns testes). */
@@ -296,18 +296,37 @@ export class PlanService {
   }
 
   /** Exclui a ficha inteira (um treino solto ou o conjunto), com todos os seus treinos. */
-  removerBloco(chave: string): void {
-    for (const f of this.fichas().filter((x) => chaveDe(x) === chave)) this.remover(f.id);
+  removerBloco(chave: string): () => void {
+    return this.removerOnde((f) => chaveDe(f) === chave);
   }
 
   /** Exclui a ficha inteira, com todos os seus treinos. */
-  removerConjunto(conjuntoId: string): void {
-    for (const f of this.fichas().filter((x) => x.conjunto?.id === conjuntoId)) this.remover(f.id);
+  removerConjunto(conjuntoId: string): () => void {
+    return this.removerOnde((f) => f.conjunto?.id === conjuntoId);
   }
 
-  remover(id: string): void {
-    this.fichas.update((l) => l.filter((f) => f.id !== id));
-    if (this.ativaId() === id) this.ativaId.set(this.fichas()[0]?.id ?? null);
+  /** Exclui uma ficha. Devolve a função que a traz de volta (o Desfazer do aviso). */
+  remover(id: string): () => void {
+    return this.removerOnde((f) => f.id === id);
+  }
+
+  /**
+   * Tira as fichas que passam em `cond`. O desfazer as devolve nas mesmas posições
+   * e, se a ativa estava entre elas, a reativa. Fichas que já voltaram (pela nuvem) não duplicam.
+   */
+  private removerOnde(cond: (f: Ficha) => boolean): () => void {
+    const antes = this.fichas();
+    const tiradas = antes.flatMap((f, i) => (cond(f) ? [{ f, i }] : []));
+    const ativa = this.ativaId();
+    this.fichas.set(antes.filter((f) => !cond(f)));
+    const ativaSaiu = tiradas.some((t) => t.f.id === ativa);
+    if (ativaSaiu) this.ativaId.set(this.fichas()[0]?.id ?? null);
+    return () => {
+      let l = this.fichas();
+      for (const { f, i } of tiradas) if (!l.some((x) => x.id === f.id)) l = [...l.slice(0, i), f, ...l.slice(i)];
+      this.fichas.set(l);
+      if (ativaSaiu) this.ativaId.set(ativa);
+    };
   }
 
   renomear(id: string, nome: string): void {
@@ -576,11 +595,24 @@ export class PlanService {
   }
 
   /** Apaga um treino do histórico (some das estatísticas, do calendário e das medalhas) e avisa os outros aparelhos. */
-  excluirSessao(id: string): void {
+  excluirSessao(id: string): Sessao | undefined {
     const s = this.historico().find((x) => x.id === id);
-    if (!s) return;
+    if (!s) return undefined;
     this.historico.update((h) => h.filter((x) => x.id !== id));
     this.excluidas.update((e) => ({ ...e, [id]: { data: s.data, em: Date.now() } }));
+    return s;
+  }
+
+  /**
+   * Desfaz `excluirSessao`. O treino volta com uma versão mais nova que a da exclusão,
+   * para que os outros aparelhos (que talvez já o tenham apagado) o recebam de novo.
+   */
+  restaurarSessao(s: Sessao): void {
+    if (!s.id || this.historico().some((x) => x.id === s.id)) return;
+    const id = s.id;
+    const em = Math.max(Date.now(), (this.excluidas()[id]?.em ?? 0) + 1);
+    this.excluidas.update(({ [id]: _apagada, ...resto }) => resto);
+    this.mesclarSessoes([{ ...s, editadaEm: em }]);
   }
 
   /**
@@ -595,7 +627,8 @@ export class PlanService {
       if (!r.id) continue;
       const i = h.findIndex((s) => s.id === r.id);
       if (r.excluida) {
-        if (i >= 0) {
+        // Uma exclusão mais antiga que a versão daqui (treino restaurado depois) não apaga.
+        if (i >= 0 && (r.editadaEm ?? 0) >= (h[i].editadaEm ?? 0)) {
           h = h.filter((s) => s.id !== r.id);
           mudou = true;
         }

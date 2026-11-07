@@ -1,4 +1,3 @@
-import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { BlocoFichas, dataCurta } from '../core/ciclo';
@@ -11,11 +10,10 @@ import { ToastService } from '../core/toast.service';
 /** Fichas arquivadas: guardadas para consulta, fora das listas e do treino sugerido. */
 @Component({
   selector: 'app-archived-plans',
-  imports: [BarraTopo, Confirmacao, Icon, RouterLink],
+  imports: [Confirmacao, Icon, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Fichas arquivadas" />
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Fichas arquivadas</h1>
@@ -45,7 +43,7 @@ import { ToastService } from '../core/toast.service';
       </ul>
 
       @if (excluindo(); as b) {
-        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="b.nome" mensagem="Ela e seus treinos serão excluídos. Essa ação não pode ser desfeita." rotulo="Excluir" (confirmar)="excluir(b)" (cancelar)="excluindo.set(null)" />
+        <app-confirmacao titulo="Excluir ficha?" [subtitulo]="b.nome" mensagem="Ela e seus treinos serão excluídos." rotulo="Excluir" (confirmar)="excluir(b)" (cancelar)="excluindo.set(null)" />
       }
     </section>
   `,
@@ -81,7 +79,7 @@ export class ArchivedPlans {
   }
 
   protected excluir(b: BlocoFichas): void {
-    this.plans.removerBloco(b.chave);
     this.excluindo.set(null);
+    this.toast.mostrar('Ficha excluída', { rotulo: 'Desfazer', executar: this.plans.removerBloco(b.chave) });
   }
 }

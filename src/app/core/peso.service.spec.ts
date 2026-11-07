@@ -28,6 +28,18 @@ describe('PesoService', () => {
     expect(s.atual()).toBeNull();
   });
 
+  it('restaurar desfaz a remoção, sem passar por cima de um registro novo do mesmo dia', () => {
+    const s = TestBed.inject(PesoService);
+    s.registrar('2026-10-22', 72);
+    const r = s.remover('2026-10-22')!;
+    s.restaurar(r);
+    expect(s.atual()).toEqual(r);
+    s.remover('2026-10-22');
+    s.registrar('2026-10-22', 70);
+    s.restaurar(r);
+    expect(s.atual()?.kg).toBe(70);
+  });
+
   it('grava no aparelho e relê ao iniciar', () => {
     const s = TestBed.inject(PesoService);
     s.registrar('2026-10-22', 72);

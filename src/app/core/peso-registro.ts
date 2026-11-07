@@ -138,8 +138,8 @@ export class PesoRegistro {
   }
 
   protected apagar(data: string): void {
-    this.peso.remover(data);
-    this.toast.mostrar('Registro apagado');
+    const r = this.peso.remover(data);
+    if (r) this.toast.mostrar('Registro apagado', { rotulo: 'Desfazer', executar: () => this.peso.restaurar(r) });
   }
 
   protected kg(v: number): string {
