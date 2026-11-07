@@ -6,7 +6,7 @@
           <app-icon name="close" [size]="20" [stroke]="2.2" />
         </button>
         <div>
-          <p class="rotulo">{{ plans.rotulo(f.id) }} · {{ f.nome }}</p>
+          <p class="rotulo">{{ f.conjunto ? 'Treino ' + plans.letra(f.id) : 'Ficha ' + plans.letra(f.id) }} · {{ f.nome }}</p>
           <p class="posicao">Exercício {{ indice() + 1 }} de {{ f.itens.length }}</p>
         </div>
       </header>
@@ -66,7 +66,12 @@
         </a>
         <div>
           <h1 [appTituloEmDuasLinhas]="nome()">{{ nome() }}</h1>
-          <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
+          <div class="ver-linha">
+            <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
+            @if (ultimasSeries().length > 0) {
+              <button type="button" class="ver" aria-haspopup="dialog" (click)="verUltimo.set(true)">Último treino</button>
+            }
+          </div>
         </div>
       </div>
 
@@ -120,8 +125,14 @@
         </div>
       </div>
 
-      @if (ultima(); as u) {
-        <p class="ultima">Última vez: {{ u }}</p>
+      @if (verUltimo()) {
+        <app-dialogo titulo="Último treino" [subtitulo]="nome()" (fechar)="verUltimo.set(false)">
+          <ol class="ultimo-lista" aria-label="Séries do último treino, repetições vezes carga">
+            @for (x of ultimasSeries(); track $index) {
+              <li><span class="ultimo-lista__n">{{ $index + 1 }}</span> {{ x }}</li>
+            }
+          </ol>
+        </app-dialogo>
       }
 
       @if (sugestaoCarga(); as sg) {

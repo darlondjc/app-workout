@@ -129,11 +129,14 @@ export class Workout {
     (this.ficha()?.itens ?? []).reduce((total, _, i) => total + this.seriesDe(i).filter((s) => !s.feita).length, 0),
   );
 
-  protected readonly ultima = computed(() => {
+  protected readonly verUltimo = signal(false);
+
+  /** Séries do último treino do exercício, na ordem repetições × carga (ex.: "10 × 45 kg"). */
+  protected readonly ultimasSeries = computed(() => {
     const r = this.anterior_();
-    if (!r) return '';
+    if (!r) return [];
     const min = r.unidade === 'min';
-    return r.series.map((s) => (min ? `${s.reps} min` : `${s.carga} kg × ${s.reps}`)).join(' · ');
+    return r.series.map((s) => (min ? `${s.reps} min` : `${s.reps} × ${s.carga} kg`));
   });
 
   protected readonly feitas = computed(() => this.series().filter((s) => s.feita).length);

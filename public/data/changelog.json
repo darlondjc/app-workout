@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.29.2",
+    "data": "2026-11-07",
+    "titulo": "Treino: botão Último treino",
+    "itens": [
+      "Na tela do treino, o topo não repete mais o nome da ficha.",
+      "O que você fez da última vez agora fica no botão Último treino, ao lado de Ver instruções, com as séries em repetições × carga."
+    ]
+  },
+  {
     "versao": "1.29.1",
     "data": "2026-11-07",
     "titulo": "Último treino em cada treino da ficha",

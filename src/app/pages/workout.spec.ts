@@ -329,6 +329,27 @@ describe('Workout — marcar séries em bloco', () => {
     });
   });
 
+  describe('último treino do exercício', () => {
+    const botaoUltimo = () => botao('Último treino');
+
+    it('sem treino anterior, não mostra o botão', () => {
+      expect(botaoUltimo()).toBeUndefined();
+    });
+
+    it('abre o último treino com as séries em repetições × carga', () => {
+      plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 45, reps: 10 }, { carga: 47.5, reps: 8 }] }]);
+      fixture.detectChanges();
+      expect(el().textContent).not.toContain('Última vez');
+      clicar(botaoUltimo());
+      const itens = [...el().querySelectorAll('.ultimo-lista li')].map((li) => li.textContent!.replace(/\s+/g, ' ').trim());
+      expect(itens).toEqual(['1 10 × 45 kg', '2 8 × 47.5 kg']);
+    });
+  });
+
+  it('o topo mostra só a letra e o nome do treino, sem o nome da ficha', () => {
+    expect(el().querySelector('.rotulo')!.textContent!.trim()).toBe('Ficha A · Ficha A');
+  });
+
   describe('sugestão de carga', () => {
     const sugestao = () => el().querySelector('.sugestao');
     const cargas = () =>
