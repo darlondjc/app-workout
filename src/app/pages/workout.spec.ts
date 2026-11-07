@@ -387,6 +387,13 @@ describe('Workout — marcar séries em bloco', () => {
       fixture.detectChanges();
     };
 
+    it('o x fecha a sugestão só daquele exercício', () => {
+      treinoAnterior([[40, 10], [40, 10], [40, 10]]);
+      expect(sugestao()).not.toBeNull();
+      clicar(el().querySelector('.sugestao__fechar') as HTMLElement);
+      expect(sugestao()).toBeNull();
+    });
+
     it('sem treino anterior, não sugere nada', () => {
       expect(sugestao()).toBeNull();
     });

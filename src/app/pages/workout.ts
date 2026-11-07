@@ -182,10 +182,18 @@ export class Workout {
     });
   }
 
+  /** Exercícios cuja sugestão de carga a pessoa fechou neste treino (volta só ao abrir o treino de novo). */
+  private readonly sugestoesFechadas = signal<ReadonlySet<string>>(new Set());
+
+  protected fecharSugestao(): void {
+    const id = this.item()?.exerciseId;
+    if (id) this.sugestoesFechadas.update((f) => new Set(f).add(id));
+  }
+
   /** Sugestão de subir a carga, enquanto nenhuma série do exercício foi marcada e a carga sugerida ainda não está na tela. */
   protected readonly sugestaoCarga = computed(() => {
     const it = this.item();
-    if (!it || this.feitas() > 0) return null;
+    if (!it || this.feitas() > 0 || this.sugestoesFechadas().has(it.exerciseId)) return null;
     const s = sugerirCarga(it, this.anterior_());
     if (!s) return null;
     return this.series().every((x) => x.carga === s.para) ? null : s;
