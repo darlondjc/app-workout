@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.29.3",
+    "data": "2026-11-07",
+    "titulo": "Fechar a sugestão de carga",
+    "itens": [
+      "A sugestão de subir a carga durante o treino ganhou um x para fechar. Ela volta só se você abrir o treino de novo."
+    ]
+  },
+  {
     "versao": "1.29.1",
     "data": "2026-11-07",
     "titulo": "Último treino em cada treino da ficha",

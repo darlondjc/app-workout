@@ -126,6 +126,9 @@
 
       @if (sugestaoCarga(); as sg) {
         <div class="sugestao">
+          <button type="button" class="sugestao__fechar" aria-label="Fechar sugestão" (click)="fecharSugestao()">
+            <app-icon name="close" [size]="16" [stroke]="2.6" />
+          </button>
           <p>Na última vez você fez todas as séries com {{ kg(sg.de) }} kg. Que tal {{ kg(sg.para) }} kg hoje?</p>
           <button type="button" class="sugestao__botao" (click)="aplicarSugestao()">Usar {{ kg(sg.para) }} kg</button>
         </div>

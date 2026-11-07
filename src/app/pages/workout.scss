@@ -387,6 +387,7 @@ h1 {
   width: 100%;
 }
 .sugestao {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -396,6 +397,28 @@ h1 {
   background: rgba(200, 236, 58, 0.12);
   font-size: 14px;
   line-height: 1.35;
+}
+.sugestao p {
+  margin: 0;
+  padding-right: 32px;
+}
+.sugestao__fechar {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b9c0ba;
+}
+.sugestao__fechar:active {
+  background: rgba(255, 255, 255, 0.1);
 }
 .sugestao__botao {
   min-height: 36px;
