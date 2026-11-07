@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.29.2",
+    "data": "2026-11-07",
+    "titulo": "Repetições lembradas de um treino para o outro",
+    "itens": [
+      "Ao abrir um exercício, as repetições de cada série agora vêm do último treino, como já acontecia com a carga. Sem treino anterior, valem as da ficha.",
+      "Ao usar a carga sugerida, as repetições voltam para a meta da ficha."
+    ]
+  },
+  {
     "versao": "1.29.1",
     "data": "2026-11-07",
     "titulo": "Último treino em cada treino da ficha",
