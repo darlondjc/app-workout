@@ -1,5 +1,30 @@
 [
   {
+    "versao": "1.29.5",
+    "data": "2026-11-07",
+    "titulo": "Último treino no card da Início",
+    "itens": [
+      "O card do treino de hoje mostra quando aquele treino foi feito pela última vez e não repete mais o nome da ficha."
+    ]
+  },
+  {
+    "versao": "1.29.4",
+    "data": "2026-11-07",
+    "titulo": "Fechar a sugestão de carga",
+    "itens": [
+      "A sugestão de subir a carga durante o treino ganhou um x para fechar. Ela volta só se você abrir o treino de novo."
+    ]
+  },
+  {
+    "versao": "1.29.3",
+    "data": "2026-11-07",
+    "titulo": "Repetições lembradas de um treino para o outro",
+    "itens": [
+      "Ao abrir um exercício, as repetições de cada série agora vêm do último treino, como já acontecia com a carga. Sem treino anterior, valem as da ficha.",
+      "Ao usar a carga sugerida, as repetições voltam para a meta da ficha."
+    ]
+  },
+  {
     "versao": "1.29.2",
     "data": "2026-11-07",
     "titulo": "Treino: botão Último treino",
