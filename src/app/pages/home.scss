@@ -69,11 +69,26 @@
   flex-direction: column;
   gap: 16px;
 }
+/* Rótulo e selo na primeira linha; o título (e o que vem abaixo) usa a largura toda, sem a coluna do selo. */
 .destaque__topo {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+  align-items: start;
+}
+.destaque__topo > div {
+  display: contents;
+}
+.destaque__topo .destaque__rotulo {
+  align-self: center;
+}
+.destaque__topo .destaque__nome,
+.destaque__topo .destaque__ultimo {
+  grid-column: 1 / -1;
+}
+.destaque__topo .selo {
+  grid-column: 2;
+  grid-row: 1;
 }
 .destaque__rotulo {
   font-size: 13px;

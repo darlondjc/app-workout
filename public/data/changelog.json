@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.29.6",
+    "data": "2026-11-07",
+    "titulo": "Título do treino na Início usa a largura toda",
+    "itens": [
+      "No card do treino de hoje, o título não quebra mais antes da hora por causa do selo de exercícios."
+    ]
+  },
+  {
     "versao": "1.29.5",
     "data": "2026-11-07",
     "titulo": "Último treino no card da Início",
