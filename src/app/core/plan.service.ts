@@ -1,10 +1,13 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, Injector, computed, effect, inject, signal } from '@angular/core';
 import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
 import { duracaoDoTreino } from './calorias';
 import { BlocoFichas, MESES_PADRAO, Situacao, agruparEmBlocos, chaveDe, limitarMeses, situacoes, somarMeses } from './ciclo';
 import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX, limparNota } from './notas';
+import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
 import { PesoService } from './peso.service';
+import { deIso } from './stats';
+import { escolherProximaFicha } from './proximo-treino';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
 const CHAVE_ATIVA = 'app-workout:ficha-ativa:v1';
@@ -51,6 +54,7 @@ export function dataLocal(d: Date = new Date()): string {
 export class PlanService {
   private readonly pesos = inject(PesoService);
   private readonly favoritos = inject(FavoritosService);
+  private readonly injector = inject(Injector);
   readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []));
   readonly ativaId = signal<string | null>(ler<string | null>(CHAVE_ATIVA, null));
   /** Treinos apagados (id → dia e momento), guardados para o apagar valer também nos outros aparelhos. */
@@ -92,17 +96,26 @@ export class PlanService {
     favoritos: this.favoritos.lista(),
   }));
 
-  /** Ficha sugerida para hoje: a seguinte à última concluída (rodízio A, B, C...). */
+  /** Base de exercícios, buscada só na hora de sugerir (ausente onde não há HTTP, como em alguns testes). */
+  private exercicios(): ExerciseService | null {
+    try {
+      return this.injector.get(ExerciseService);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Ficha sugerida para hoje: a que está em andamento ou, senão, a que trabalha os músculos menos trabalhados
+   * nos treinos recentes. Se as opções empatam (ou não há histórico), segue o rodízio A, B, C...
+   */
   readonly proxima = computed<Ficha | null>(() => {
     const em = this.emAndamento();
     const emCurso = em ? this.get(em.fichaId) : undefined;
     if (emCurso && emCurso.itens.length > 0) return emCurso;
     const fichas = this.fichasEmUso().filter((f) => f.itens.length > 0);
-    if (fichas.length === 0) return null;
-    // Atividade fora da ficha não avança o rodízio.
-    const ultima = this.historico().filter((s) => s.fichaId).at(-1);
-    const idx = ultima ? fichas.findIndex((f) => f.id === ultima.fichaId) : -1;
-    return fichas[(idx + 1) % fichas.length];
+    const ex = this.exercicios();
+    return escolherProximaFicha(fichas, this.historico(), deIso(this.hoje()), (id) => ex?.get(id));
   });
 
   constructor() {

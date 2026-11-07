@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.26.1",
+    "data": "2026-11-07",
+    "titulo": "Próximo treino pelos músculos menos trabalhados",
+    "itens": [
+      "O treino sugerido agora leva em conta os músculos menos trabalhados nos últimos treinos, os mesmos do mapa do corpo, em vez de seguir só a ordem A, B, C. Se as opções estiverem parecidas (ou ainda não houver histórico), vale a ordem da lista."
+    ]
+  },
+  {
     "versao": "1.26.0",
     "data": "2026-11-03",
     "titulo": "Corrigir treinos, séries extras, evolução por exercício e favoritos",
