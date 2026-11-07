@@ -5,9 +5,10 @@ import { BlocoFichas, MESES_PADRAO, Situacao, agruparEmBlocos, chaveDe, limitarM
 import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX, limparNota } from './notas';
 import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
+import { haDias } from './musculos';
 import { PesoService } from './peso.service';
 import { escolherProximaFicha } from './proximo-treino';
-import { deIso } from './stats';
+import { dias, deIso } from './stats';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
 const CHAVE_ATIVA = 'app-workout:ficha-ativa:v1';
@@ -131,6 +132,21 @@ export class PlanService {
     effect(() => gravar(CHAVE_HISTORICO, this.historico()));
     effect(() => gravar(CHAVE_EXCLUIDAS, this.excluidas()));
     effect(() => gravar(CHAVE_ANDAMENTO, this.emAndamento()));
+  }
+
+  /** Dia (yyyy-mm-dd) do último treino concluído de cada ficha. Atividades fora da ficha não contam. */
+  private readonly ultimaVezPorFicha = computed(() => {
+    const m = new Map<string, string>();
+    for (const s of this.historico()) {
+      if (s.fichaId && (!m.has(s.fichaId) || s.data > m.get(s.fichaId)!)) m.set(s.fichaId, s.data);
+    }
+    return m;
+  });
+
+  /** "Último treino: ontem" / "há 12 dias"; "Ainda não feito" se esta ficha nunca foi concluída. */
+  textoUltimaVez(id: string): string {
+    const data = this.ultimaVezPorFicha().get(id);
+    return data ? `Último treino: ${haDias(Math.max(0, dias(deIso(data), deIso(this.hoje()))))}` : 'Ainda não feito';
   }
 
   get(id: string): Ficha | undefined {

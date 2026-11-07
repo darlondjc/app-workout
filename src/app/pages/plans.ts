@@ -136,6 +136,7 @@ import { ToastService } from '../core/toast.service';
               <span class="linha__texto">
                 <span class="linha__nome">{{ f.nome }}</span>
                 <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
+                <span class="apoio">{{ plans.textoUltimaVez(f.id) }}</span>
                 @if (grupos(f.itens); as gs) {
                   @if (gs.length > 0 || plans.proxima()?.id === f.id) {
                     <ul class="grupos" aria-label="Grupos musculares">

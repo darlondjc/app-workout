@@ -41,6 +41,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
             }
           </div>
           <p class="apoio">{{ plans.rotulo(f.id) }}</p>
+          <p class="apoio">{{ plans.textoUltimaVez(f.id) }}</p>
           @if (periodo(); as per) {
             <div class="periodo">
               <span class="apoio">{{ per }}</span>

@@ -90,6 +90,21 @@ describe('Plans — fichas com vários treinos', () => {
     });
   });
 
+  describe('último treino de cada ficha', () => {
+    const textos = () => [...el().querySelectorAll('.item .linha__texto .apoio')].map((x) => x.textContent!.trim()).filter((t) => /treino|feito/.test(t));
+
+    it('treino nunca feito mostra "Ainda não feito"', () => {
+      expect(textos().every((t) => t === 'Ainda não feito')).toBeTrue();
+    });
+
+    it('depois de concluir um treino, mostra quando foi', () => {
+      plans.registrarSessao(plans.fichas()[0].id);
+      fixture.detectChanges();
+      expect(textos()[0]).toBe('Último treino: hoje');
+      expect(textos()[1]).toBe('Ainda não feito');
+    });
+  });
+
   describe('chip do próximo treino', () => {
     const chips = () => [...el().querySelectorAll('.chip-proximo')];
     const nomeDoChip = () => chips()[0]?.closest('.link')?.querySelector('.linha__nome')?.textContent?.trim();

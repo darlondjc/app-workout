@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.29.1",
+    "data": "2026-11-07",
+    "titulo": "Último treino em cada treino da ficha",
+    "itens": [
+      "Na lista de fichas e ao abrir um treino, aparece quando ele foi feito pela última vez (hoje, ontem, há 5 dias) ou \"Ainda não feito\"."
+    ]
+  },
+  {
     "versao": "1.29.0",
     "data": "2026-11-07",
     "titulo": "Próximo treino pelos músculos menos trabalhados",
