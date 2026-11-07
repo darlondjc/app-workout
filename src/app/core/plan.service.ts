@@ -3,6 +3,7 @@ import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, Re
 import { duracaoDoTreino } from './calorias';
 import { BlocoFichas, MESES_PADRAO, Situacao, agruparEmBlocos, chaveDe, limitarMeses, situacoes, somarMeses } from './ciclo';
 import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX, limparNota } from './notas';
+import { FavoritosService } from './favoritos.service';
 import { PesoService } from './peso.service';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
@@ -19,6 +20,8 @@ export interface EstadoNuvem {
   emAndamento: EmAndamento | null;
   /** Registros de peso corporal. Ausente em documentos gravados por versões antigas do app. */
   pesos?: RegistroPeso[];
+  /** Exercícios favoritados na biblioteca. Ausente em documentos gravados por versões antigas do app. */
+  favoritos?: string[];
 }
 
 function ler<T>(chave: string, padrao: T): T {
@@ -47,6 +50,7 @@ export function dataLocal(d: Date = new Date()): string {
 @Injectable({ providedIn: 'root' })
 export class PlanService {
   private readonly pesos = inject(PesoService);
+  private readonly favoritos = inject(FavoritosService);
   readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []));
   readonly ativaId = signal<string | null>(ler<string | null>(CHAVE_ATIVA, null));
   /** Treinos apagados (id → dia e momento), guardados para o apagar valer também nos outros aparelhos. */
@@ -85,6 +89,7 @@ export class PlanService {
     ativaId: this.ativaId(),
     emAndamento: this.emAndamento(),
     pesos: this.pesos.registros(),
+    favoritos: this.favoritos.lista(),
   }));
 
   /** Ficha sugerida para hoje: a seguinte à última concluída (rodízio A, B, C...). */
@@ -522,6 +527,7 @@ export class PlanService {
   aplicarEstadoNuvem(remoto: EstadoNuvem, mesclar = false): void {
     this.aplicarFichasDaNuvem(remoto, mesclar);
     this.pesos.aplicar(remoto.pesos, mesclar);
+    this.favoritos.aplicar(remoto.favoritos, mesclar);
   }
 
   private aplicarFichasDaNuvem(remoto: EstadoNuvem, mesclar: boolean): void {
@@ -602,6 +608,7 @@ export class PlanService {
     this.excluidas.set({});
     this.emAndamento.set(null);
     this.pesos.limpar();
+    this.favoritos.limpar();
   }
 
   private atualizar(id: string, fn: (f: Ficha) => Ficha): void {

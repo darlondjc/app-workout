@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Avatar } from '../core/avatar';
@@ -15,11 +16,12 @@ import { EventoCard } from './evento-card';
 /** Tela de um grupo: só a timeline de quem está nele. Estatísticas ficam na tela de cada pessoa. */
 @Component({
   selector: 'app-group',
-  imports: [RouterLink, Avatar, AvatarGrupo, Dialogo, FotoBotao, Icon, EventoCard, Carregando],
+  imports: [BarraTopo, RouterLink, Avatar, AvatarGrupo, Dialogo, FotoBotao, Icon, EventoCard, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:resize)': 'medirFaixa()' },
   template: `
     <section class="page">
+      <app-barra-topo [titulo]="grupo()?.nome ?? 'Grupo'" />
       <header class="cabeca">
         <button type="button" class="voltar" aria-label="Voltar" (click)="nav.voltar('/social')"><app-icon name="back" [size]="20" [stroke]="2.2" /></button>
         <h1 class="titulo nome">{{ grupo()?.nome ?? 'Grupo' }}</h1>

@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Dialogo } from '../core/dialogo';
 import { Icon } from '../core/icon';
@@ -12,10 +13,11 @@ import { Progress } from './progress';
 /** As estatísticas da própria pessoa, abertas pelo ícone no topo do Perfil: calendário, medalhas conquistadas e o resto. */
 @Component({
   selector: 'app-my-stats',
-  imports: [Dialogo, Icon, MedalhasFaixa, MedalhasGaleria, Progress],
+  imports: [BarraTopo, Dialogo, Icon, MedalhasFaixa, MedalhasGaleria, Progress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
+      <app-barra-topo titulo="Minhas estatísticas" />
       <header class="cabeca">
         <button type="button" class="voltar" aria-label="Voltar" (click)="nav.voltar('/perfil')"><app-icon name="back" [size]="20" [stroke]="2.2" /></button>
         <h1 class="titulo">Minhas estatísticas</h1>

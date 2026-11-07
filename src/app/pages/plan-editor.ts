@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { dataCurta, diasParaVencer, somarDias, textoDoPrazo } from '../core/ciclo';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -15,11 +16,12 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
 
 @Component({
   selector: 'app-plan-editor',
-  imports: [Confirmacao, FichaCompartilhar, RouterLink, Icon],
+  imports: [BarraTopo, Confirmacao, FichaCompartilhar, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ficha(); as f) {
       <section class="page">
+        <app-barra-topo [titulo]="f.nome" />
         <header>
           <div class="topo-editor">
             <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>

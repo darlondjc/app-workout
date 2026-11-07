@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ExerciseService, GRUPOS } from '../core/exercise.service';
@@ -14,10 +15,11 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
 
 @Component({
   selector: 'app-custom-plan',
-  imports: [RouterLink, Icon, Carregando],
+  imports: [BarraTopo, RouterLink, Icon, Carregando],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
+      <app-barra-topo titulo="Ficha personalizada" />
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Ficha personalizada</h1>

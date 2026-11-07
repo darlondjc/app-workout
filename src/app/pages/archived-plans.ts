@@ -1,3 +1,4 @@
+import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { BlocoFichas, dataCurta } from '../core/ciclo';
@@ -10,10 +11,11 @@ import { ToastService } from '../core/toast.service';
 /** Fichas arquivadas: guardadas para consulta, fora das listas e do treino sugerido. */
 @Component({
   selector: 'app-archived-plans',
-  imports: [Confirmacao, Icon, RouterLink],
+  imports: [BarraTopo, Confirmacao, Icon, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
+      <app-barra-topo titulo="Fichas arquivadas" />
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
         <h1 class="titulo">Fichas arquivadas</h1>
