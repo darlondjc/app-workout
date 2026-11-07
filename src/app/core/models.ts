@@ -135,6 +135,7 @@ export interface EmAndamento {
   /**
    * Cronômetro de descanso, guardado quando começa e de novo ao fechar a tela do treino. Ao voltar ele segue daí:
    * parado se o treino foi pausado, ou contando o tempo fora (instruções do exercício, app fechado ou reiniciado).
+   * `decorrido` e o tempo fora entram com frações de segundo: arredondar travava o cronômetro em saídas curtas.
    */
   descanso?: { decorrido: number; limite: number; saiuEm: number; pausado: boolean };
 }

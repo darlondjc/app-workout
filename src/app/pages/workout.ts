@@ -167,14 +167,15 @@ export class Workout {
       const d = this.estado()?.descanso;
       if (!d || this.descansando()) return;
       untracked(() => {
-        const fora = d.pausado ? 0 : Math.max(0, Math.floor((Date.now() - d.saiuEm) / 1000));
+        // Sem arredondar: cada saída e volta perderia até 2 s, e saídas curtas e seguidas travariam o cronômetro.
+        const fora = d.pausado ? 0 : Math.max(0, (Date.now() - d.saiuEm) / 1000);
         this.iniciarDescanso(d.decorrido + fora, d.limite);
       });
     });
     inject(DestroyRef).onDestroy(() => {
       // Saiu com o treino ainda em andamento (pausa, ou ver as instruções de um exercício): guarda o cronômetro para retomar.
       if (this.descansando() && this.estado()) {
-        const descanso = { decorrido: this.descansoAtivo(), limite: this.limiteAtivo(), saiuEm: Date.now(), pausado: this.pausado };
+        const descanso = { decorrido: (Date.now() - this.descansoDesde) / 1000, limite: this.limiteAtivo(), saiuEm: Date.now(), pausado: this.pausado };
         this.plans.andamento(this.id(), (a) => ({ ...a, descanso }));
       }
       this.pararDescanso();
@@ -478,7 +479,7 @@ export class Workout {
     this.descansoDesde = Date.now() - decorrido * 1000;
     // O limite é o do exercício em que a série foi marcada, mesmo que a pessoa já esteja em outro.
     this.limiteAtivo.set(limite);
-    this.descansoAtivo.set(decorrido);
+    this.descansoAtivo.set(Math.floor(decorrido));
     this.descansando.set(true);
     // Guardado desde o início: se o app for fechado ou reiniciado, o cronômetro retoma de onde estava (com o tempo fora).
     const descanso = { decorrido, limite, saiuEm: Date.now(), pausado: false };

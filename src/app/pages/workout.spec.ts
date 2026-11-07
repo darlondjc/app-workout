@@ -254,6 +254,34 @@ describe('Workout — marcar séries em bloco', () => {
       expect(tempo()).toBe('00:17');
     });
 
+    it('sair e voltar nos primeiros segundos não perde frações de segundo', () => {
+      marcas().slice(0, 2).forEach((m) => clicar(m));
+      passar(1900);
+      expect(tempo()).toBe('00:01');
+      fixture.destroy();
+      jasmine.clock().tick(900); // 2,8 s desde que a série foi marcada
+      fixture = TestBed.createComponent(Workout);
+      fixture.componentRef.setInput('id', fichaId);
+      fixture.detectChanges();
+      fixture.detectChanges();
+      expect(tempo()).toBe('00:02');
+    });
+
+    it('várias saídas e voltas seguidas não atrasam o cronômetro', () => {
+      marcas().slice(0, 2).forEach((m) => clicar(m));
+      for (let i = 0; i < 4; i++) {
+        passar(900);
+        fixture.destroy();
+        jasmine.clock().tick(900);
+        fixture = TestBed.createComponent(Workout);
+        fixture.componentRef.setInput('id', fichaId);
+        fixture.detectChanges();
+        fixture.detectChanges();
+      }
+      // 4 × (0,9 + 0,9) = 7,2 s desde que a série foi marcada
+      expect(tempo()).toBe('00:07');
+    });
+
     it('se o app fechar ou reiniciar sem sair da tela, o cronômetro retoma contando o tempo fora', () => {
       marcas().slice(0, 2).forEach((m) => clicar(m));
       passar(7000);

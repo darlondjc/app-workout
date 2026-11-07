@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.29.7",
+    "data": "2026-11-07",
+    "titulo": "Cronômetro de descanso não trava ao sair e voltar",
+    "itens": [
+      "Sair da tela do treino logo depois de marcar uma série (para ver instruções ou usar outro app) não faz mais o cronômetro parecer parado ao voltar."
+    ]
+  },
+  {
     "versao": "1.29.6",
     "data": "2026-11-07",
     "titulo": "Título do treino na Início usa a largura toda",
