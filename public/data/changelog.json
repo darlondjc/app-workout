@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.29.4",
+    "data": "2026-11-07",
+    "titulo": "Último treino no card da Início",
+    "itens": [
+      "O card do treino de hoje mostra quando aquele treino foi feito pela última vez e não repete mais o nome da ficha."
+    ]
+  },
+  {
     "versao": "1.29.1",
     "data": "2026-11-07",
     "titulo": "Último treino em cada treino da ficha",

@@ -161,6 +161,11 @@ export class PlanService {
     return String.fromCharCode(65 + (grupo.findIndex((f) => f.id === id) % 26));
   }
 
+  /** Só a letra do treino, sem o nome da ficha: "Treino B" numa ficha com vários treinos, "Ficha A" num treino solto. */
+  rotuloCurto(id: string): string {
+    return this.get(id)?.conjunto ? `Treino ${this.letra(id)}` : `Ficha ${this.letra(id)}`;
+  }
+
   /** "Ficha A" para um treino solto; "Minha divisão · Treino B" para um treino de uma ficha com vários. */
   rotulo(id: string): string {
     const f = this.get(id);
