@@ -105,18 +105,21 @@ export class Workout {
     return it ? this.plans.ultimoRegistro(it.exerciseId) : undefined;
   });
 
-  /** Séries do exercício i como a tela as mostra: o que foi salvo, ou os valores sugeridos (última vez ou ficha). */
+  /** Séries do exercício i como a tela as mostra: o que foi salvo, ou o que foi feito na última vez (carga e repetições; sem histórico, a ficha). */
   private seriesDe(i: number) {
     const it = this.itemDe(i);
     if (!it) return [];
     const salvas = this.estado()?.series[i] ?? [];
-    const ant = this.plans.ultimoRegistro(it.exerciseId)?.series ?? [];
+    const ultimo = this.plans.ultimoRegistro(it.exerciseId);
+    const ant = ultimo?.series ?? [];
+    // Repetições do último treino só valem se a unidade for a mesma (repetições ou minutos).
+    const repsAnt = !!ultimo && (ultimo.unidade === 'min') === (it.unidade === 'min') ? ant : [];
     const total = this.estado()?.qtdSeries?.[i] ?? it.series;
     return Array.from({ length: total }, (_, k) => ({
       n: k + 1,
       feita: !!salvas[k]?.feita,
       carga: salvas[k]?.carga ?? ant[k]?.carga ?? ant.at(-1)?.carga ?? it.carga,
-      reps: salvas[k]?.reps ?? it.reps,
+      reps: salvas[k]?.reps ?? repsAnt[k]?.reps ?? repsAnt.at(-1)?.reps ?? it.reps,
       descanso: salvas[k]?.descanso,
     }));
   }
@@ -193,7 +196,8 @@ export class Workout {
     const s = this.sugestaoCarga();
     if (!s) return;
     const i = this.indice();
-    const base = this.series().map((x) => this.paraSalvar({ ...x, carga: s.para }));
+    const alvo = this.item()?.reps ?? 0;
+    const base = this.series().map((x) => this.paraSalvar({ ...x, carga: s.para, reps: alvo || x.reps }));
     this.piscadas.update((p) => {
       const novo = { ...p };
       for (const x of this.series()) novo[x.n] = (novo[x.n] ?? 0) + 1;

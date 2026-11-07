@@ -350,6 +350,34 @@ describe('Workout — marcar séries em bloco', () => {
     expect(el().querySelector('.rotulo')!.textContent!.trim()).toBe('Ficha A · Ficha A');
   });
 
+  describe('repetições do último treino', () => {
+    const reps = () => [...el().querySelectorAll('input[aria-label^="Repetições"]')].map((i) => Number((i as HTMLInputElement).value));
+
+    it('sem treino anterior, vêm da ficha', () => {
+      expect(reps()).toEqual([10, 10, 10]);
+    });
+
+    it('depois de um treino, repetem o que foi feito em cada série', () => {
+      plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 20, reps: 12 }, { carga: 20, reps: 9 }, { carga: 20, reps: 7 }] }]);
+      fixture.detectChanges();
+      expect(reps()).toEqual([12, 9, 7]);
+    });
+
+    it('série extra repete a última', () => {
+      plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 20, reps: 12 }, { carga: 20, reps: 9 }, { carga: 20, reps: 7 }] }]);
+      fixture.detectChanges();
+      clicar(botao('Série extra'));
+      expect(reps()).toEqual([12, 9, 7, 7]);
+    });
+
+    it('"Usar" a carga sugerida volta as repetições para a meta da ficha', () => {
+      plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 40, reps: 12 }, { carga: 40, reps: 12 }, { carga: 40, reps: 12 }] }]);
+      fixture.detectChanges();
+      clicar(el().querySelector('.sugestao__botao') as HTMLElement);
+      expect(reps()).toEqual([10, 10, 10]);
+    });
+  });
+
   describe('sugestão de carga', () => {
     const sugestao = () => el().querySelector('.sugestao');
     const cargas = () =>
