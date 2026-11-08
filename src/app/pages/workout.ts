@@ -40,7 +40,7 @@ function lerPreferencia(): boolean {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'fecharMenuMembro()' },
   templateUrl: './workout.html',
-  styleUrl: './workout.scss',
+  styleUrls: ['./workout.scss', './workout-conjugado.scss'],
 })
 export class Workout {
   readonly id = input.required<string>();
