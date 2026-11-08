@@ -131,6 +131,7 @@ import { ToastService } from '../core/toast.service';
             </button>
             <div
               class="card linha frente"
+              [class.card--proximo]="plans.proxima()?.id === f.id"
               [class.arrastando]="arrasto()?.id === f.id"
               [style.transform]="'translateX(' + deslocamento(f.id) + 'px)'"
               (pointerdown)="iniciar($event, f.id)"
@@ -139,16 +140,17 @@ import { ToastService } from '../core/toast.service';
               (pointercancel)="soltar($event)"
             >
             <a class="link" draggable="false" [routerLink]="['/ficha', f.id]" (click)="plans.definirAtiva(f.id)">
-              <span class="letra">{{ plans.letra(f.id) }}</span>
               <span class="linha__texto">
-                <span class="linha__nome">{{ f.nome }}</span>
-                <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span>
-                <span class="apoio">{{ plans.textoUltimaVez(f.id) }}</span>
+                <span class="linha__topo">
+                  <span class="letra">{{ plans.letra(f.id) }}</span>
+                  <span class="linha__nome">{{ f.nome }}</span>
+                </span>
+                <span class="apoio linha__meta">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }} · {{ plans.ultimaVezCurta(f.id) }}</span>
                 @if (grupos(f.itens); as gs) {
                   @if (gs.length > 0 || plans.proxima()?.id === f.id) {
                     <ul class="grupos" aria-label="Grupos musculares">
                       @if (plans.proxima()?.id === f.id) {
-                        <li class="grupo chip-proximo">{{ plans.emAndamento() ? 'Em andamento' : 'Próximo sugerido' }}</li>
+                        <li class="grupo chip-proximo" [attr.aria-label]="plans.emAndamento() ? 'Treino em andamento' : 'Próximo treino sugerido'">{{ plans.emAndamento() ? 'Em andamento' : 'Próximo' }}</li>
                       }
                       @for (g of gs; track g) {
                         <li class="grupo">{{ g }}</li>
@@ -299,16 +301,57 @@ import { ToastService } from '../core/toast.service';
       align-items: center;
       gap: 12px;
     }
+    .linha__topo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .letra {
       flex: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
       background: var(--accent-soft);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 12.5px;
       font-weight: 700;
+    }
+    .linha__nome {
+      font-family: var(--font-display);
+      font-size: 16px;
+    }
+    .linha__meta {
+      margin: 1px 0 0 32px;
+      font-size: 13px;
+    }
+    .linha {
+      gap: 8px;
+    }
+    .linha .btn-icone {
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+    }
+    .linha .grupos {
+      margin-top: 6px;
+      gap: 5px;
+    }
+    .linha .grupo {
+      font-size: 11.5px;
+      padding: 1px 8px;
+    }
+    /* O próximo sugerido: fundo suave e borda, para se achar de relance; o chip "Próximo" confirma em texto. */
+    .card--proximo {
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1.5px var(--accent-soft-borda);
+    }
+    .card--proximo .letra {
+      background: var(--accent);
+    }
+    .card--proximo .grupo:not(.chip-proximo) {
+      background: var(--card);
     }
     .prazo { font-size: 12px; color: var(--muted); }
     .prazo--aviso { color: var(--ink); font-weight: 700; }
