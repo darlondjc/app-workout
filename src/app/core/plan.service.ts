@@ -7,7 +7,7 @@ import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
 import { haDias } from './musculos';
 import { PesoService } from './peso.service';
-import { escolherProximaFicha } from './proximo-treino';
+import { escolherProximaFicha, treinosDaFichaAtual } from './proximo-treino';
 import { dias, deIso } from './stats';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
@@ -107,8 +107,9 @@ export class PlanService {
   }
 
   /**
-   * Ficha sugerida para hoje: a que está em andamento ou, senão, a que trabalha os músculos menos trabalhados
-   * nos treinos recentes. Se as opções empatam (ou não há histórico), segue o rodízio A, B, C...
+   * Ficha sugerida para hoje: a que está em andamento ou, senão, entre os treinos da ficha atual (a do último treino
+   * concluído), a que trabalha os músculos menos trabalhados nos treinos recentes. Se as opções empatam (ou não há
+   * histórico), segue o rodízio A, B, C...
    */
   readonly proxima = computed<Ficha | null>(() => {
     const em = this.emAndamento();
@@ -116,7 +117,8 @@ export class PlanService {
     if (emCurso && emCurso.itens.length > 0) return emCurso;
     const fichas = this.fichasEmUso().filter((f) => f.itens.length > 0);
     const ex = this.exercicios();
-    return escolherProximaFicha(fichas, this.historico(), deIso(this.hoje()), (id) => ex?.get(id));
+    const daFichaAtual = treinosDaFichaAtual(fichas, this.historico(), this.ativaId());
+    return escolherProximaFicha(daFichaAtual, this.historico(), deIso(this.hoje()), (id) => ex?.get(id));
   });
 
   constructor() {

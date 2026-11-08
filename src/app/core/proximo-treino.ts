@@ -36,6 +36,18 @@ export function pontuacaoDaFicha(
 }
 
 /**
+ * Os treinos da ficha atual: a ficha (divisão A, B, C…) do último treino concluído; sem histórico nela, a ficha ativa;
+ * sem nenhuma das duas, todos. Treinos soltos (sem ficha com vários treinos) contam como uma ficha só, como na lista.
+ */
+export function treinosDaFichaAtual(fichas: Ficha[], historico: Sessao[], ativaId: string | null): Ficha[] {
+  const ultima = historico.filter((s) => s.fichaId).at(-1);
+  const referencia = fichas.find((f) => f.id === ultima?.fichaId) ?? fichas.find((f) => f.id === ativaId);
+  if (!referencia) return fichas;
+  const mesma = fichas.filter((f) => f.conjunto?.id === referencia.conjunto?.id);
+  return mesma.length > 0 ? mesma : fichas;
+}
+
+/**
  * Escolhe o treino a sugerir entre as fichas (já na ordem da lista): o que trabalha os músculos menos trabalhados
  * nos últimos treinos. Quando as pontuações empatam (ou não há histórico de músculos), vale o rodízio: a ficha
  * seguinte à última concluída, A, B, C… Fichas sem exercício contável (só cardio, por exemplo) valem `NEUTRA`.

@@ -109,17 +109,26 @@ describe('Plans — fichas com vários treinos', () => {
     const chips = () => [...el().querySelectorAll('.chip-proximo')];
     const nomeDoChip = () => chips()[0]?.closest('.link')?.querySelector('.linha__nome')?.textContent?.trim();
 
-    it('marca só o treino sugerido como próximo', () => {
+    it('marca só o treino sugerido como próximo, na ficha ativa quando ainda não há histórico', () => {
       expect(chips().length).toBe(1);
       expect(chips()[0].textContent!.trim()).toBe('Próximo sugerido');
-      expect(nomeDoChip()).toBe('Antiga');
+      expect(nomeDoChip()).toBe('Peito');
     });
 
-    it('depois de concluir um treino, o chip passa para o seguinte', () => {
-      plans.registrarSessao(plans.fichas()[0].id);
+    it('depois de concluir um treino, o chip passa para o seguinte da mesma ficha', () => {
+      plans.registrarSessao(plans.fichas()[1].id);
       fixture.detectChanges();
       expect(chips().length).toBe(1);
-      expect(nomeDoChip()).toBe('Peito');
+      expect(nomeDoChip()).toBe('Costas');
+    });
+
+    it('a sugestão não pula para outra ficha ao concluir um treino', () => {
+      const [, peito, costas, pernas, bracos] = plans.fichas();
+      for (const t of [peito, costas, pernas, bracos]) {
+        plans.registrarSessao(t.id);
+        fixture.detectChanges();
+        expect(plans.proxima()?.conjunto?.nome).toBe('Divisão ABCD');
+      }
     });
 
     it('com um treino em andamento, o chip vira "Em andamento"', () => {

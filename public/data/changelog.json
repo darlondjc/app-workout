@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.29.9",
+    "data": "2026-11-08",
+    "titulo": "Próximo treino fica dentro da ficha atual",
+    "itens": [
+      "Ao concluir um treino, o próximo sugerido sai dos treinos da mesma ficha (a divisão que você está fazendo), sem pular para outra ficha."
+    ]
+  },
+  {
     "versao": "1.29.7",
     "data": "2026-11-07",
     "titulo": "Cronômetro de descanso não trava ao sair e voltar",
