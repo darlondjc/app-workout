@@ -1,4 +1,4 @@
-import { Injectable, Injector, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, Injector, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
 import { duracaoDoTreino } from './calorias';
 import { BlocoFichas, MESES_PADRAO, Situacao, agruparEmBlocos, chaveDe, limitarMeses, situacoes, somarMeses } from './ciclo';
@@ -7,7 +7,7 @@ import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
 import { haDias } from './musculos';
 import { PesoService } from './peso.service';
-import { escolherProximaFicha } from './proximo-treino';
+import { escolherProximaFicha, treinosDaFichaAtiva } from './proximo-treino';
 import { dias, deIso } from './stats';
 
 const CHAVE_FICHAS = 'app-workout:fichas:v1';
@@ -17,6 +17,7 @@ const CHAVE_EXCLUIDAS = 'app-workout:sessoes-excluidas:v1';
 const CHAVE_ANDAMENTO = 'app-workout:andamento:v1';
 const CHAVE_MESES = 'app-workout:ficha-meses:v1';
 const CHAVE_CARGAS_SINCRONIZADAS = 'app-workout:cargas-da-ficha-sincronizadas:v1';
+const CHAVE_PROXIMA = 'app-workout:proximo-treino:v1';
 
 /** Parte do estado que vai para a nuvem num único documento. */
 export interface EstadoNuvem {
@@ -107,17 +108,43 @@ export class PlanService {
     }
   }
 
+  /** Os treinos da ficha ativa que têm exercícios: de onde sai o próximo treino sugerido. */
+  private readonly candidatosProxima = computed<Ficha[]>(() =>
+    treinosDaFichaAtiva(
+      this.fichasEmUso().filter((f) => f.itens.length > 0),
+      this.ativaId(),
+      this.historico(),
+    ),
+  );
+
+  /** O treino sugerido, guardado: só muda quando é recalculado, ao concluir um treino ou ao salvar um treino da ficha ativa. */
+  private readonly proximaId = signal<string | null>(ler<string | null>(CHAVE_PROXIMA, null));
+  private assinaturaDaFichaAtiva: string | null = null;
+
   /**
-   * Ficha sugerida para hoje: a que está em andamento ou, senão, a que trabalha os músculos menos trabalhados
-   * nos treinos recentes. Se as opções empatam (ou não há histórico), segue o rodízio A, B, C...
+   * Refaz a sugestão entre os treinos da ficha ativa: o que trabalha os músculos menos trabalhados nos treinos
+   * recentes e, em caso de empate (ou sem histórico), o rodízio A, B, C… É chamado só em dois momentos: ao concluir
+   * um treino e ao salvar um treino da ficha ativa (a mudança pode incluir músculos que estão frios).
+   */
+  private recalcularProxima(): void {
+    const ex = this.exercicios();
+    const escolhida = escolherProximaFicha(this.candidatosProxima(), this.historico(), deIso(this.hoje()), (id) => ex?.get(id));
+    this.proximaId.set(escolhida?.id ?? null);
+  }
+
+  /**
+   * Ficha sugerida para hoje: a que está em andamento ou, senão, o treino guardado como próximo. Enquanto não houver
+   * um guardado que valha (primeiro uso, treino apagado ou outra ficha ativa), calcula na hora.
    */
   readonly proxima = computed<Ficha | null>(() => {
     const em = this.emAndamento();
     const emCurso = em ? this.get(em.fichaId) : undefined;
     if (emCurso && emCurso.itens.length > 0) return emCurso;
-    const fichas = this.fichasEmUso().filter((f) => f.itens.length > 0);
+    const candidatos = this.candidatosProxima();
+    const guardada = candidatos.find((f) => f.id === this.proximaId());
+    if (guardada) return guardada;
     const ex = this.exercicios();
-    return escolherProximaFicha(fichas, this.historico(), deIso(this.hoje()), (id) => ex?.get(id));
+    return escolherProximaFicha(candidatos, this.historico(), deIso(this.hoje()), (id) => ex?.get(id));
   });
 
   constructor() {
@@ -131,6 +158,17 @@ export class PlanService {
     effect(() => gravar(CHAVE_FICHAS, this.fichas()));
     effect(() => gravar(CHAVE_MESES, this.mesesPadrao()));
     effect(() => gravar(CHAVE_ATIVA, this.ativaId()));
+    effect(() => gravar(CHAVE_PROXIMA, this.proximaId()));
+    // Salvar um treino da ficha ativa (ou trocar a ficha ativa) refaz a sugestão; também quando a guardada deixou de valer.
+    effect(() => {
+      const candidatos = this.candidatosProxima();
+      const assinatura = JSON.stringify(candidatos.map((f) => [f.id, f.itens]));
+      untracked(() => {
+        const mudou = this.assinaturaDaFichaAtiva !== null && assinatura !== this.assinaturaDaFichaAtiva;
+        this.assinaturaDaFichaAtiva = assinatura;
+        if (mudou || !candidatos.some((f) => f.id === this.proximaId())) this.recalcularProxima();
+      });
+    });
     effect(() => gravar(CHAVE_HISTORICO, this.historico()));
     effect(() => gravar(CHAVE_EXCLUIDAS, this.excluidas()));
     effect(() => gravar(CHAVE_ANDAMENTO, this.emAndamento()));
@@ -542,6 +580,7 @@ export class PlanService {
     ]);
     this.atualizarCargasDaFicha(fichaId, registros);
     this.emAndamento.set(null);
+    this.recalcularProxima();
     return id;
   }
 

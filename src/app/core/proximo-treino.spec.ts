@@ -1,5 +1,5 @@
 import { Exercise, Ficha, Sessao } from './models';
-import { escolherProximaFicha, pontuacaoDaFicha } from './proximo-treino';
+import { escolherProximaFicha, pontuacaoDaFicha, treinosDaFichaAtiva } from './proximo-treino';
 
 const ex = (id: string, primary: string[], category = 'strength', secondary: string[] = []) =>
   ({ id, category, primaryMuscles: primary, secondaryMuscles: secondary }) as unknown as Exercise;
@@ -60,5 +60,31 @@ describe('próximo treino pelos músculos menos trabalhados', () => {
     expect(pontuacaoDaFicha(cardio, new Map(), exercicioDe)).toBeNull();
     const h = [sessao('A', '2026-11-04', 'supino'), sessao('A', '2026-11-05', 'supino'), sessao('A', '2026-11-06', 'supino')];
     expect(escolherProximaFicha([peito, cardio], h, hoje, exercicioDe)?.id).toBe('D');
+  });
+});
+
+describe('treinosDaFichaAtiva', () => {
+  const conj = { id: 'c1', nome: 'Divisão' };
+  const doConjunto = (id: string, ...ids: string[]) => ({ ...ficha(id, ...ids), conjunto: conj }) as Ficha;
+  const a = doConjunto('A', 'supino');
+  const b = doConjunto('B', 'remada');
+  const solta = ficha('S', 'agachamento');
+
+  it('sem ficha ativa nem histórico, devolve todos', () => {
+    expect(treinosDaFichaAtiva([a, b, solta], null, [])).toEqual([a, b, solta]);
+  });
+
+  it('vale a ficha ativa, mesmo que o último treino seja de outra', () => {
+    expect(treinosDaFichaAtiva([a, b, solta], 'B', [sessao('S', '2026-11-05', 'agachamento')])).toEqual([a, b]);
+    expect(treinosDaFichaAtiva([a, b, solta], 'S', [sessao('A', '2026-11-05', 'supino')])).toEqual([solta]);
+  });
+
+  it('sem ficha ativa em uso, vale a ficha do último treino concluído', () => {
+    expect(treinosDaFichaAtiva([a, b, solta], null, [sessao('A', '2026-11-05', 'supino')])).toEqual([a, b]);
+  });
+
+  it('atividade fora da ficha não conta como último treino', () => {
+    const h = [sessao('S', '2026-11-04', 'agachamento'), { id: 'x', data: '2026-11-06', fichaId: '', registros: [] } as unknown as Sessao];
+    expect(treinosDaFichaAtiva([a, b, solta], null, h)).toEqual([solta]);
   });
 });

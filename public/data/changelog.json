@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.29.9",
+    "data": "2026-11-08",
+    "titulo": "Próximo treino sugerido, só da ficha ativa e guardado",
+    "itens": [
+      "O próximo treino sugerido sai dos treinos da ficha ativa, sem pular para outra ficha.",
+      "Ele é refeito em dois momentos: ao concluir um treino e ao salvar um treino da ficha ativa (a mudança pode trazer músculos que estão frios). Fora disso, a sugestão não muda sozinha."
+    ]
+  },
+  {
     "versao": "1.29.8",
     "data": "2026-11-08",
     "titulo": "A ficha mostra a carga de hoje",
