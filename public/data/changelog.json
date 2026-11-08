@@ -1,5 +1,23 @@
 [
   {
+    "versao": "1.29.12",
+    "data": "2026-11-08",
+    "titulo": "Exercícios do treino mais compactos",
+    "itens": [
+      "Na tela de um treino, cada exercício mostra só o resumo (3 × 12 · 47,5 kg · desc. 60 s). Toque no resumo para editar séries, repetições, carga e descanso.",
+      "Subir, descer e remover foram para o menu ⋯ de cada exercício, e o nome do exercício ganhou mais espaço. A alça de arrastar continua."
+    ]
+  },
+  {
+    "versao": "1.29.11",
+    "data": "2026-11-08",
+    "titulo": "Cards de treino mais enxutos",
+    "itens": [
+      "Na lista de fichas, cada treino ocupa menos espaço: o título inteiro na primeira linha, a quantidade de exercícios e o último treino logo abaixo, e os músculos na terceira linha.",
+      "O chip Próximo, com o treino sugerido, fica junto dos chips de músculo, e o card ganha um fundo verde-claro."
+    ]
+  },
+  {
     "versao": "1.29.10",
     "data": "2026-11-08",
     "titulo": "O prazo é da ficha",
