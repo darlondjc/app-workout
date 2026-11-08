@@ -5,6 +5,7 @@ import { ConcluirTreino } from '../core/concluir-treino';
 import { Dialogo } from '../core/dialogo';
 import { ExerciseImage } from '../core/exercise-image';
 import { ExerciseService } from '../core/exercise.service';
+import { blocosDe, letraDoPar } from '../core/conjugado';
 import { Icon } from '../core/icon';
 import { RegistroExercicio, SerieEmAndamento } from '../core/models';
 import { NavegacaoService } from '../core/navegacao.service';
@@ -37,6 +38,7 @@ function lerPreferencia(): boolean {
   selector: 'app-workout',
   imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'fecharMenuMembro()' },
   templateUrl: './workout.html',
   styleUrl: './workout.scss',
 })
@@ -61,11 +63,18 @@ export class Workout {
   /** O descanso definido na ficha é a referência: passado esse tempo o cronômetro fica vermelho, mas continua contando. */
   /** Limite do descanso que está contando agora. */
   protected readonly limiteAtivo = signal(60);
-  protected readonly limiteDescanso = computed(() => this.item()?.descanso || 60);
+  /** O descanso do exercício da vez; num par, o do par (depois de cada rodada), que é o do segundo exercício. */
+  protected readonly limiteDescanso = computed(() => {
+    const p = this.par();
+    return (p ? this.itemDe(p.b)?.descanso : this.item()?.descanso) || 60;
+  });
   private descansoDesde = 0;
   protected readonly confirmandoSaida = signal(false);
-  /** Quantas vezes cada série (pelo número) foi preenchida sozinha; o valor mudando refaz a animação. */
+  /** Quantas vezes cada série (pela chave do exercício e do número) foi preenchida sozinha; o valor mudando refaz a animação. */
   protected readonly piscadas = signal<Record<number, number>>({});
+  protected chave(i: number, n: number): number {
+    return i * 100 + n;
+  }
   /** Último passo aberto: foto opcional antes de concluir. */
   protected readonly concluindo = signal(false);
   /** Ao finalizar com séries sem marcar: pergunta se pode marcá-las como feitas. */
@@ -80,33 +89,52 @@ export class Workout {
     const a = this.plans.emAndamento();
     return a && a.fichaId === this.id() ? a : null;
   });
-  protected readonly indice = computed(() => {
+  /** A lista como o treino a percorre: cada exercício sozinho ou cada par conjugado (que se faz junto, em rodadas). */
+  private readonly blocos = computed(() => blocosDe(this.ficha()?.itens ?? []));
+  private readonly indiceBruto = computed(() => {
     const max = Math.max(0, (this.ficha()?.itens.length ?? 1) - 1);
     return Math.min(this.estado()?.indice ?? 0, max);
   });
+  /** Posição do bloco da vez entre os blocos. */
+  protected readonly numBloco = computed(() => {
+    const i = this.indiceBruto();
+    return Math.max(0, this.blocos().findIndex((b) => (b.tipo === 'solo' ? b.i === i : b.a === i || b.b === i)));
+  });
+  /** Posição do exercício da vez; num par, o primeiro dos dois (o que a tela mostra como A1). */
+  protected readonly indice = computed(() => {
+    const b = this.blocos()[this.numBloco()];
+    return b ? (b.tipo === 'solo' ? b.i : b.a) : this.indiceBruto();
+  });
+  /** O par da vez, se o bloco atual for um par conjugado. */
+  protected readonly par = computed(() => {
+    const b = this.blocos()[this.numBloco()];
+    return b?.tipo === 'par' ? b : null;
+  });
   /** O exercício na posição i: o da ficha, ou o que foi trocado só para este treino. */
-  private itemDe(i: number) {
+  protected itemDe(i: number) {
     const base = this.ficha()?.itens[i];
     const troca = this.estado()?.trocas?.[i];
     return base && troca ? { ...base, exerciseId: troca } : base;
   }
   /** O exercício da vez. */
   protected readonly item = computed(() => this.itemDe(this.indice()));
-  protected readonly ultimo = computed(() => this.indice() >= (this.ficha()?.itens.length ?? 1) - 1);
+  protected readonly ultimo = computed(() => this.numBloco() >= this.blocos().length - 1);
 
-  protected readonly nome = computed(() => {
-    const it = this.item();
+  protected nomeDe(i: number): string {
+    const it = this.itemDe(i);
     const e = it ? this.ex.get(it.exerciseId) : undefined;
     return e ? this.ex.nome(e) : (it?.exerciseId ?? '');
-  });
+  }
 
-  private readonly anterior_ = computed(() => {
-    const it = this.item();
+  protected readonly nome = computed(() => this.nomeDe(this.indice()));
+
+  private anteriorDe(i: number) {
+    const it = this.itemDe(i);
     return it ? this.plans.ultimoRegistro(it.exerciseId) : undefined;
-  });
+  }
 
   /** Séries do exercício i como a tela as mostra: o que foi salvo, ou o que foi feito na última vez (carga e repetições; sem histórico, a ficha). */
-  private seriesDe(i: number) {
+  protected seriesDe(i: number) {
     const it = this.itemDe(i);
     if (!it) return [];
     const salvas = this.estado()?.series[i] ?? [];
@@ -132,24 +160,58 @@ export class Workout {
     (this.ficha()?.itens ?? []).reduce((total, _, i) => total + this.seriesDe(i).filter((s) => !s.feita).length, 0),
   );
 
-  protected readonly verUltimo = signal(false);
+  /** Exercício cujo último treino está aberto no diálogo (posição na ficha), ou nenhum. */
+  protected readonly verUltimo = signal<number | null>(null);
 
   /** Séries do último treino do exercício, na ordem repetições × carga (ex.: "10 × 45 kg"). */
-  protected readonly ultimasSeries = computed(() => {
-    const r = this.anterior_();
+  protected ultimasSeriesDe(i: number): string[] {
+    const r = this.anteriorDe(i);
     if (!r) return [];
     const min = r.unidade === 'min';
     return r.series.map((s) => (min ? `${s.reps} min` : `${s.reps} × ${s.carga} kg`));
-  });
+  }
+
+  protected readonly ultimasSeries = computed(() => this.ultimasSeriesDe(this.indice()));
+  protected readonly ultimasDoDialogo = computed(() => (this.verUltimo() === null ? [] : this.ultimasSeriesDe(this.verUltimo()!)));
 
   protected readonly feitas = computed(() => this.series().filter((s) => s.feita).length);
 
+  /** As rodadas do par da vez: a série k de cada exercício. Se um tem mais séries, as últimas rodadas têm só um. */
+  protected readonly rodadas = computed(() => {
+    const p = this.par();
+    if (!p) return [];
+    const sa = this.seriesDe(p.a);
+    const sb = this.seriesDe(p.b);
+    return Array.from({ length: Math.max(sa.length, sb.length) }, (_, k) => {
+      const a = sa[k] ?? null;
+      const b = sb[k] ?? null;
+      return { n: k + 1, k, a, b, feita: (!a || a.feita) && (!b || b.feita) };
+    });
+  });
+  /** Rodadas feitas em ordem, a partir da primeira: a rodada "agora" é a primeira que falta. */
+  protected readonly rodadaAgora = computed(() => {
+    const k = this.rodadas().findIndex((r) => !r.feita);
+    return k < 0 ? this.rodadas().length : k;
+  });
+  protected readonly mostrarConcluidas = signal(false);
+  /** Quantas rodadas já feitas ficam recolhidas numa linha só (nenhuma se todas estiverem feitas). */
+  protected readonly recolhidas = computed(() => {
+    const agora = this.rodadaAgora();
+    return !this.mostrarConcluidas() && agora > 0 && agora < this.rodadas().length ? agora : 0;
+  });
+  protected readonly rodadasVisiveis = computed(() => this.rodadas().slice(this.recolhidas()));
+  protected readonly letraDoPar = computed(() => {
+    const p = this.par();
+    return p ? letraDoPar(this.ficha()?.itens ?? [], p.id) : '';
+  });
+
   protected readonly progresso = computed(() => {
-    const total = this.ficha()?.itens.length ?? 0;
-    const series = this.series().length;
+    const total = this.blocos().length;
     if (total === 0) return 0;
-    const fracao = series > 0 ? this.feitas() / series : 0;
-    return Math.round(((this.indice() + fracao) / total) * 100);
+    const rodadas = this.rodadas();
+    const series = this.series().length;
+    const fracao = this.par() ? (rodadas.length > 0 ? rodadas.filter((r) => r.feita).length / rodadas.length : 0) : series > 0 ? this.feitas() / series : 0;
+    return Math.round(((this.numBloco() + fracao) / total) * 100);
   });
 
   protected readonly tempo = computed(() => {
@@ -186,33 +248,46 @@ export class Workout {
   /** Exercícios cuja sugestão de carga a pessoa fechou neste treino (volta só ao abrir o treino de novo). */
   private readonly sugestoesFechadas = signal<ReadonlySet<string>>(new Set());
 
-  protected fecharSugestao(): void {
-    const id = this.item()?.exerciseId;
+  protected fecharSugestao(i = this.indice()): void {
+    const id = this.itemDe(i)?.exerciseId;
     if (id) this.sugestoesFechadas.update((f) => new Set(f).add(id));
   }
 
   /** Sugestão de subir a carga, enquanto nenhuma série do exercício foi marcada e a carga sugerida ainda não está na tela. */
-  protected readonly sugestaoCarga = computed(() => {
-    const it = this.item();
-    if (!it || this.feitas() > 0 || this.sugestoesFechadas().has(it.exerciseId)) return null;
-    const s = sugerirCarga(it, this.anterior_());
+  private sugestaoDe(i: number) {
+    const it = this.itemDe(i);
+    const series = this.seriesDe(i);
+    if (!it || series.some((x) => x.feita) || this.sugestoesFechadas().has(it.exerciseId)) return null;
+    const s = sugerirCarga(it, this.anteriorDe(i));
     if (!s) return null;
-    return this.series().every((x) => x.carga === s.para) ? null : s;
+    return series.every((x) => x.carga === s.para) ? null : s;
+  }
+
+  protected readonly sugestaoCarga = computed(() => this.sugestaoDe(this.indice()));
+
+  /** As sugestões dos dois exercícios do par da vez (só os que têm uma). */
+  protected readonly sugestoesDoPar = computed(() => {
+    const p = this.par();
+    if (!p) return [];
+    return [p.a, p.b].flatMap((i) => {
+      const sg = this.sugestaoDe(i);
+      return sg ? [{ i, nome: this.nomeDe(i), sg }] : [];
+    });
   });
 
   /** Põe a carga sugerida em todas as séries do exercício (todas mudam juntas e piscam, como na cópia automática). */
-  protected aplicarSugestao(): void {
-    const s = this.sugestaoCarga();
+  protected aplicarSugestao(i = this.indice()): void {
+    const s = this.sugestaoDe(i);
     if (!s) return;
-    const i = this.indice();
-    const alvo = this.item()?.reps ?? 0;
-    const base = this.series().map((x) => this.paraSalvar({ ...x, carga: s.para, reps: alvo || x.reps }));
+    const alvo = this.itemDe(i)?.reps ?? 0;
+    const series = this.seriesDe(i);
+    const base = series.map((x) => this.paraSalvar({ ...x, carga: s.para, reps: alvo || x.reps }));
     this.piscadas.update((p) => {
       const novo = { ...p };
-      for (const x of this.series()) novo[x.n] = (novo[x.n] ?? 0) + 1;
+      for (const x of series) novo[this.chave(i, x.n)] = (novo[this.chave(i, x.n)] ?? 0) + 1;
       return novo;
     });
-    this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
+    this.plans.andamento(this.id(), (a) => ({ ...a, indice: this.indice(), series: { ...a.series, [i]: base } }));
   }
 
   /** 22.5 → "22,5". */
@@ -225,13 +300,24 @@ export class Workout {
   protected readonly rascunhoTreino = signal('');
   protected readonly notaMaxExercicio = NOTA_EXERCICIO_MAX;
   protected readonly notaMaxTreino = NOTA_TREINO_MAX;
+  /** Exercício cuja nota está sendo editada (posição na ficha). */
+  protected readonly alvoNotas = signal(0);
   /** Exercício trocado só neste treino: a nota da ficha é do exercício original e não vale para o que entrou. */
-  protected readonly trocado = computed(() => !!this.estado()?.trocas?.[this.indice()]);
-  protected readonly notaExercicio = computed(() => (this.trocado() ? '' : (this.item()?.nota ?? '')));
+  protected trocadoDe(i: number): boolean {
+    return !!this.estado()?.trocas?.[i];
+  }
+  protected notaDoExercicio(i: number): string {
+    return this.trocadoDe(i) ? '' : (this.itemDe(i)?.nota ?? '');
+  }
+  protected readonly trocado = computed(() => this.trocadoDe(this.indice()));
+  protected readonly notaExercicio = computed(() => this.notaDoExercicio(this.indice()));
   protected readonly notaTreino = computed(() => this.estado()?.nota ?? '');
+  protected readonly trocadoAlvo = computed(() => this.trocadoDe(this.alvoNotas()));
+  protected readonly nomeAlvoNotas = computed(() => this.nomeDe(this.alvoNotas()));
 
-  protected abrirNotas(): void {
-    this.rascunhoExercicio.set(this.notaExercicio());
+  protected abrirNotas(i = this.indice()): void {
+    this.alvoNotas.set(i);
+    this.rascunhoExercicio.set(this.notaDoExercicio(i));
     this.rascunhoTreino.set(this.notaTreino());
     this.editandoNotas.set(true);
   }
@@ -242,8 +328,9 @@ export class Workout {
 
   /** Grava só o que mudou: a nota do exercício vai para a ficha, a do treino para o treino em andamento. */
   protected salvarNotas(): void {
-    if (!this.trocado() && this.rascunhoExercicio().trim() !== this.notaExercicio()) {
-      this.plans.definirNotaDoItem(this.id(), this.indice(), this.rascunhoExercicio());
+    const i = this.alvoNotas();
+    if (!this.trocadoDe(i) && this.rascunhoExercicio().trim() !== this.notaDoExercicio(i)) {
+      this.plans.definirNotaDoItem(this.id(), i, this.rascunhoExercicio());
     }
     if (this.rascunhoTreino().trim() !== this.notaTreino()) {
       this.plans.definirNotaDoTreino(this.id(), this.rascunhoTreino());
@@ -256,57 +343,57 @@ export class Workout {
     return { feita: s.feita, carga: s.carga, reps: s.reps, ...(s.descanso != null ? { descanso: s.descanso } : {}) };
   }
 
-  /** Grava a série k (valores atuais da tela + alteração) no treino em andamento. */
-  private gravarSerie(k: number, mudanca: Partial<{ feita: boolean; carga: number; reps: number; descanso: number | undefined }>): void {
-    const i = this.indice();
-    const base = this.series().map((s) => this.paraSalvar(s));
+  /** Grava a série k do exercício i (valores atuais da tela + alteração) no treino em andamento. */
+  private gravarSerie(i: number, k: number, mudanca: Partial<{ feita: boolean; carga: number; reps: number; descanso: number | undefined }>): void {
+    const base = this.seriesDe(i).map((s) => this.paraSalvar(s));
     base[k] = this.paraSalvar({ ...base[k], ...mudanca });
-    this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
+    this.plans.andamento(this.id(), (a) => ({ ...a, indice: this.indice(), series: { ...a.series, [i]: base } }));
   }
 
   /** Ao mudar carga ou repetições de uma série, as de baixo que ainda não foram feitas ganham o mesmo valor. */
-  protected editar(k: number, campo: 'carga' | 'reps', evento: Event): void {
+  protected editar(k: number, campo: 'carga' | 'reps', evento: Event, i = this.indice()): void {
     const v = (evento.target as HTMLInputElement).valueAsNumber;
     const valor = Number.isFinite(v) && v >= 0 ? v : 0;
-    const i = this.indice();
-    const base = this.series().map((s, j) => (j >= k && (j === k || !s.feita) ? { ...s, [campo]: valor } : s));
+    const series = this.seriesDe(i);
+    const base = series.map((s, j) => (j >= k && (j === k || !s.feita) ? { ...s, [campo]: valor } : s));
     // Só as linhas de baixo que mudaram sozinhas piscam, para a pessoa notar o que foi copiado.
-    const copiadas = this.series().filter((s, j) => j > k && !s.feita && s[campo] !== valor).map((s) => s.n);
+    const copiadas = series.filter((s, j) => j > k && !s.feita && s[campo] !== valor).map((s) => s.n);
     if (copiadas.length > 0) {
       this.piscadas.update((p) => {
         const novo = { ...p };
-        for (const n of copiadas) novo[n] = (novo[n] ?? 0) + 1;
+        for (const n of copiadas) novo[this.chave(i, n)] = (novo[this.chave(i, n)] ?? 0) + 1;
         return novo;
       });
     }
     this.plans.andamento(this.id(), (a) => ({
       ...a,
-      indice: i,
+      indice: this.indice(),
       series: { ...a.series, [i]: base.map((s) => this.paraSalvar(s)) },
     }));
   }
 
   /** Acrescenta uma série só neste treino (a ficha não muda), com os valores da última. */
-  protected adicionarSerie(): void {
-    const it = this.item();
-    if (!it || this.series().length >= SERIES_MAX) return;
-    const base = this.series().map((s) => this.paraSalvar(s));
+  protected adicionarSerie(i = this.indice()): void {
+    const it = this.itemDe(i);
+    const series = this.seriesDe(i);
+    if (!it || series.length >= SERIES_MAX) return;
+    const base = series.map((s) => this.paraSalvar(s));
     const ultima = base.at(-1) ?? { carga: it.carga, reps: it.reps };
     base.push(this.paraSalvar({ feita: false, carga: ultima.carga, reps: ultima.reps }));
-    this.gravarQuantidade(base);
+    this.gravarQuantidade(i, base);
   }
 
   /** Tira a última série, só neste treino. Sempre fica pelo menos uma. */
-  protected removerSerie(): void {
-    if (this.series().length <= 1) return;
-    this.gravarQuantidade(this.series().slice(0, -1).map((s) => this.paraSalvar(s)));
+  protected removerSerie(i = this.indice()): void {
+    const series = this.seriesDe(i);
+    if (series.length <= 1) return;
+    this.gravarQuantidade(i, series.slice(0, -1).map((s) => this.paraSalvar(s)));
   }
 
-  private gravarQuantidade(base: SerieEmAndamento[]): void {
-    const i = this.indice();
+  private gravarQuantidade(i: number, base: SerieEmAndamento[]): void {
     this.plans.andamento(this.id(), (a) => ({
       ...a,
-      indice: i,
+      indice: this.indice(),
       series: { ...a.series, [i]: base },
       qtdSeries: { ...a.qtdSeries, [i]: base.length },
     }));
@@ -336,11 +423,11 @@ export class Workout {
   }
 
   /** Marca todas as séries do exercício; se já estão todas marcadas, desmarca. */
-  protected marcarTodos(): void {
-    const i = this.indice();
-    const marcar = this.feitas() < this.series().length;
-    const base = this.series().map((s) => this.paraSalvar({ ...s, feita: marcar, descanso: marcar ? s.descanso : undefined }));
-    this.plans.andamento(this.id(), (a) => ({ ...a, indice: i, series: { ...a.series, [i]: base } }));
+  protected marcarTodos(i = this.indice()): void {
+    const series = this.seriesDe(i);
+    const marcar = series.filter((s) => s.feita).length < series.length;
+    const base = series.map((s) => this.paraSalvar({ ...s, feita: marcar, descanso: marcar ? s.descanso : undefined }));
+    this.plans.andamento(this.id(), (a) => ({ ...a, indice: this.indice(), series: { ...a.series, [i]: base } }));
     // Exercício terminado: o cronômetro zera e fica parado até a primeira série do próximo.
     if (marcar) this.zerarDescanso();
   }
@@ -356,7 +443,8 @@ export class Workout {
 
   /** O descanso só conta entre séries do mesmo exercício: ao marcar a última (ou com uma só, como o cardio) o cronômetro zera. */
   private iniciarDescansoSeFizerSentido(ultimaDoExercicio: boolean): void {
-    if (ultimaDoExercicio || this.series().length <= 1) this.zerarDescanso();
+    const unica = this.par() ? this.rodadas().length <= 1 : this.series().length <= 1;
+    if (ultimaDoExercicio || unica) this.zerarDescanso();
     else this.iniciarDescanso();
   }
 
@@ -367,24 +455,92 @@ export class Workout {
     // O descanso desta série é o tempo corrido desde a anterior; sem timer rodando (primeira série), não há o que guardar.
     const descanso = ficouFeita && this.descansando() ? Math.round((Date.now() - this.descansoDesde) / 1000) : undefined;
     const ultimaDoExercicio = ficouFeita && this.feitas() + 1 === this.series().length;
-    this.gravarSerie(k, { feita: ficouFeita, descanso });
+    this.gravarSerie(this.indice(), k, { feita: ficouFeita, descanso });
     // Marcar uma série reinicia o cronômetro, que segue contando ao trocar de tela; a última do exercício o zera.
     // Desmarcar não mexe nele.
     if (ficouFeita) this.iniciarDescansoSeFizerSentido(ultimaDoExercicio);
   }
 
+  /**
+   * Marca (ou desmarca) uma rodada do par: a série k de cada exercício, de uma vez. O descanso entre esta rodada e a
+   * anterior é um só, guardado na primeira série da rodada; depois da última rodada o cronômetro zera.
+   */
+  protected alternarRodada(k: number): void {
+    const p = this.par();
+    const rodada = this.rodadas()[k];
+    if (!p || !rodada) return;
+    const marcar = !rodada.feita;
+    const descanso = marcar && this.descansando() ? Math.round((Date.now() - this.descansoDesde) / 1000) : undefined;
+    const doDescanso = rodada.a ? p.a : p.b;
+    const nova = (i: number, existe: boolean) => {
+      const base = this.seriesDe(i).map((s) => this.paraSalvar(s));
+      if (!existe) return base;
+      base[k] = this.paraSalvar({ ...base[k], feita: marcar, descanso: i === doDescanso ? descanso : undefined });
+      return base;
+    };
+    const a = nova(p.a, !!rodada.a);
+    const b = nova(p.b, !!rodada.b);
+    this.plans.andamento(this.id(), (est) => ({ ...est, indice: this.indice(), series: { ...est.series, [p.a]: a, [p.b]: b } }));
+    const ultimaRodada = marcar && this.rodadas().every((r) => r.feita);
+    if (marcar) this.iniciarDescansoSeFizerSentido(ultimaRodada);
+  }
+
+  /** Menu ⋯ de cada exercício do par (posição na ficha), ou nenhum. */
+  protected readonly menuMembro = signal<number | null>(null);
+
+  protected alternarMenuMembro(i: number, evento: Event): void {
+    evento.stopPropagation();
+    this.menuMembro.set(this.menuMembro() === i ? null : i);
+  }
+
+  protected fecharMenuMembro(): void {
+    if (this.menuMembro() !== null) this.menuMembro.set(null);
+  }
+
+  /** Todas as séries do exercício estão feitas. */
+  protected todasFeitas(i: number): boolean {
+    const series = this.seriesDe(i);
+    return series.length > 0 && series.every((s) => s.feita);
+  }
+
+  /** Ações do menu ⋯ de um exercício do par: cada uma fecha o menu e age sobre o exercício `i`. */
+  protected adicionarSerieDe(i: number): void {
+    this.menuMembro.set(null);
+    this.adicionarSerie(i);
+  }
+  protected removerSerieDe(i: number): void {
+    this.menuMembro.set(null);
+    this.removerSerie(i);
+  }
+  protected marcarTodosDe(i: number): void {
+    this.menuMembro.set(null);
+    this.marcarTodos(i);
+  }
+  protected abrirNotasDe(i: number): void {
+    this.menuMembro.set(null);
+    this.abrirNotas(i);
+  }
+
   private irPara(indice: number): void {
     this.piscadas.set({});
+    this.mostrarConcluidas.set(false);
+    this.menuMembro.set(null);
     this.plans.andamento(this.id(), (a) => ({ ...a, indice }));
   }
 
+  /** Posição do primeiro exercício do bloco `n`. */
+  private primeiroDoBloco(n: number): number {
+    const b = this.blocos()[n];
+    return b ? (b.tipo === 'solo' ? b.i : b.a) : 0;
+  }
+
   protected anterior(): void {
-    this.irPara(Math.max(0, this.indice() - 1));
+    this.irPara(this.primeiroDoBloco(Math.max(0, this.numBloco() - 1)));
   }
 
   protected proximo(): void {
     if (!this.ultimo()) {
-      this.irPara(this.indice() + 1);
+      this.irPara(this.primeiroDoBloco(this.numBloco() + 1));
       return;
     }
     if (this.faltantes() > 0) {

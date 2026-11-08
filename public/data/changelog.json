@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.32.0",
+    "data": "2026-11-08",
+    "titulo": "Treino conjugado em rodadas",
+    "itens": [
+      "No treino em andamento, os dois exercícios conjugados aparecem numa tela só, em rodadas: cada rodada é uma série de cada, e um único ✓ marca as duas de uma vez.",
+      "O descanso do par começa ao marcar a rodada e zera depois da última. Se um exercício tem mais séries que o outro, as últimas rodadas têm só ele; o cardio em minutos também entra no par.",
+      "As rodadas já feitas recolhem numa linha (toque em Ver para abri-las). O menu ⋯ de cada exercício tem Série extra, Tirar série, Marcar todas as séries e Notas, e Instruções e Último treino são de cada exercício.",
+      "O histórico, as estatísticas e as medalhas continuam iguais: os dois exercícios entram no treino concluído com as séries que você fez."
+    ]
+  },
+  {
     "versao": "1.31.0",
     "data": "2026-11-08",
     "titulo": "Exercícios conjugados na ficha",

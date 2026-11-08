@@ -557,3 +557,243 @@ describe('Workout — tela ligada', () => {
     expect(tela.desligar).toHaveBeenCalled();
   });
 });
+
+describe('Workout — exercícios conjugados', () => {
+  let fixture: ComponentFixture<Workout>;
+  let plans: PlanService;
+  let fichaId: string;
+
+  const el = () => fixture.nativeElement as HTMLElement;
+  const item = (exerciseId: string, extra: object = {}) => ({ exerciseId, series: 3, reps: 12, carga: 20, descanso: 60, ...extra });
+  const rodadas = () => [...el().querySelectorAll('.rodada')] as HTMLElement[];
+  const checks = () => [...el().querySelectorAll('.marca--rodada')] as HTMLButtonElement[];
+  const botao = (texto: string) =>
+    [...el().querySelectorAll('button')].find((b) => b.textContent?.replace(/\s+/g, ' ').trim() === texto) as HTMLButtonElement | undefined;
+  const clicar = (e: Element | null | undefined) => {
+    (e as HTMLElement).click();
+    fixture.detectChanges();
+  };
+  const estado = () => plans.emAndamento()!;
+  const feitas = (i: number) => (estado()?.series[i] ?? []).map((s) => !!s.feita);
+  const tempo = () => el().querySelector('.tempo')?.textContent?.trim();
+
+  function abrir(itens: object[]): void {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: SocialService, useValue: { ativo: signal(false) } }],
+    });
+    plans = TestBed.inject(PlanService);
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    [{ id: fichaId }] = plans.criarComItens([{ nome: 'Braços', itens: itens as never }]);
+    fixture = TestBed.createComponent(Workout);
+    fixture.componentRef.setInput('id', fichaId);
+    fixture.detectChanges();
+  }
+
+  const par = () => [item('rosca', { par: 'p', descanso: 30 }), item('triceps', { par: 'p', descanso: 90, carga: 25 }), item('martelo')];
+
+  beforeEach(() => jasmine.clock().install().mockDate(new Date(2026, 10, 8, 10, 0, 0)));
+  afterEach(() => {
+    jasmine.clock().uninstall();
+    localStorage.clear();
+  });
+
+  it('o par aparece numa tela só, com rodadas e um só ✓ por rodada', () => {
+    abrir(par());
+    expect(el().querySelector('.conjugado-tag')!.textContent).toContain('Conjugado');
+    expect(el().querySelector('.posicao')!.textContent).toContain('Exercícios 1 e 2 de 3');
+    expect([...el().querySelectorAll('.membro__nome')].length).toBe(2);
+    expect([...el().querySelectorAll('.membro .rot')].map((r) => r.textContent!.trim())).toEqual(['A1', 'A2']);
+    expect(rodadas().length).toBe(3);
+    expect(checks().length).toBe(3);
+    expect(el().querySelectorAll('.serie').length).toBe(0);
+    expect(rodadas()[0].classList.contains('rodada--agora')).toBeTrue();
+  });
+
+  it('marcar a rodada marca a série dos dois exercícios e passa o "agora" para a próxima', () => {
+    abrir(par());
+    clicar(checks()[0]);
+    expect(feitas(0)).toEqual([true, false, false]);
+    expect(feitas(1)).toEqual([true, false, false]);
+    // A rodada 1 concluída recolhe numa linha, e o "agora" passa para a rodada 2.
+    expect(el().querySelector('.concluidas__texto')!.textContent).toContain('Rodada 1 concluída');
+    expect(rodadas().length).toBe(2);
+    expect(rodadas()[0].querySelector('.rodada__titulo')!.textContent).toContain('Rodada 2');
+    expect(rodadas()[0].classList.contains('rodada--agora')).toBeTrue();
+    // Ver mostra a rodada 1 de novo, já marcada.
+    clicar(el().querySelector('.concluidas'));
+    expect(rodadas().length).toBe(3);
+    expect(rodadas()[0].classList.contains('rodada--feita')).toBeTrue();
+  });
+
+  it('o descanso começa ao marcar a rodada, com o tempo do par (o do segundo exercício)', () => {
+    abrir(par());
+    clicar(checks()[0]);
+    jasmine.clock().tick(5000);
+    fixture.detectChanges();
+    expect(tempo()).toBe('00:05');
+    expect(estado().descanso?.limite).toBe(90);
+  });
+
+  it('guarda um descanso só por rodada, na primeira série dela', () => {
+    abrir(par());
+    clicar(checks()[0]);
+    jasmine.clock().tick(40000);
+    clicar(el().querySelector('.rodada--agora .marca--rodada'));
+    expect(estado().series[0][1].descanso).toBe(40);
+    expect(estado().series[1][1].descanso).toBeUndefined();
+  });
+
+  it('marcar a última rodada zera o cronômetro', () => {
+    abrir(par());
+    for (let k = 0; k < 3; k++) {
+      clicar(el().querySelector('.rodada--agora .marca--rodada'));
+      jasmine.clock().tick(2000);
+      fixture.detectChanges();
+    }
+    expect(feitas(0)).toEqual([true, true, true]);
+    expect(tempo()).toBe('00:00');
+    expect(estado().descanso).toBeUndefined();
+    // Todas feitas: nenhuma fica recolhida.
+    expect(el().querySelector('.concluidas')).toBeNull();
+    expect(rodadas().length).toBe(3);
+  });
+
+  it('tocar de novo no ✓ desmarca a rodada inteira', () => {
+    abrir(par());
+    clicar(checks()[0]);
+    clicar(el().querySelector('.concluidas'));
+    clicar(checks()[0]);
+    expect(feitas(0)).toEqual([false, false, false]);
+    expect(feitas(1)).toEqual([false, false, false]);
+    expect(estado().series[0][0].descanso).toBeUndefined();
+  });
+
+  it('com séries diferentes, a rodada extra tem só o exercício que tem mais séries', () => {
+    abrir([item('rosca', { par: 'p', series: 4 }), item('triceps', { par: 'p', series: 3 })]);
+    expect(rodadas().length).toBe(4);
+    const ultima = rodadas()[3];
+    expect(ultima.querySelector('.sem-par')!.textContent).toContain('sem par nesta rodada');
+    expect(ultima.querySelectorAll('input').length).toBe(2);
+    for (let k = 0; k < 4; k++) clicar(el().querySelector('.rodada--agora .marca--rodada'));
+    expect(feitas(0)).toEqual([true, true, true, true]);
+    expect(feitas(1)).toEqual([true, true, true]);
+    expect(tempo()).toBe('00:00');
+  });
+
+  it('o cardio em minutos pode ser um dos dois', () => {
+    abrir([item('supino', { par: 'p', series: 3 }), item('esteira', { par: 'p', series: 3, reps: 3, unidade: 'min', carga: 0 })]);
+    expect(el().querySelector('.cabecalho--rodada')!.textContent).toContain('Reps / min');
+    expect(el().querySelector('input[aria-label*="Minutos"]')).not.toBeNull();
+  });
+
+  it('editar reps de um exercício copia para as rodadas de baixo, só dele', () => {
+    abrir(par());
+    const reps = [...el().querySelectorAll('.rodada')].map((r) => (r.querySelectorAll('.linha-par input')[0] as HTMLInputElement));
+    reps[0].value = '8';
+    reps[0].dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(estado().series[0].map((s) => s.reps)).toEqual([8, 8, 8]);
+    const segunda = [...el().querySelectorAll('.rodada')].map((r) => (r.querySelectorAll('.linha-par')[1].querySelector('input') as HTMLInputElement).value);
+    expect(segunda).toEqual(['12', '12', '12']);
+  });
+
+  it('o menu ⋯ de cada exercício tem Série extra, Tirar série, Marcar todas e Notas', () => {
+    abrir(par());
+    clicar(el().querySelectorAll('[data-menu]')[1]);
+    expect([...el().querySelectorAll('.menu button')].map((b) => b.textContent!.trim())).toEqual(['Série extra', 'Tirar série', 'Marcar todas as séries', 'Adicionar nota']);
+    clicar(botao('Série extra'));
+    expect(el().querySelector('.menu')).toBeNull();
+    expect(rodadas().length).toBe(4);
+    expect(rodadas()[3].querySelector('.sem-par')).not.toBeNull();
+    clicar(el().querySelectorAll('[data-menu]')[1]);
+    clicar(botao('Tirar série'));
+    expect(rodadas().length).toBe(3);
+  });
+
+  it('Marcar todas as séries de um exercício marca só o dele', () => {
+    abrir(par());
+    clicar(el().querySelectorAll('[data-menu]')[0]);
+    clicar(botao('Marcar todas as séries'));
+    expect(feitas(0)).toEqual([true, true, true]);
+    expect(estado().series[1]?.some((s) => s.feita) ?? false).toBeFalse();
+  });
+
+  it('a nota é de cada exercício do par', () => {
+    abrir(par());
+    clicar(el().querySelectorAll('[data-menu]')[1]);
+    clicar(botao('Adicionar nota'));
+    expect(el().querySelector('app-dialogo')!.textContent).toContain('Notas');
+    const campo = el().querySelector('app-dialogo textarea') as HTMLTextAreaElement;
+    campo.value = 'cabo na posição 3';
+    campo.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    clicar(botao('Salvar notas'));
+    expect(plans.get(fichaId)!.itens[1].nota).toBe('cabo na posição 3');
+    expect(plans.get(fichaId)!.itens[0].nota).toBeUndefined();
+    expect(el().querySelector('.nota-fixa')!.textContent).toContain('cabo na posição 3');
+  });
+
+  it('Último treino é de cada exercício', () => {
+    abrir(par());
+    plans.registrarSessao(fichaId, [{ exerciseId: 'triceps', series: [{ carga: 25, reps: 10 }, { carga: 27.5, reps: 8 }] }]);
+    fixture.detectChanges();
+    const botoes = [...el().querySelectorAll('.membro button.ver')].filter((b) => b.textContent!.trim() === 'Último treino');
+    expect(botoes.length).toBe(1); // só o tríceps tem treino anterior
+    clicar(botoes[0]);
+    const itens = [...el().querySelectorAll('.ultimo-lista li')].map((li) => li.textContent!.replace(/\s+/g, ' ').trim());
+    expect(itens).toEqual(['1 10 × 25 kg', '2 8 × 27.5 kg']);
+  });
+
+  it('Próximo vai para o bloco seguinte e Anterior volta ao par', () => {
+    abrir(par());
+    clicar(botao('Próximo exercício'));
+    expect(el().querySelector('.posicao')!.textContent).toContain('Exercício 3 de 3');
+    expect(el().querySelector('.conjugado-tag')).toBeNull();
+    expect(el().querySelectorAll('.serie').length).toBe(3);
+    expect(botao('Finalizar treino')).toBeDefined();
+    clicar(botao('Anterior'));
+    expect(el().querySelector('.posicao')!.textContent).toContain('Exercícios 1 e 2 de 3');
+    expect(el().querySelector('.conjugado-tag')).not.toBeNull();
+  });
+
+  it('concluir grava os dois exercícios do par com as séries feitas', () => {
+    abrir(par());
+    for (let k = 0; k < 3; k++) clicar(el().querySelector('.rodada--agora .marca--rodada'));
+    clicar(botao('Próximo exercício'));
+    clicar(el().querySelector('.marca'));
+    clicar(botao('Marcar todos'));
+    clicar(botao('Finalizar treino'));
+    const sessao = plans.historico().at(-1)!;
+    expect(sessao.registros!.map((r) => [r.exerciseId, r.series.length])).toEqual([['rosca', 3], ['triceps', 3], ['martelo', 3]]);
+    expect(plans.emAndamento()).toBeNull();
+  });
+
+  it('Finalizar com rodadas sem marcar pergunta se pode marcar o que falta', () => {
+    abrir([item('rosca', { par: 'p' }), item('triceps', { par: 'p' })]);
+    clicar(checks()[0]);
+    clicar(botao('Finalizar treino'));
+    expect(el().querySelector('[role="alertdialog"]')!.textContent).toContain('Faltam 4 séries');
+  });
+
+  it('o progresso conta blocos: um par vale uma etapa', () => {
+    abrir(par());
+    const barra = () => Number(el().querySelector('[role="progressbar"]')!.getAttribute('aria-valuenow'));
+    expect(barra()).toBe(0);
+    for (let k = 0; k < 3; k++) clicar(el().querySelector('.rodada--agora .marca--rodada'));
+    expect(barra()).toBe(50); // o par (1 de 2 blocos) está pronto
+  });
+
+  it('a sugestão de carga aparece por exercício do par', () => {
+    abrir([item('rosca', { par: 'p' }), item('triceps', { par: 'p', carga: 25 })]);
+    plans.registrarSessao(fichaId, [{ exerciseId: 'rosca', series: [{ carga: 40, reps: 12 }, { carga: 40, reps: 12 }, { carga: 40, reps: 12 }] }]);
+    fixture.detectChanges();
+    const sugestoes = [...el().querySelectorAll('.sugestao')];
+    expect(sugestoes.length).toBe(1);
+    expect(sugestoes[0].textContent).toContain('42 kg');
+    clicar(botao('Usar 42 kg'));
+    expect(estado().series[0].map((s) => s.carga)).toEqual([42, 42, 42]);
+    expect(el().querySelector('.sugestao')).toBeNull();
+  });
+});
