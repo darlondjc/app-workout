@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.29.11",
+    "data": "2026-11-08",
+    "titulo": "Cards de treino mais enxutos",
+    "itens": [
+      "Na lista de fichas, cada treino ocupa menos espaço: o título inteiro na primeira linha, a quantidade de exercícios e o último treino logo abaixo, e os músculos na terceira linha.",
+      "O chip Próximo, com o treino sugerido, fica junto dos chips de músculo, e o card ganha um fundo verde-claro."
+    ]
+  },
+  {
     "versao": "1.29.9",
     "data": "2026-11-08",
     "titulo": "Próximo treino sugerido, só da ficha ativa e guardado",

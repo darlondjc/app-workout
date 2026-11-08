@@ -90,18 +90,27 @@ describe('Plans — fichas com vários treinos', () => {
     });
   });
 
-  describe('último treino de cada ficha', () => {
-    const textos = () => [...el().querySelectorAll('.item .linha__texto .apoio')].map((x) => x.textContent!.trim()).filter((t) => /treino|feito/.test(t));
+  describe('card do treino: título, meta e chips', () => {
+    const metas = () => [...el().querySelectorAll('.item .linha__meta')].map((x) => x.textContent!.replace(/\s+/g, ' ').trim());
 
-    it('treino nunca feito mostra "Ainda não feito"', () => {
-      expect(textos().every((t) => t === 'Ainda não feito')).toBeTrue();
+    it('a segunda linha traz a quantidade de exercícios e quando o treino foi feito', () => {
+      expect(metas().every((t) => t === '1 exercício · ainda não feito')).toBeTrue();
     });
 
     it('depois de concluir um treino, mostra quando foi', () => {
       plans.registrarSessao(plans.fichas()[0].id);
       fixture.detectChanges();
-      expect(textos()[0]).toBe('Último treino: hoje');
-      expect(textos()[1]).toBe('Ainda não feito');
+      expect(metas()[0]).toBe('1 exercício · hoje');
+      expect(metas()[1]).toBe('1 exercício · ainda não feito');
+    });
+
+    it('a letra fica na linha do título e os chips ficam por último, com o "Próximo" entre eles', () => {
+      const card = el().querySelector('.item .card--proximo')!;
+      expect(card.querySelector('.linha__topo .letra')).not.toBeNull();
+      expect(card.querySelector('.linha__topo .linha__nome')).not.toBeNull();
+      const filhos = [...card.querySelector('.linha__texto')!.children].map((c) => c.className.split(' ')[0]);
+      expect(filhos).toEqual(['linha__topo', 'apoio', 'grupos']);
+      expect(card.querySelector('.grupos .chip-proximo')).not.toBeNull();
     });
   });
 
@@ -111,7 +120,8 @@ describe('Plans — fichas com vários treinos', () => {
 
     it('marca só o treino sugerido como próximo, na ficha ativa quando ainda não há histórico', () => {
       expect(chips().length).toBe(1);
-      expect(chips()[0].textContent!.trim()).toBe('Próximo sugerido');
+      expect(el().querySelectorAll('.card--proximo').length).toBe(1);
+      expect(chips()[0].textContent!.trim()).toBe('Próximo');
       expect(nomeDoChip()).toBe('Peito');
     });
 

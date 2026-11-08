@@ -184,6 +184,12 @@ export class PlanService {
     return m;
   });
 
+  /** Quando o treino foi feito pela última vez: "hoje", "ontem", "há 12 dias"; sem treino concluído, "ainda não feito". */
+  ultimaVezCurta(id: string): string {
+    const data = this.ultimaVezPorFicha().get(id);
+    return data ? haDias(Math.max(0, dias(deIso(data), deIso(this.hoje())))) : 'ainda não feito';
+  }
+
   /** "Último treino: ontem" / "há 12 dias"; "Ainda não feito" se esta ficha nunca foi concluída. */
   textoUltimaVez(id: string): string {
     const data = this.ultimaVezPorFicha().get(id);
