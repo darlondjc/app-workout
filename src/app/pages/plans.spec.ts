@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { somarDias } from '../core/ciclo';
 import { PlanService } from '../core/plan.service';
 import { Plans } from './plans';
 
@@ -102,6 +103,40 @@ describe('Plans — fichas com vários treinos', () => {
       fixture.detectChanges();
       expect(textos()[0]).toBe('Último treino: hoje');
       expect(textos()[1]).toBe('Ainda não feito');
+    });
+  });
+
+  describe('prazo da ficha', () => {
+    const botaoPrazo = () => [...el().querySelectorAll('.conjunto__compartilhar')].find((b) => b.textContent!.trim() === 'Alterar prazo') as HTMLButtonElement | undefined;
+
+    it('Alterar prazo fica no card da ficha e o formulário só abre ao tocar', () => {
+      expect(botaoPrazo()).toBeDefined();
+      expect(el().querySelector('.conjunto__prazo')).toBeNull();
+      botaoPrazo()!.click();
+      fixture.detectChanges();
+      expect(el().querySelector('.conjunto__prazo input[type="date"]')).not.toBeNull();
+    });
+
+    it('salvar a nova data vale para todos os treinos da ficha', () => {
+      botaoPrazo()!.click();
+      fixture.detectChanges();
+      const fim = somarDias(plans.hoje(), 90);
+      (el().querySelector('.conjunto__prazo input') as HTMLInputElement).value = fim;
+      (el().querySelector('.conjunto__prazo .btn') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const bloco = plans.blocos().find((b) => b.conjunto)!;
+      expect(bloco.fichas.every((f) => f.fim === fim)).toBeTrue();
+      expect(el().querySelector('.conjunto__prazo')).toBeNull();
+    });
+
+    it('uma data que não é futura não é aceita', () => {
+      botaoPrazo()!.click();
+      fixture.detectChanges();
+      const antes = plans.blocos().find((b) => b.conjunto)!.fim;
+      (el().querySelector('.conjunto__prazo input') as HTMLInputElement).value = plans.hoje();
+      (el().querySelector('.conjunto__prazo .btn') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(plans.blocos().find((b) => b.conjunto)!.fim).toBe(antes);
     });
   });
 

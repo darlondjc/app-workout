@@ -79,3 +79,35 @@ describe('PlanEditor — ficha nova', () => {
     expect(navegar).toHaveBeenCalledWith(['/fichas']);
   });
 });
+
+describe('PlanEditor — prazo', () => {
+  let fixture: ComponentFixture<PlanEditor>;
+  let plans: PlanService;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const item = { exerciseId: 'supino', series: 3, reps: 10, carga: 0, descanso: 60 };
+  const abrir = (id: string) => {
+    fixture = TestBed.createComponent(PlanEditor);
+    fixture.componentRef.setInput('id', id);
+    fixture.detectChanges();
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
+    plans = TestBed.inject(PlanService);
+  });
+
+  it('um treino de uma ficha com vários treinos não mostra o prazo: ele é da ficha', () => {
+    const [a] = plans.criarConjunto('Divisão', [{ nome: 'A', itens: [item] }, { nome: 'B', itens: [item] }]);
+    abrir(a.id);
+    expect(el().querySelector('.periodo')).toBeNull();
+    expect(el().textContent).not.toContain('Alterar prazo');
+  });
+
+  it('um treino solto, que é a própria ficha, mostra o prazo e a opção de alterar', () => {
+    const [solto] = plans.criarComItens([{ nome: 'Solta', itens: [item] }]);
+    abrir(solto.id);
+    expect(el().querySelector('.periodo')).not.toBeNull();
+    expect(el().textContent).toContain('Alterar prazo');
+  });
+});

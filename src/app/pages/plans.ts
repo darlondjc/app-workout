@@ -1,8 +1,8 @@
 import { BarraTopo } from '../core/barra-topo';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { BlocoFichas, dataCurta, diasParaVencer, emAviso, textoDoPrazo } from '../core/ciclo';
+import { BlocoFichas, dataCurta, diasParaVencer, emAviso, somarDias, textoDoPrazo } from '../core/ciclo';
 import { Confirmacao } from '../core/confirmacao';
 import { ExerciseService } from '../core/exercise.service';
 import { FichaCompartilhar } from '../core/ficha-compartilhar';
@@ -96,6 +96,9 @@ import { ToastService } from '../core/toast.service';
                 <a class="conjunto__compartilhar" routerLink="/fichas/treino-novo" [queryParams]="{ conjunto: c.id }">
                   <app-icon name="plus" [size]="18" [stroke]="2.5" /> Adicionar treino
                 </a>
+                <button type="button" class="conjunto__compartilhar" [attr.aria-expanded]="editandoPrazo() === b.chave" (click)="editandoPrazo.set(editandoPrazo() === b.chave ? null : b.chave)">
+                  Alterar prazo
+                </button>
                 <button type="button" class="conjunto__compartilhar" aria-haspopup="dialog" (click)="compartilhar(c.nome, b.fichas)">
                   <app-icon name="share" [size]="18" [stroke]="2" /> Compartilhar
                 </button>
@@ -103,6 +106,13 @@ import { ToastService } from '../core/toast.service';
                   <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
                 </button>
               </div>
+              @if (editandoPrazo() === b.chave) {
+                <div class="conjunto__prazo">
+                  <label [for]="'fim-' + c.id" class="apoio">Termina em</label>
+                  <input [id]="'fim-' + c.id" type="date" [min]="amanha()" [value]="b.fim ?? ''" #fimInput />
+                  <button type="button" class="btn btn--escuro" (click)="salvarPrazo(b, fimInput.value)">Salvar</button>
+                </div>
+              }
             }
           </li>
         } @else {
@@ -229,6 +239,9 @@ import { ToastService } from '../core/toast.service';
       font-size: 17px;
     }
     .conjunto__acoes { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+    .conjunto__prazo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 10px 8px; }
+    .conjunto__prazo .apoio { margin: 0; }
+    .conjunto__prazo input { min-height: 44px; padding: 0 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
     .conjunto__compartilhar {
       display: inline-flex;
       align-items: center;
@@ -320,6 +333,24 @@ export class Plans {
   private readonly toast = inject(ToastService);
 
   protected readonly vencidasAbertas = signal(false);
+
+  /** Chave da ficha cujo prazo está sendo alterado (o formulário abre no card dela). */
+  protected readonly editandoPrazo = signal<string | null>(null);
+  protected readonly amanha = computed(() => somarDias(this.plans.hoje(), 1));
+
+  /** O prazo é da ficha, não de cada treino: vale para todos os treinos dela. Escolher outra data reativa uma ficha vencida. */
+  protected salvarPrazo(b: BlocoFichas, fim: string): void {
+    if (!fim) return;
+    if (fim <= this.plans.hoje()) {
+      this.toast.mostrar('Escolha uma data a partir de amanhã');
+      return;
+    }
+    if (this.plans.situacaoDe(b.fichas[0]) !== 'ativa') this.plans.reativarBloco(b.chave);
+    if (this.plans.definirFimBloco(b.chave, fim)) {
+      this.editandoPrazo.set(null);
+      this.toast.mostrar('Prazo atualizado');
+    }
+  }
 
   protected vencidasResumo(): string {
     const v = this.plans.blocosVencidos();

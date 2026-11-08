@@ -42,7 +42,8 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
           </div>
           <p class="apoio">{{ plans.rotulo(f.id) }}</p>
           <p class="apoio">{{ plans.textoUltimaVez(f.id) }}</p>
-          @if (periodo(); as per) {
+          <!-- O prazo é da ficha e se altera na lista de fichas; só um treino solto (que é a própria ficha) mostra o prazo aqui. -->
+          @if (!f.conjunto && periodo(); as per) {
             <div class="periodo">
               <span class="apoio">{{ per }}</span>
               <button type="button" class="periodo__btn" [attr.aria-expanded]="editandoPrazo()" (click)="editandoPrazo.set(!editandoPrazo())">Alterar prazo</button>

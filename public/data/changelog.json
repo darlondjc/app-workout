@@ -1,5 +1,13 @@
 [
   {
+    "versao": "1.29.10",
+    "data": "2026-11-08",
+    "titulo": "O prazo é da ficha",
+    "itens": [
+      "A tela de um treino não mostra mais o prazo da ficha. Alterar prazo agora fica no card da ficha, na lista, e vale para todos os treinos dela."
+    ]
+  },
+  {
     "versao": "1.29.9",
     "data": "2026-11-08",
     "titulo": "Próximo treino sugerido, só da ficha ativa e guardado",
