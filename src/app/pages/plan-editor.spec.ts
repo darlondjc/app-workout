@@ -79,3 +79,94 @@ describe('PlanEditor — ficha nova', () => {
     expect(navegar).toHaveBeenCalledWith(['/fichas']);
   });
 });
+
+describe('PlanEditor — card do exercício', () => {
+  let fixture: ComponentFixture<PlanEditor>;
+  let plans: PlanService;
+  let fichaId: string;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const cards = () => [...el().querySelectorAll('li.item')] as HTMLElement[];
+  const resumo = (i: number) => cards()[i].querySelector('.item__resumo')!.textContent!.replace(/\s+/g, ' ').trim();
+  const clicar = (e: Element | null | undefined) => {
+    (e as HTMLElement).click();
+    fixture.detectChanges();
+  };
+  const abrirMenu = (i: number) => clicar(cards()[i].querySelector('[data-menu]'));
+  const itemDoMenu = (texto: string) => [...el().querySelectorAll('.menu button')].find((b) => b.textContent!.trim() === texto) as HTMLButtonElement;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
+    plans = TestBed.inject(PlanService);
+    [{ id: fichaId }] = plans.criarComItens([
+      {
+        nome: 'Braços',
+        itens: [
+          { exerciseId: 'rosca', series: 3, reps: 12, carga: 47.5, descanso: 60 },
+          { exerciseId: 'triceps', series: 4, reps: 10, carga: 0, descanso: 90 },
+        ],
+      },
+    ]);
+    fixture = TestBed.createComponent(PlanEditor);
+    fixture.componentRef.setInput('id', fichaId);
+    fixture.detectChanges();
+  });
+
+  it('fechado, cada exercício mostra só o resumo, sem os campos', () => {
+    expect(resumo(0)).toBe('3 × 12 · 47,5 kg · desc. 60 s');
+    expect(resumo(1)).toBe('4 × 10 · 0 kg · desc. 90 s');
+    expect(el().querySelectorAll('.campos').length).toBe(0);
+  });
+
+  it('tocar no resumo abre os campos só daquele exercício, e tocar de novo fecha', () => {
+    clicar(cards()[0].querySelector('.item__resumo'));
+    expect(cards()[0].querySelectorAll('.campos input').length).toBe(4);
+    expect(cards()[1].querySelectorAll('.campos').length).toBe(0);
+    expect(cards()[0].querySelector('.item__resumo')!.getAttribute('aria-expanded')).toBe('true');
+    clicar(cards()[0].querySelector('.item__resumo'));
+    expect(el().querySelectorAll('.campos').length).toBe(0);
+  });
+
+  it('editar um campo grava na ficha e atualiza o resumo', () => {
+    clicar(cards()[0].querySelector('.item__resumo'));
+    const carga = cards()[0].querySelectorAll('.campos input')[2] as HTMLInputElement;
+    carga.value = '50';
+    carga.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(plans.get(fichaId)!.itens[0].carga).toBe(50);
+    expect(resumo(0)).toBe('3 × 12 · 50 kg · desc. 60 s');
+  });
+
+  it('nome e foto continuam levando às instruções', () => {
+    const nome = cards()[0].querySelector('a.item__nome')!;
+    expect(nome.getAttribute('href')).toContain('/exercicio/rosca');
+  });
+
+  it('o menu ⋯ abre com as três ações e fecha ao tocar fora', () => {
+    abrirMenu(0);
+    expect([...el().querySelectorAll('.menu button')].map((b) => b.textContent!.trim())).toEqual(['Mover para cima', 'Mover para baixo', 'Remover da ficha']);
+    expect(itemDoMenu('Mover para cima').disabled).toBeTrue();
+    document.body.click();
+    fixture.detectChanges();
+    expect(el().querySelector('.menu')).toBeNull();
+  });
+
+  it('Mover para baixo no menu troca a ordem na ficha e fecha o menu', () => {
+    abrirMenu(0);
+    clicar(itemDoMenu('Mover para baixo'));
+    expect(plans.get(fichaId)!.itens.map((i) => i.exerciseId)).toEqual(['triceps', 'rosca']);
+    expect(el().querySelector('.menu')).toBeNull();
+  });
+
+  it('Remover da ficha no menu pede confirmação', () => {
+    abrirMenu(1);
+    clicar(itemDoMenu('Remover da ficha'));
+    expect(el().querySelector('[role="dialog"], [role="alertdialog"]')).not.toBeNull();
+    expect(plans.get(fichaId)!.itens.length).toBe(2);
+  });
+
+  it('não há mais os botões soltos de subir, descer e remover nos cards', () => {
+    expect(el().querySelectorAll('li.item > .item__topo > button[data-mover]').length).toBe(0);
+    expect(el().querySelectorAll('li.item .btn-icone').length).toBe(2);
+  });
+});

@@ -18,6 +18,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
   selector: 'app-plan-editor',
   imports: [BarraTopo, Confirmacao, FichaCompartilhar, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:click)': 'fecharMenu()', '(document:keydown.escape)': 'fecharMenu()' },
   template: `
     @if (ficha(); as f) {
       <section class="page">
@@ -69,7 +70,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
         <p class="sr-only" aria-live="polite">{{ anuncio() }}</p>
         <ul class="itens">
           @for (l of linhas(); track l.item.exerciseId) {
-            <li class="card item" [class.item--arrastando]="arrasto()?.i === l.i" [style.transform]="deslocamento(l.i)">
+            <li class="card item" [class.item--aberto]="aberto(l.item)" [class.item--arrastando]="arrasto()?.i === l.i" [style.transform]="deslocamento(l.i)">
               <div class="item__topo">
                 <button
                   type="button"
@@ -90,34 +91,50 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
                     <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
                   </a>
                 }
-                <a class="item__nome" [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }">
-                  {{ l.ex ? ex.nome(l.ex) : l.item.exerciseId }}
-                  <span class="item__ver">Ver instruções ›</span>
-                </a>
-                <button type="button" class="btn-icone btn-icone--neutro" data-mover="cima" aria-label="Mover para cima" [disabled]="l.i === 0" (click)="mover(l.i, -1)">
-                  <app-icon name="up" [size]="20" />
-                </button>
-                <button type="button" class="btn-icone btn-icone--neutro" data-mover="baixo" aria-label="Mover para baixo" [disabled]="l.i === linhas().length - 1" (click)="mover(l.i, 1)">
-                  <app-icon name="down" [size]="20" />
-                </button>
-                <button type="button" class="btn-icone btn-icone--neutro" aria-label="Remover da ficha" aria-haspopup="dialog" (click)="remover(l.i)">
-                  <app-icon name="close" [size]="20" />
-                </button>
+                <div class="item__texto">
+                  <a class="item__nome" [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }">{{ l.ex ? ex.nome(l.ex) : l.item.exerciseId }}</a>
+                  <button type="button" class="item__resumo" [attr.aria-expanded]="aberto(l.item)" [attr.aria-controls]="'campos-' + l.i" (click)="alternarCampos(l.item)">
+                    <span>{{ resumo(l.item) }}</span>
+                    <app-icon [name]="aberto(l.item) ? 'up' : 'down'" [size]="14" [stroke]="2.6" />
+                  </button>
+                </div>
+                <div class="menu-ancora">
+                  <button
+                    type="button"
+                    class="btn-icone btn-icone--neutro"
+                    data-menu
+                    aria-haspopup="menu"
+                    [attr.aria-expanded]="menuAberto() === l.i"
+                    [attr.aria-label]="'Mais opções de ' + (l.ex ? ex.nome(l.ex) : l.item.exerciseId)"
+                    (click)="alternarMenu(l.i, $event)"
+                  >
+                    <app-icon name="more" [size]="20" [stroke]="2.4" />
+                  </button>
+                  @if (menuAberto() === l.i) {
+                    <div class="menu" role="menu">
+                      <button type="button" role="menuitem" data-mover="cima" [disabled]="l.i === 0" (click)="moverDoMenu(l.i, -1)">Mover para cima</button>
+                      <button type="button" role="menuitem" data-mover="baixo" [disabled]="l.i === linhas().length - 1" (click)="moverDoMenu(l.i, 1)">Mover para baixo</button>
+                      <button type="button" role="menuitem" class="menu__perigo" aria-haspopup="dialog" (click)="removerDoMenu(l.i)">Remover da ficha</button>
+                    </div>
+                  }
+                </div>
               </div>
-              <div class="campos">
-                <label>Séries
-                  <input class="campo-num" type="number" inputmode="numeric" min="1" max="20" [value]="l.item.series" (change)="editar(l.i, 'series', $event)" />
-                </label>
-                <label>{{ l.item.unidade === 'min' ? 'Minutos' : 'Reps' }}
-                  <input class="campo-num" type="number" inputmode="numeric" min="1" max="100" [value]="l.item.reps" (change)="editar(l.i, 'reps', $event)" />
-                </label>
-                <label>Carga (kg)
-                  <input class="campo-num" type="number" inputmode="decimal" min="0" step="0.5" [value]="l.item.carga" (change)="editar(l.i, 'carga', $event)" />
-                </label>
-                <label>Desc. (s)
-                  <input class="campo-num" type="number" inputmode="numeric" min="0" step="5" [value]="l.item.descanso" (change)="editar(l.i, 'descanso', $event)" />
-                </label>
-              </div>
+              @if (aberto(l.item)) {
+                <div class="campos" [id]="'campos-' + l.i">
+                  <label class="cp"><small>Séries</small>
+                    <input class="cp__input" type="number" inputmode="numeric" min="1" max="20" [value]="l.item.series" (change)="editar(l.i, 'series', $event)" />
+                  </label>
+                  <label class="cp"><small>{{ l.item.unidade === 'min' ? 'Minutos' : 'Reps' }}</small>
+                    <input class="cp__input" type="number" inputmode="numeric" min="1" max="100" [value]="l.item.reps" (change)="editar(l.i, 'reps', $event)" />
+                  </label>
+                  <label class="cp"><small>Carga (kg)</small>
+                    <input class="cp__input" type="number" inputmode="decimal" min="0" step="0.5" [value]="l.item.carga" (change)="editar(l.i, 'carga', $event)" />
+                  </label>
+                  <label class="cp"><small>Desc. (s)</small>
+                    <input class="cp__input" type="number" inputmode="numeric" min="0" step="5" [value]="l.item.descanso" (change)="editar(l.i, 'descanso', $event)" />
+                  </label>
+                </div>
+              }
             </li>
           } @empty {
             <li class="apoio vazio">Esta ficha está vazia. Adicione exercícios pela biblioteca.</li>
@@ -212,10 +229,13 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     .item {
       transition: transform 0.15s ease;
       position: relative;
-      padding: 12px;
+      padding: 10px 6px 10px 4px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+    }
+    .item--aberto {
+      box-shadow: inset 0 0 0 1.5px var(--accent-soft-borda);
     }
     .voltar {
       border: 0;
@@ -229,12 +249,6 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
       min-height: 44px;
       color: var(--muted);
     }
-    .item__ver {
-      display: block;
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--muted);
-    }
     .item--arrastando {
       transition: none;
       z-index: 2;
@@ -243,7 +257,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     }
     .alca {
       flex: none;
-      width: 28px;
+      width: 24px;
       height: 44px;
       padding: 0;
       border: 0;
@@ -260,43 +274,122 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     .item__topo {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
     .mini {
-      width: 48px;
-      height: 48px;
+      display: block;
+      width: 52px;
+      height: 52px;
       border-radius: 10px;
       object-fit: cover;
       background: var(--bg);
-      margin-right: 8px;
     }
-    .item__nome {
+    .item__texto {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .item__nome {
+      font-family: var(--font-display);
       font-weight: 700;
-      font-size: 15px;
-      line-height: 1.25;
+      font-size: 15.5px;
+      line-height: 1.2;
+      color: inherit;
+      text-decoration: none;
+    }
+    .item__resumo {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      align-self: flex-start;
+      min-height: 28px;
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: left;
+    }
+    .menu-ancora {
+      position: relative;
+      flex: none;
     }
     .item .btn-icone {
       width: 36px;
       height: 44px;
       border-radius: 10px;
     }
-    .item .btn-icone:disabled {
-      opacity: 0.3;
-      cursor: default;
+    .menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 6;
+      min-width: 200px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 0 0 0 1px var(--line), 0 10px 28px rgba(0, 0, 0, 0.18);
+    }
+    .menu button {
+      min-height: 44px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 10px;
+      background: none;
+      color: var(--ink);
+      font: inherit;
+      font-size: 15px;
+      text-align: left;
+    }
+    .menu button:disabled {
+      opacity: 0.35;
+    }
+    .menu .menu__perigo {
+      color: var(--perigo);
     }
     .campos {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
+      gap: 6px;
+      margin: 0 4px 2px 30px;
     }
-    .campos label {
+    .cp {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      font-size: 12px;
+      min-height: 46px;
+      padding: 4px 8px 5px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+    .cp small {
+      font-size: 10.5px;
+      line-height: 1.3;
       color: var(--muted);
+      white-space: nowrap;
+    }
+    .cp__input {
+      width: 100%;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .cp__input:focus {
+      outline: none;
+    }
+    .cp:focus-within {
+      border-color: var(--ink);
     }
     .fab {
       position: fixed;
@@ -327,7 +420,7 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     }
     .excluir {
       align-self: center;
-      margin-bottom: 64px; /* espaço para o botão de play flutuante não cobrir o fim da tela */
+      margin-bottom: 88px; /* folga para o botão de play flutuante não cobrir o fim da tela */
       min-height: 44px;
       padding: 0 12px;
       border: none;
@@ -354,6 +447,46 @@ export class PlanEditor {
   private readonly injector = inject(Injector);
   /** Texto para leitores de tela quando a ordem muda. */
   protected readonly anuncio = signal('');
+  /** Exercícios com os campos abertos (séries, repetições, carga e descanso); fechados mostram só o resumo. */
+  private readonly abertos = signal<ReadonlySet<string>>(new Set());
+  protected readonly menuAberto = signal<number | null>(null);
+
+  protected aberto(item: ItemFicha): boolean {
+    return this.abertos().has(item.exerciseId);
+  }
+
+  protected alternarCampos(item: ItemFicha): void {
+    this.abertos.update((a) => {
+      const novo = new Set(a);
+      if (!novo.delete(item.exerciseId)) novo.add(item.exerciseId);
+      return novo;
+    });
+  }
+
+  /** "3 × 12 · 47,5 kg · desc. 60 s" (exercícios em minutos: "3 × 12 min · …"). */
+  protected resumo(item: ItemFicha): string {
+    const n = (v: number) => v.toLocaleString('pt-BR');
+    return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg · desc. ${n(item.descanso)} s`;
+  }
+
+  protected alternarMenu(indice: number, evento: Event): void {
+    evento.stopPropagation();
+    this.menuAberto.set(this.menuAberto() === indice ? null : indice);
+  }
+
+  protected fecharMenu(): void {
+    if (this.menuAberto() !== null) this.menuAberto.set(null);
+  }
+
+  protected moverDoMenu(indice: number, direcao: -1 | 1): void {
+    this.menuAberto.set(null);
+    this.mover(indice, direcao);
+  }
+
+  protected removerDoMenu(indice: number): void {
+    this.menuAberto.set(null);
+    this.remover(indice);
+  }
 
   protected readonly ficha = computed(() => this.plans.get(this.id()));
   protected readonly compartilhando = signal<FichaCompartilhada | null>(null);
@@ -479,7 +612,6 @@ export class PlanEditor {
     if (animar) for (const c of [movido, vizinho]) c.getAnimations().forEach((a) => a.finish());
     const antesMovido = animar ? movido.getBoundingClientRect().top : 0;
     const antesVizinho = animar ? vizinho.getBoundingClientRect().top : 0;
-    const botao = direcao === -1 ? 'cima' : 'baixo';
 
     this.plans.moverItem(this.id(), indice, direcao);
     const nome = this.linhas()[indice + direcao]?.ex;
@@ -487,10 +619,8 @@ export class PlanEditor {
 
     afterNextRender(
       () => {
-        // A troca de lugar dos elementos tira o foco do botão; devolve para a mesma ação (ou a oposta, se chegou ao limite).
-        const alvo = movido?.querySelector<HTMLButtonElement>(`[data-mover="${botao}"]`);
-        const par = movido?.querySelector<HTMLButtonElement>(`[data-mover="${botao === 'cima' ? 'baixo' : 'cima'}"]`);
-        (alvo && !alvo.disabled ? alvo : par)?.focus({ preventScroll: true });
+        // A troca de lugar dos elementos tira o foco; devolve para o botão ⋯ do exercício movido.
+        movido?.querySelector<HTMLButtonElement>('[data-menu]')?.focus({ preventScroll: true });
         if (!animar) return;
         const dMovido = antesMovido - movido.getBoundingClientRect().top;
         const dVizinho = antesVizinho - vizinho.getBoundingClientRect().top;
@@ -508,17 +638,6 @@ export class PlanEditor {
         );
         subida.finished.then(() => (movido.style.zIndex = ''), () => (movido.style.zIndex = ''));
         vizinho.animate([{ transform: `translateY(${dVizinho}px)` }, { transform: 'translateY(0)' }], { duration: duracao, easing: curva });
-        // Ênfase no chevron tocado: o ícone dá um pulo curto na direção da troca e o botão acende de leve.
-        const empurra = direcao === -1 ? -4 : 4;
-        alvo?.querySelector('app-icon')?.animate(
-          [
-            { transform: 'translateY(0) scale(1)' },
-            { transform: `translateY(${empurra}px) scale(1.4)`, offset: 0.3 },
-            { transform: 'translateY(0) scale(1)' },
-          ],
-          { duration: 460, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' },
-        );
-        alvo?.animate([{ backgroundColor: 'rgba(205, 235, 59, 0.9)' }, { backgroundColor: 'rgba(205, 235, 59, 0)' }], { duration: 560, easing: 'ease-out' });
       },
       { injector: this.injector },
     );

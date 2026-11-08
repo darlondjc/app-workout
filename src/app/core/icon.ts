@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 export type IconName =
+  | 'more'
   | 'home'
   | 'search'
   | 'clipboard'
@@ -104,6 +105,11 @@ export type IconName =
         @case ('rotate') {
           <path d="M20 12a8 8 0 1 1-2.5-5.8" />
           <path d="M20 4v5h-5" />
+        }
+        @case ('more') {
+          <circle cx="12" cy="5" r="1" />
+          <circle cx="12" cy="12" r="1" />
+          <circle cx="12" cy="19" r="1" />
         }
         @case ('close') {
           <path d="M6 6l12 12M18 6L6 18" />
