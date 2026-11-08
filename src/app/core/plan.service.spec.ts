@@ -442,6 +442,9 @@ describe('PlanService: ajuste único das cargas das fichas antigas', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({});
     expect(TestBed.inject(PlanService).get('f1')!.itens[0].carga).toBe(10);
+  });
+});
+
 describe('PlanService: próximo treino sugerido', () => {
   let plans: PlanService;
   let ids: string[];

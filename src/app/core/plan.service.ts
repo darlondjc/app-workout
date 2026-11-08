@@ -159,10 +159,11 @@ export class PlanService {
     effect(() => gravar(CHAVE_MESES, this.mesesPadrao()));
     effect(() => gravar(CHAVE_ATIVA, this.ativaId()));
     effect(() => gravar(CHAVE_PROXIMA, this.proximaId()));
-    // Salvar um treino da ficha ativa (ou trocar a ficha ativa) refaz a sugestão; também quando a guardada deixou de valer.
+    // Salvar um treino da ficha ativa (exercícios ou séries) ou trocar a ficha ativa refaz a sugestão; também quando a guardada deixou de valer.
     effect(() => {
       const candidatos = this.candidatosProxima();
-      const assinatura = JSON.stringify(candidatos.map((f) => [f.id, f.itens]));
+      // Só o que entra na conta dos músculos (exercícios e séries): a carga muda sozinha ao concluir um treino.
+      const assinatura = JSON.stringify(candidatos.map((f) => [f.id, f.itens.map((i) => [i.exerciseId, i.series])]));
       untracked(() => {
         const mudou = this.assinaturaDaFichaAtiva !== null && assinatura !== this.assinaturaDaFichaAtiva;
         this.assinaturaDaFichaAtiva = assinatura;
