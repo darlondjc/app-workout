@@ -32,6 +32,11 @@ export interface ItemFicha {
   descanso: number;
   /** Nota fixa do exercício nesta ficha (ex.: "banco na posição 4"); aparece em todo treino. */
   nota?: string;
+  /**
+   * Exercício conjugado: dois exercícios vizinhos com o mesmo `par` são feitos juntos, uma série de cada. O descanso do
+   * par é o `descanso` do segundo. Veja `core/conjugado.ts`.
+   */
+  par?: string;
 }
 
 export interface Ficha {

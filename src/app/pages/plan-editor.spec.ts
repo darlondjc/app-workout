@@ -190,7 +190,8 @@ describe('PlanEditor — card do exercício', () => {
 
   it('o menu ⋯ abre com as três ações e fecha ao tocar fora', () => {
     abrirMenu(0);
-    expect([...el().querySelectorAll('.menu button')].map((b) => b.textContent!.trim())).toEqual(['Mover para cima', 'Mover para baixo', 'Remover da ficha']);
+    // O primeiro exercício tem outro logo abaixo, sozinho: pode ser conjugado com ele.
+    expect([...el().querySelectorAll('.menu button')].map((b) => b.textContent!.trim())).toEqual(['Mover para cima', 'Mover para baixo', 'Conjugar com o de baixo', 'Remover da ficha']);
     expect(itemDoMenu('Mover para cima').disabled).toBeTrue();
     document.body.click();
     fixture.detectChanges();
@@ -214,5 +215,113 @@ describe('PlanEditor — card do exercício', () => {
   it('não há mais os botões soltos de subir, descer e remover nos cards', () => {
     expect(el().querySelectorAll('li.item > .item__topo > button[data-mover]').length).toBe(0);
     expect(el().querySelectorAll('li.item .btn-icone').length).toBe(2);
+  });
+});
+
+describe('PlanEditor — exercícios conjugados', () => {
+  let fixture: ComponentFixture<PlanEditor>;
+  let plans: PlanService;
+  let fichaId: string;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const clicar = (e: Element | null | undefined) => {
+    (e as HTMLElement).click();
+    fixture.detectChanges();
+  };
+  const blocos = () => [...el().querySelectorAll('li.bloco')] as HTMLElement[];
+  const menuDe = (i: number) => clicar(el().querySelectorAll('[data-menu]')[i]);
+  const opcoes = () => [...el().querySelectorAll('.menu button')].map((b) => b.textContent!.trim());
+  const opcao = (texto: string) => [...el().querySelectorAll('.menu button')].find((b) => b.textContent!.trim() === texto);
+  const item = (exerciseId: string, extra: object = {}) => ({ exerciseId, series: 3, reps: 12, carga: 20, descanso: 60, ...extra });
+
+  function abrir(itens: object[]): void {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
+    plans = TestBed.inject(PlanService);
+    [{ id: fichaId }] = plans.criarComItens([{ nome: 'Braços', itens: itens as never }]);
+    fixture = TestBed.createComponent(PlanEditor);
+    fixture.componentRef.setInput('id', fichaId);
+    fixture.detectChanges();
+  }
+
+  it('Conjugar com o de baixo forma um bloco com A1 e A2', () => {
+    abrir([item('rosca'), item('triceps'), item('martelo')]);
+    expect(blocos().length).toBe(3);
+    menuDe(0);
+    expect(opcoes()).toContain('Conjugar com o de baixo');
+    clicar(opcao('Conjugar com o de baixo'));
+    expect(blocos().length).toBe(2);
+    const grupo = el().querySelector('li.grupo')!;
+    expect(grupo.querySelector('.tag')!.textContent).toContain('Conjugado');
+    expect([...grupo.querySelectorAll('.rot')].map((r) => r.textContent!.trim())).toEqual(['A1', 'A2']);
+    expect(plans.get(fichaId)!.itens.map((i) => !!i.par)).toEqual([true, true, false]);
+  });
+
+  it('o último exercício não oferece conjugar, e quem tem o de baixo num par também não', () => {
+    abrir([item('rosca'), item('triceps', { par: 'p' }), item('martelo', { par: 'p' })]);
+    menuDe(0); // o de baixo já está num par
+    expect(opcoes()).not.toContain('Conjugar com o de baixo');
+    document.body.click();
+    fixture.detectChanges();
+    abrir([item('rosca'), item('triceps')]);
+    menuDe(1); // último
+    expect(opcoes()).not.toContain('Conjugar com o de baixo');
+  });
+
+  it('o menu de quem está num par oferece Separar do conjugado, e separar desfaz o bloco', () => {
+    abrir([item('rosca', { par: 'p' }), item('triceps', { par: 'p' }), item('martelo')]);
+    menuDe(0);
+    expect(opcoes()).toEqual(['Mover o par para cima', 'Mover o par para baixo', 'Separar do conjugado', 'Remover da ficha']);
+    clicar(opcao('Separar do conjugado'));
+    expect(el().querySelector('li.grupo')).toBeNull();
+    expect(blocos().length).toBe(3);
+    expect(plans.get(fichaId)!.itens.some((i) => i.par)).toBeFalse();
+  });
+
+  it('o descanso do par fica no cabeçalho do bloco e é o do segundo exercício', () => {
+    abrir([item('rosca', { par: 'p', descanso: 30 }), item('triceps', { par: 'p', descanso: 90 })]);
+    const resumo = el().querySelector('.gs')!;
+    expect(resumo.textContent).toContain('desc. 90 s após a rodada');
+    clicar(resumo);
+    const campo = el().querySelector('.campos--par input') as HTMLInputElement;
+    campo.value = '120';
+    campo.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(plans.get(fichaId)!.itens[1].descanso).toBe(120);
+    expect(plans.get(fichaId)!.itens[0].descanso).toBe(30);
+    expect(el().querySelector('.gs')!.textContent).toContain('desc. 120 s após a rodada');
+  });
+
+  it('cada exercício do par tem as suas séries, reps e carga', () => {
+    abrir([item('rosca', { par: 'p', series: 4 }), item('triceps', { par: 'p', series: 3 })]);
+    const resumos = [...el().querySelectorAll('.mb .item__resumo')].map((r) => r.textContent!.replace(/\s+/g, ' ').trim());
+    expect(resumos).toEqual(['4 × 12 · 20 kg', '3 × 12 · 20 kg']);
+    clicar(el().querySelectorAll('.mb .item__resumo')[1]);
+    const campos = [...el().querySelectorAll('.campos--membro input')] as HTMLInputElement[];
+    expect(campos.length).toBe(3);
+    campos[0].value = '5';
+    campos[0].dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(plans.get(fichaId)!.itens.map((i) => i.series)).toEqual([4, 5]);
+  });
+
+  it('mover o par leva os dois exercícios juntos', () => {
+    abrir([item('rosca', { par: 'p' }), item('triceps', { par: 'p' }), item('martelo')]);
+    menuDe(0);
+    expect((opcao('Mover o par para cima') as HTMLButtonElement).disabled).toBeTrue();
+    clicar(opcao('Mover o par para baixo'));
+    expect(plans.get(fichaId)!.itens.map((i) => i.exerciseId)).toEqual(['martelo', 'rosca', 'triceps']);
+    expect(plans.get(fichaId)!.itens.map((i) => !!i.par)).toEqual([false, true, true]);
+  });
+
+  it('remover um exercício do par deixa o outro sozinho', () => {
+    abrir([item('rosca', { par: 'p' }), item('triceps', { par: 'p' })]);
+    menuDe(1);
+    clicar(opcao('Remover da ficha'));
+    const confirmar = [...el().querySelectorAll('button')].find((b) => b.textContent!.trim() === 'Remover');
+    clicar(confirmar);
+    expect(plans.get(fichaId)!.itens.map((i) => i.exerciseId)).toEqual(['rosca']);
+    expect(plans.get(fichaId)!.itens[0].par).toBeUndefined();
+    expect(el().querySelector('li.grupo')).toBeNull();
   });
 });

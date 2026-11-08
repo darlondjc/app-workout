@@ -7,12 +7,39 @@ import { FichaCompartilhar } from '../core/ficha-compartilhar';
 import { FichaCompartilhada, fichaParaCompartilhar } from '../core/ficha-link';
 import { ExerciseService } from '../core/exercise.service';
 import { Icon } from '../core/icon';
-import { ItemFicha } from '../core/models';
+import { Exercise, ItemFicha } from '../core/models';
+import { blocosDe, letraDoPar, podeConjugarComProximo } from '../core/conjugado';
 import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
 
-type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
+type Campo = keyof Omit<ItemFicha, 'exerciseId' | 'par'>;
+
+interface Linha {
+  item: ItemFicha;
+  i: number;
+  ex: Exercise | undefined;
+}
+interface BlocoSolo {
+  tipo: 'solo';
+  bi: number;
+  chave: string;
+  a: Linha;
+  podeConjugar: boolean;
+}
+interface BlocoPar {
+  tipo: 'par';
+  bi: number;
+  chave: string;
+  id: string;
+  letra: string;
+  a: Linha;
+  b: Linha;
+  membros: [Linha, Linha];
+  /** Descanso depois de cada rodada: o do segundo exercício. */
+  descanso: number;
+}
+type BlocoDaTela = BlocoSolo | BlocoPar;
 
 @Component({
   selector: 'app-plan-editor',
@@ -66,73 +93,165 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
 
         <p class="sr-only" aria-live="polite">{{ anuncio() }}</p>
         <ul class="itens">
-          @for (l of linhas(); track l.item.exerciseId) {
-            <li class="card item" [class.item--aberto]="aberto(l.item)" [class.item--arrastando]="arrasto()?.i === l.i" [style.transform]="deslocamento(l.i)">
-              <div class="item__topo">
-                <button
-                  type="button"
-                  class="alca"
-                  aria-hidden="true"
-                  tabindex="-1"
-                  title="Arraste para mudar a ordem"
-                  (mousedown)="$event.preventDefault()"
-                  (pointerdown)="iniciarArrasto($event, l.i)"
-                  (pointermove)="moverArrasto($event)"
-                  (pointerup)="soltarArrasto($event)"
-                  (pointercancel)="cancelarArrasto()"
-                >
-                  <app-icon name="grip" [size]="20" [stroke]="2" />
-                </button>
-                @if (l.ex) {
-                  <a [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
-                    <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
-                  </a>
-                }
-                <div class="item__texto">
-                  <a class="item__nome" [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }">{{ l.ex ? ex.nome(l.ex) : l.item.exerciseId }}</a>
-                  <button type="button" class="item__resumo" [attr.aria-expanded]="aberto(l.item)" [attr.aria-controls]="'campos-' + l.i" (click)="alternarCampos(l.item)">
-                    <span>{{ resumo(l.item) }}</span>
-                    <app-icon [name]="aberto(l.item) ? 'up' : 'down'" [size]="14" [stroke]="2.6" />
-                  </button>
-                </div>
-                <div class="menu-ancora">
+          @for (b of blocos(); track b.chave) {
+            @if (b.tipo === 'solo') {
+              @let l = b.a;
+              <li class="card item bloco" [class.item--aberto]="aberto(l.item)" [class.item--arrastando]="arrasto()?.i === b.bi" [style.transform]="deslocamento(b.bi)">
+                <div class="item__topo">
                   <button
                     type="button"
-                    class="btn-icone btn-icone--neutro"
-                    data-menu
-                    aria-haspopup="menu"
-                    [attr.aria-expanded]="menuAberto() === l.i"
-                    [attr.aria-label]="'Mais opções de ' + (l.ex ? ex.nome(l.ex) : l.item.exerciseId)"
-                    (click)="alternarMenu(l.i, $event)"
+                    class="alca"
+                    aria-hidden="true"
+                    tabindex="-1"
+                    title="Arraste para mudar a ordem"
+                    (mousedown)="$event.preventDefault()"
+                    (pointerdown)="iniciarArrasto($event, b.bi)"
+                    (pointermove)="moverArrasto($event)"
+                    (pointerup)="soltarArrasto($event)"
+                    (pointercancel)="cancelarArrasto()"
                   >
-                    <app-icon name="more" [size]="20" [stroke]="2.4" />
+                    <app-icon name="grip" [size]="20" [stroke]="2" />
                   </button>
-                  @if (menuAberto() === l.i) {
-                    <div class="menu" role="menu">
-                      <button type="button" role="menuitem" data-mover="cima" [disabled]="l.i === 0" (click)="moverDoMenu(l.i, -1)">Mover para cima</button>
-                      <button type="button" role="menuitem" data-mover="baixo" [disabled]="l.i === linhas().length - 1" (click)="moverDoMenu(l.i, 1)">Mover para baixo</button>
-                      <button type="button" role="menuitem" class="menu__perigo" aria-haspopup="dialog" (click)="removerDoMenu(l.i)">Remover da ficha</button>
+                  @if (l.ex) {
+                    <a [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
+                      <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
+                    </a>
+                  }
+                  <div class="item__texto">
+                    <a class="item__nome" [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }">{{ l.ex ? ex.nome(l.ex) : l.item.exerciseId }}</a>
+                    <button type="button" class="item__resumo" [attr.aria-expanded]="aberto(l.item)" [attr.aria-controls]="'campos-' + l.i" (click)="alternarCampos(l.item)">
+                      <span>{{ resumo(l.item) }}</span>
+                      <app-icon [name]="aberto(l.item) ? 'up' : 'down'" [size]="14" [stroke]="2.6" />
+                    </button>
+                  </div>
+                  <div class="menu-ancora">
+                    <button
+                      type="button"
+                      class="btn-icone btn-icone--neutro"
+                      data-menu
+                      aria-haspopup="menu"
+                      [attr.aria-expanded]="menuAberto() === l.i"
+                      [attr.aria-label]="'Mais opções de ' + (l.ex ? ex.nome(l.ex) : l.item.exerciseId)"
+                      (click)="alternarMenu(l.i, $event)"
+                    >
+                      <app-icon name="more" [size]="20" [stroke]="2.4" />
+                    </button>
+                    @if (menuAberto() === l.i) {
+                      <div class="menu" role="menu">
+                        <button type="button" role="menuitem" data-mover="cima" [disabled]="b.bi === 0" (click)="moverDoMenu(b.bi, -1)">Mover para cima</button>
+                        <button type="button" role="menuitem" data-mover="baixo" [disabled]="b.bi === blocos().length - 1" (click)="moverDoMenu(b.bi, 1)">Mover para baixo</button>
+                        @if (b.podeConjugar) {
+                          <button type="button" role="menuitem" class="menu__destaque" (click)="conjugarDoMenu(l.i)">Conjugar com o de baixo</button>
+                        }
+                        <button type="button" role="menuitem" class="menu__perigo" aria-haspopup="dialog" (click)="removerDoMenu(l.i)">Remover da ficha</button>
+                      </div>
+                    }
+                  </div>
+                </div>
+                @if (aberto(l.item)) {
+                  <div class="campos" [id]="'campos-' + l.i">
+                    <label class="cp"><small>Séries</small>
+                      <input class="cp__input" type="number" inputmode="numeric" min="1" max="20" [value]="l.item.series" (change)="editar(l.i, 'series', $event)" />
+                    </label>
+                    <label class="cp"><small>{{ l.item.unidade === 'min' ? 'Minutos' : 'Reps' }}</small>
+                      <input class="cp__input" type="number" inputmode="numeric" min="1" max="100" [value]="l.item.reps" (change)="editar(l.i, 'reps', $event)" />
+                    </label>
+                    <label class="cp"><small>Carga (kg)</small>
+                      <input class="cp__input" type="number" inputmode="decimal" min="0" step="0.5" [value]="l.item.carga" (change)="editar(l.i, 'carga', $event)" />
+                    </label>
+                    <label class="cp"><small>Desc. (s)</small>
+                      <input class="cp__input" type="number" inputmode="numeric" min="0" step="5" [value]="l.item.descanso" (change)="editar(l.i, 'descanso', $event)" />
+                    </label>
+                  </div>
+                }
+              </li>
+            } @else {
+              <li class="grupo bloco" [class.item--arrastando]="arrasto()?.i === b.bi" [style.transform]="deslocamento(b.bi)">
+                <div class="gh">
+                  <button
+                    type="button"
+                    class="alca"
+                    aria-hidden="true"
+                    tabindex="-1"
+                    title="Arraste para mudar a ordem"
+                    (mousedown)="$event.preventDefault()"
+                    (pointerdown)="iniciarArrasto($event, b.bi)"
+                    (pointermove)="moverArrasto($event)"
+                    (pointerup)="soltarArrasto($event)"
+                    (pointercancel)="cancelarArrasto()"
+                  >
+                    <app-icon name="grip" [size]="20" [stroke]="2" />
+                  </button>
+                  <span class="tag"><app-icon name="link" [size]="13" [stroke]="2.4" /> Conjugado</span>
+                  <button type="button" class="gs" [attr.aria-expanded]="abertoChave('par:' + b.id)" (click)="alternarChave('par:' + b.id)">
+                    <span>desc. {{ b.descanso }} s após a rodada</span>
+                    <app-icon [name]="abertoChave('par:' + b.id) ? 'up' : 'down'" [size]="14" [stroke]="2.6" />
+                  </button>
+                </div>
+                @if (abertoChave('par:' + b.id)) {
+                  <div class="campos campos--par">
+                    <label class="cp"><small>Descanso após a rodada (s)</small>
+                      <input class="cp__input" type="number" inputmode="numeric" min="0" step="5" [value]="b.descanso" (change)="editar(b.b.i, 'descanso', $event)" />
+                    </label>
+                  </div>
+                }
+                <div class="mbs">
+                  @for (m of b.membros; track m.item.exerciseId; let k = $index) {
+                    <div class="mb" [class.item--aberto]="aberto(m.item)">
+                      <div class="item__topo">
+                        <span class="rot">{{ b.letra }}{{ k + 1 }}</span>
+                        @if (m.ex) {
+                          <a [routerLink]="['/exercicio', m.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
+                            <img class="mini mini--par" [src]="ex.imagem(m.ex.id, 0)" alt="" loading="lazy" />
+                          </a>
+                        }
+                        <div class="item__texto">
+                          <a class="item__nome" [routerLink]="['/exercicio', m.item.exerciseId]" [queryParams]="{ ficha: id() }">{{ m.ex ? ex.nome(m.ex) : m.item.exerciseId }}</a>
+                          <button type="button" class="item__resumo" [attr.aria-expanded]="aberto(m.item)" [attr.aria-controls]="'campos-' + m.i" (click)="alternarCampos(m.item)">
+                            <span>{{ resumoMembro(m.item) }}</span>
+                            <app-icon [name]="aberto(m.item) ? 'up' : 'down'" [size]="14" [stroke]="2.6" />
+                          </button>
+                        </div>
+                        <div class="menu-ancora">
+                          <button
+                            type="button"
+                            class="btn-icone btn-icone--neutro"
+                            data-menu
+                            aria-haspopup="menu"
+                            [attr.aria-expanded]="menuAberto() === m.i"
+                            [attr.aria-label]="'Mais opções de ' + (m.ex ? ex.nome(m.ex) : m.item.exerciseId)"
+                            (click)="alternarMenu(m.i, $event)"
+                          >
+                            <app-icon name="more" [size]="20" [stroke]="2.4" />
+                          </button>
+                          @if (menuAberto() === m.i) {
+                            <div class="menu" role="menu">
+                              <button type="button" role="menuitem" data-mover="cima" [disabled]="b.bi === 0" (click)="moverDoMenu(b.bi, -1)">Mover o par para cima</button>
+                              <button type="button" role="menuitem" data-mover="baixo" [disabled]="b.bi === blocos().length - 1" (click)="moverDoMenu(b.bi, 1)">Mover o par para baixo</button>
+                              <button type="button" role="menuitem" class="menu__destaque" (click)="separarDoMenu(m.i)">Separar do conjugado</button>
+                              <button type="button" role="menuitem" class="menu__perigo" aria-haspopup="dialog" (click)="removerDoMenu(m.i)">Remover da ficha</button>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                      @if (aberto(m.item)) {
+                        <div class="campos campos--membro" [id]="'campos-' + m.i">
+                          <label class="cp"><small>Séries</small>
+                            <input class="cp__input" type="number" inputmode="numeric" min="1" max="20" [value]="m.item.series" (change)="editar(m.i, 'series', $event)" />
+                          </label>
+                          <label class="cp"><small>{{ m.item.unidade === 'min' ? 'Minutos' : 'Reps' }}</small>
+                            <input class="cp__input" type="number" inputmode="numeric" min="1" max="100" [value]="m.item.reps" (change)="editar(m.i, 'reps', $event)" />
+                          </label>
+                          <label class="cp"><small>Carga (kg)</small>
+                            <input class="cp__input" type="number" inputmode="decimal" min="0" step="0.5" [value]="m.item.carga" (change)="editar(m.i, 'carga', $event)" />
+                          </label>
+                        </div>
+                      }
                     </div>
                   }
                 </div>
-              </div>
-              @if (aberto(l.item)) {
-                <div class="campos" [id]="'campos-' + l.i">
-                  <label class="cp"><small>Séries</small>
-                    <input class="cp__input" type="number" inputmode="numeric" min="1" max="20" [value]="l.item.series" (change)="editar(l.i, 'series', $event)" />
-                  </label>
-                  <label class="cp"><small>{{ l.item.unidade === 'min' ? 'Minutos' : 'Reps' }}</small>
-                    <input class="cp__input" type="number" inputmode="numeric" min="1" max="100" [value]="l.item.reps" (change)="editar(l.i, 'reps', $event)" />
-                  </label>
-                  <label class="cp"><small>Carga (kg)</small>
-                    <input class="cp__input" type="number" inputmode="decimal" min="0" step="0.5" [value]="l.item.carga" (change)="editar(l.i, 'carga', $event)" />
-                  </label>
-                  <label class="cp"><small>Desc. (s)</small>
-                    <input class="cp__input" type="number" inputmode="numeric" min="0" step="5" [value]="l.item.descanso" (change)="editar(l.i, 'descanso', $event)" />
-                  </label>
-                </div>
-              }
-            </li>
+              </li>
+            }
           } @empty {
             <li class="apoio vazio">Esta ficha está vazia. Adicione exercícios pela biblioteca.</li>
           }
@@ -348,6 +467,99 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
     .menu .menu__perigo {
       color: var(--perigo);
     }
+    /* Exercícios conjugados: um bloco verde com os dois exercícios do par */
+    .grupo {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 6px 6px 6px 4px;
+      border-radius: 18px;
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1.5px var(--accent-soft-borda);
+      transition: transform 0.15s ease;
+      position: relative;
+    }
+    .gh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--on-accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .gs {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 44px;
+      padding: 0 8px;
+      border: 0;
+      background: none;
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--accent-ink);
+    }
+    .mbs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+    .mb {
+      position: relative;
+      padding: 8px 4px 8px 8px;
+      border-radius: 14px;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mb .item__topo {
+      gap: 8px;
+    }
+    .rot {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: var(--ink-bg);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini--par {
+      width: 46px;
+      height: 46px;
+    }
+    .campos.campos--par {
+      grid-template-columns: minmax(0, 1fr);
+      margin: 0 8px 2px 30px;
+    }
+    .campos.campos--membro {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 0 4px 2px 36px;
+    }
+    .menu .menu__destaque {
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+      font-weight: 700;
+    }
     .campos {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -448,15 +660,29 @@ export class PlanEditor {
   protected readonly menuAberto = signal<number | null>(null);
 
   protected aberto(item: ItemFicha): boolean {
-    return this.abertos().has(item.exerciseId);
+    return this.abertoChave(item.exerciseId);
+  }
+
+  protected abertoChave(chave: string): boolean {
+    return this.abertos().has(chave);
   }
 
   protected alternarCampos(item: ItemFicha): void {
+    this.alternarChave(item.exerciseId);
+  }
+
+  protected alternarChave(chave: string): void {
     this.abertos.update((a) => {
       const novo = new Set(a);
-      if (!novo.delete(item.exerciseId)) novo.add(item.exerciseId);
+      if (!novo.delete(chave)) novo.add(chave);
       return novo;
     });
+  }
+
+  /** Resumo de um exercício do par, sem o descanso (que é do par): "3 × 12 · 20 kg". */
+  protected resumoMembro(item: ItemFicha): string {
+    const n = (v: number) => v.toLocaleString('pt-BR');
+    return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg`;
   }
 
   /** "3 × 12 · 47,5 kg · desc. 60 s" (exercícios em minutos: "3 × 12 min · …"). */
@@ -477,6 +703,18 @@ export class PlanEditor {
   protected moverDoMenu(indice: number, direcao: -1 | 1): void {
     this.menuAberto.set(null);
     this.mover(indice, direcao);
+  }
+
+  protected conjugarDoMenu(indice: number): void {
+    this.menuAberto.set(null);
+    this.plans.conjugarComProximo(this.id(), indice);
+    this.anuncio.set('Exercícios conjugados: uma série de cada, em sequência.');
+  }
+
+  protected separarDoMenu(indice: number): void {
+    this.menuAberto.set(null);
+    this.plans.separarPar(this.id(), indice);
+    this.anuncio.set('Exercícios separados.');
   }
 
   protected removerDoMenu(indice: number): void {
@@ -539,6 +777,20 @@ export class PlanEditor {
     (this.ficha()?.itens ?? []).map((item, i) => ({ item, i, ex: this.ex.get(item.exerciseId) })),
   );
 
+  /** A lista como a tela a mostra: cada exercício sozinho ou cada par conjugado, na ordem da ficha. */
+  protected readonly blocos = computed<BlocoDaTela[]>(() => {
+    const itens = this.ficha()?.itens ?? [];
+    const linha = (i: number): Linha => ({ item: itens[i], i, ex: this.ex.get(itens[i].exerciseId) });
+    return blocosDe(itens).map((b, bi): BlocoDaTela => {
+      if (b.tipo === 'solo') {
+        return { tipo: 'solo', bi, chave: itens[b.i].exerciseId, a: linha(b.i), podeConjugar: podeConjugarComProximo(itens, b.i) };
+      }
+      const a = linha(b.a);
+      const seg = linha(b.b);
+      return { tipo: 'par', bi, chave: 'par:' + b.id, id: b.id, letra: letraDoPar(itens, b.id), a, b: seg, membros: [a, seg], descanso: itens[b.b].descanso };
+    });
+  });
+
   protected renomear(nome: string): void {
     const limpo = nome.trim();
     if (limpo) this.plans.renomear(this.id(), limpo);
@@ -563,7 +815,7 @@ export class PlanEditor {
     if (e.button > 0) return;
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    const cartoes = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('li.item')).map((c) => c.getBoundingClientRect());
+    const cartoes = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('li.bloco')).map((c) => c.getBoundingClientRect());
     if (!cartoes[i]) return;
     this.gestoArrasto = { y0: e.clientY, centros: cartoes.map((r) => r.top + r.height / 2) };
     this.arrasto.set({ i, dy: 0, alvo: i, passo: cartoes[i].height + 10 });
@@ -587,9 +839,8 @@ export class PlanEditor {
     this.cancelarArrasto();
     if (!a || a.alvo === a.i) return;
     (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-    this.plans.reordenarItem(this.id(), a.i, a.alvo);
-    const nome = this.linhas()[a.alvo]?.ex;
-    this.anuncio.set(`${nome ? this.ex.nome(nome) : 'Exercício'} movido para a posição ${a.alvo + 1} de ${this.linhas().length}`);
+    this.plans.reordenarBloco(this.id(), a.i, a.alvo);
+    this.anuncio.set(`${this.nomeDoBloco(a.alvo)} movido para a posição ${a.alvo + 1} de ${this.blocos().length}`);
   }
 
   protected cancelarArrasto(): void {
@@ -607,19 +858,26 @@ export class PlanEditor {
     return null;
   }
 
-  protected mover(indice: number, direcao: -1 | 1): void {
-    const cartoes = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('li.item'));
-    const movido = cartoes[indice];
-    const vizinho = cartoes[indice + direcao];
+  /** Nome do bloco para os leitores de tela: o exercício ou, num par, "Par A: X e Y". */
+  private nomeDoBloco(bi: number): string {
+    const b = this.blocos()[bi];
+    const nome = (l: Linha) => (l.ex ? this.ex.nome(l.ex) : 'Exercício');
+    if (!b) return 'Exercício';
+    return b.tipo === 'solo' ? nome(b.a) : `Par ${b.letra}: ${nome(b.a)} e ${nome(b.b)}`;
+  }
+
+  protected mover(bloco: number, direcao: -1 | 1): void {
+    const cartoes = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('li.bloco'));
+    const movido = cartoes[bloco];
+    const vizinho = cartoes[bloco + direcao];
     const animar = !!movido && !!vizinho && !matchMedia('(prefers-reduced-motion: reduce)').matches;
     // Termina qualquer animação em curso para medir as posições reais (toques em sequência).
     if (animar) for (const c of [movido, vizinho]) c.getAnimations().forEach((a) => a.finish());
     const antesMovido = animar ? movido.getBoundingClientRect().top : 0;
     const antesVizinho = animar ? vizinho.getBoundingClientRect().top : 0;
 
-    this.plans.moverItem(this.id(), indice, direcao);
-    const nome = this.linhas()[indice + direcao]?.ex;
-    this.anuncio.set(`${nome ? this.ex.nome(nome) : 'Exercício'} movido para a posição ${indice + direcao + 1} de ${this.linhas().length}`);
+    this.plans.moverBloco(this.id(), bloco, direcao);
+    this.anuncio.set(`${this.nomeDoBloco(bloco + direcao)} movido para a posição ${bloco + direcao + 1} de ${this.blocos().length}`);
 
     afterNextRender(
       () => {

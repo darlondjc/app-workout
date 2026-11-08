@@ -17,6 +17,41 @@ describe('ficha-link', () => {
     expect(volta).toEqual(f);
   });
 
+  it('um par conjugado vai e volta pelo link, com séries diferentes e sem nota', async () => {
+    const t = treino('Braços', ['rosca', 'triceps', 'martelo']);
+    t.itens[0] = { ...t.itens[0], series: 4, par: 'id-longo-qualquer-1' };
+    t.itens[1] = { ...t.itens[1], series: 3, descanso: 90, par: 'id-longo-qualquer-1' };
+    const volta = await decodificarFicha(await codificarFicha(fichaParaCompartilhar('Divisão', [t])));
+    const itens = volta!.treinos[0].itens;
+    expect(itens[0].par).toBeTruthy();
+    expect(itens[0].par).toBe(itens[1].par);
+    expect(itens[2].par).toBeUndefined();
+    expect(itens.map((i) => [i.series, i.descanso])).toEqual([[4, 60], [3, 90], [3, 60]]);
+    expect(itens.some((i) => i.nota)).toBeFalse();
+  });
+
+  it('o par e a nota convivem no mesmo exercício', async () => {
+    const t = treino('T', ['a', 'b']);
+    t.itens[0] = { ...t.itens[0], nota: 'banco 4', par: 'p' };
+    t.itens[1] = { ...t.itens[1], par: 'p' };
+    const itens = (await decodificarFicha(await codificarFicha(fichaParaCompartilhar('F', [t]))))!.treinos[0].itens;
+    expect(itens[0].nota).toBe('banco 4');
+    expect(itens[0].par).toBe(itens[1].par);
+  });
+
+  it('marca de par sem o vizinho certo é descartada ao ler o link', () => {
+    const compacto = { v: 1, n: 'F', t: [{ n: 'T', i: [['a', 3, 10, 0, 60, 0, '', '1'], ['b', 3, 10, 0, 60, 0], ['c', 3, 10, 0, 60, 0, '', '2'], ['d', 3, 10, 0, 60, 0, '', '2'], ['e', 3, 10, 0, 60, 0, '', 'rótulo inválido!']] }] };
+    const itens = validar(compacto)!.treinos[0].itens;
+    expect(itens.map((i) => (i.par ? 'P' : '-')).join('')).toBe('--PP-');
+  });
+
+  it('links de antes dos pares continuam valendo', async () => {
+    const antigo = { v: 1, n: 'F', t: [{ n: 'T', i: [['a', 3, 10, 20, 60, 0], ['b', 3, 10, 20, 60, 0, 'nota']] }] };
+    const f = validar(antigo)!;
+    expect(f.treinos[0].itens.every((i) => !i.par)).toBeTrue();
+    expect(f.treinos[0].itens[1].nota).toBe('nota');
+  });
+
   it('o código só tem caracteres seguros para o endereço', async () => {
     const codigo = await codificarFicha(fichaParaCompartilhar('A', [treino('T', ['a', 'b'])]));
     expect(codigo).toMatch(/^[zj][A-Za-z0-9_-]+$/);

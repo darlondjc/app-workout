@@ -1,3 +1,4 @@
+import { limparPares } from './conjugado';
 import { Ficha, ItemFicha } from './models';
 import { NOTA_EXERCICIO_MAX, limparNota } from './notas';
 
@@ -28,8 +29,10 @@ const MAX_LINK = 20_000;
 export const MAX_LINK_PARA_QR = 1100;
 
 const ID_VALIDO = /^[\w.-]{1,100}$/;
+const ROTULO_PAR = /^[\w-]{1,12}$/;
 
-type ItemCompacto = [string, number, number, number, number, 0 | 1, string?];
+/** [exercício, séries, reps, carga, descanso, minutos?, nota, par]: a nota é '' quando não há; o par é um rótulo curto, igual nos dois do par. */
+type ItemCompacto = [string, number, number, number, number, 0 | 1, string?, string?];
 interface Compacto {
   v: number;
   n: string;
@@ -41,16 +44,28 @@ export function fichaParaCompartilhar(nome: string, treinos: readonly Ficha[]): 
   return { nome, treinos: treinos.map((t) => ({ nome: t.nome, itens: t.itens })) };
 }
 
+/** Troca os ids de par (longos) por rótulos curtos "1", "2"… dentro do treino; '' para quem não faz par. */
+function rotulosDePar(itens: readonly ItemFicha[]): string[] {
+  const rotulos = new Map<string, string>();
+  return limparPares([...itens]).map((it) => {
+    if (!it.par) return '';
+    if (!rotulos.has(it.par)) rotulos.set(it.par, String(rotulos.size + 1));
+    return rotulos.get(it.par)!;
+  });
+}
+
 function compactar(f: FichaCompartilhada): string {
   const c: Compacto = {
     v: VERSAO,
     n: f.nome,
     t: f.treinos.map((t) => ({
       n: t.nome,
-      i: t.itens.map((it) => {
+      i: rotulosDePar(t.itens).map((rotulo, k) => {
+        const it = t.itens[k];
         const min = it.unidade === 'min' ? 1 : 0;
         const item: ItemCompacto = [it.exerciseId, it.series, it.reps, it.carga, it.descanso, min];
-        if (it.nota) item.push(it.nota);
+        if (it.nota || rotulo) item.push(it.nota ?? '');
+        if (rotulo) item.push(rotulo);
         return item;
       }),
     })),
@@ -173,9 +188,11 @@ export function validar(bruto: unknown): FichaCompartilhada | null {
       if (min) item.unidade = 'min';
       const nota = limparNota(typeof it[6] === 'string' ? it[6] : undefined, NOTA_EXERCICIO_MAX);
       if (nota) item.nota = nota;
+      if (typeof it[7] === 'string' && ROTULO_PAR.test(it[7])) item.par = it[7];
       itens.push(item);
     }
-    if (itens.length > 0) treinos.push({ nome: nome((t as { n?: unknown }).n, 'Treino'), itens });
+    // Só fica o par que de fato forma um par (dois vizinhos com o mesmo rótulo).
+    if (itens.length > 0) treinos.push({ nome: nome((t as { n?: unknown }).n, 'Treino'), itens: limparPares(itens) });
   }
   if (treinos.length === 0) return null;
   return { nome: nome(c.n, 'Ficha compartilhada'), treinos };

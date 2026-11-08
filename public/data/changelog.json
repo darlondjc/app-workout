@@ -1,5 +1,16 @@
 [
   {
+    "versao": "1.31.0",
+    "data": "2026-11-08",
+    "titulo": "Exercícios conjugados na ficha",
+    "itens": [
+      "Dois exercícios vizinhos de um treino podem ser conjugados, para fazer uma série de cada, em sequência. No menu ⋯ do exercício, use Conjugar com o de baixo; no bloco, Separar do conjugado.",
+      "O par aparece num bloco verde, com as marcas A1 e A2. Cada exercício mantém as suas séries, repetições e carga (um pode ter mais séries que o outro), e o descanso é um só, depois de cada rodada. O cardio em minutos também pode entrar.",
+      "Arrastar ou mover um par leva os dois juntos, e o link de compartilhamento da ficha leva os pares.",
+      "Por enquanto, durante o treino os dois exercícios do par ainda aparecem um depois do outro. A tela de rodadas vem na sequência."
+    ]
+  },
+  {
     "versao": "1.30.0",
     "data": "2026-11-08",
     "titulo": "Perfil em abas",

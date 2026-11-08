@@ -293,13 +293,13 @@ describe('PlanService: criar fichas novas com as que já existem', () => {
     expect(plans.blocosAtivos().length).toBe(1);
   });
 
-  it('reordenarItem leva o exercício para a nova posição, mantendo os demais na ordem', () => {
+  it('reordenarBloco leva o exercício para a nova posição, mantendo os demais na ordem', () => {
     const [f] = plans.criarComItens([{ nome: 'A', itens: [item('a', 1), item('b', 1), item('c', 1), item('d', 1)] }]);
-    plans.reordenarItem(f.id, 0, 2);
+    plans.reordenarBloco(f.id, 0, 2);
     expect(plans.get(f.id)!.itens.map((i) => i.exerciseId)).toEqual(['b', 'c', 'a', 'd']);
-    plans.reordenarItem(f.id, 3, 1);
+    plans.reordenarBloco(f.id, 3, 1);
     expect(plans.get(f.id)!.itens.map((i) => i.exerciseId)).toEqual(['b', 'd', 'c', 'a']);
-    plans.reordenarItem(f.id, 1, 9);
+    plans.reordenarBloco(f.id, 1, 9);
     expect(plans.get(f.id)!.itens.map((i) => i.exerciseId)).toEqual(['b', 'd', 'c', 'a']);
   });
 
@@ -503,6 +503,108 @@ describe('PlanService: próximo treino sugerido', () => {
     plans.trocarNaFicha(outra.id, 0, 'remada');
     TestBed.flushEffects();
     expect(plans.proxima()?.id).toBe(ids[1]);
+  });
+});
+
+describe('PlanService: exercícios conjugados', () => {
+  let plans: PlanService;
+  let fichaId: string;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+    [{ id: fichaId }] = plans.criarComItens([{ nome: 'A', itens: ['a', 'b', 'c', 'd'].map((e) => item(e, 10)) }]);
+  });
+
+  const ids = () => plans.get(fichaId)!.itens.map((i) => i.exerciseId);
+  const pares = () => plans.get(fichaId)!.itens.map((i) => (i.par ? 'P' : '-')).join('');
+
+  it('conjugar com o de baixo forma um par entre os dois vizinhos', () => {
+    plans.conjugarComProximo(fichaId, 1);
+    expect(pares()).toBe('-PP-');
+    const [, b, c] = plans.get(fichaId)!.itens;
+    expect(b.par).toBe(c.par);
+  });
+
+  it('não conjuga o último exercício nem quem já está num par', () => {
+    plans.conjugarComProximo(fichaId, 3);
+    expect(pares()).toBe('----');
+    plans.conjugarComProximo(fichaId, 0);
+    plans.conjugarComProximo(fichaId, 1); // o de baixo (b) já está no par com a
+    plans.conjugarComProximo(fichaId, 2); // c com d: c está sozinho e d também, vale
+    expect(pares()).toBe('PPPP');
+    const itens = plans.get(fichaId)!.itens;
+    expect(itens[0].par).toBe(itens[1].par);
+    expect(itens[2].par).toBe(itens[3].par);
+    expect(itens[1].par).not.toBe(itens[2].par);
+  });
+
+  it('separar desfaz o par e cada um guarda os seus números', () => {
+    plans.editarItem(fichaId, 0, 'reps', 8);
+    plans.editarItem(fichaId, 1, 'carga', 30);
+    plans.conjugarComProximo(fichaId, 0);
+    plans.separarPar(fichaId, 1);
+    expect(pares()).toBe('----');
+    const [a, b] = plans.get(fichaId)!.itens;
+    expect(a.reps).toBe(8);
+    expect(b.carga).toBe(30);
+  });
+
+  it('remover um exercício do par deixa o outro sozinho', () => {
+    plans.conjugarComProximo(fichaId, 1);
+    plans.removerItem(fichaId, 1);
+    expect(ids()).toEqual(['a', 'c', 'd']);
+    expect(pares()).toBe('---');
+  });
+
+  it('mover um bloco leva o par junto', () => {
+    plans.conjugarComProximo(fichaId, 1); // blocos: a | b+c | d
+    plans.moverBloco(fichaId, 1, -1);
+    expect(ids()).toEqual(['b', 'c', 'a', 'd']);
+    expect(pares()).toBe('PP--');
+    plans.moverBloco(fichaId, 0, 1);
+    expect(ids()).toEqual(['a', 'b', 'c', 'd']);
+    plans.moverBloco(fichaId, 0, -1); // já é o primeiro
+    expect(ids()).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('arrastar um bloco para outra posição leva o par junto', () => {
+    plans.conjugarComProximo(fichaId, 0); // blocos: a+b | c | d
+    plans.reordenarBloco(fichaId, 0, 2);
+    expect(ids()).toEqual(['c', 'd', 'a', 'b']);
+    expect(pares()).toBe('--PP');
+  });
+
+  it('trocar o exercício de um do par mantém o par', () => {
+    plans.conjugarComProximo(fichaId, 0);
+    plans.trocarNaFicha(fichaId, 1, 'z');
+    expect(ids()).toEqual(['a', 'z', 'c', 'd']);
+    expect(pares()).toBe('PP--');
+  });
+
+  it('cada exercício do par mantém as suas séries e o descanso do par é o do segundo', () => {
+    plans.editarItem(fichaId, 0, 'series', 4);
+    plans.editarItem(fichaId, 1, 'series', 3);
+    plans.editarItem(fichaId, 1, 'descanso', 90);
+    plans.conjugarComProximo(fichaId, 0);
+    const [a, b] = plans.get(fichaId)!.itens;
+    expect([a.series, b.series, b.descanso]).toEqual([4, 3, 90]);
+  });
+
+  it('ao carregar, marcas de par sem o vizinho certo são limpas', () => {
+    localStorage.clear();
+    const itens = [
+      { ...item('a', 10), par: 'x' },
+      item('b', 10),
+      { ...item('c', 10), par: 'y' },
+      { ...item('d', 10), par: 'y' },
+    ];
+    localStorage.setItem('app-workout:fichas:v1', JSON.stringify([{ id: 'f', nome: 'A', itens }]));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+    const carregado = TestBed.inject(PlanService).get('f')!.itens;
+    expect(carregado.map((i) => (i.par ? 'P' : '-')).join('')).toBe('--PP');
   });
 });
 

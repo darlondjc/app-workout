@@ -7,6 +7,7 @@ import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
 import { haDias } from './musculos';
 import { PesoService } from './peso.service';
+import { conjugarComProximo, limparPares, moverBloco, removerDaLista, reordenarBlocos, separarPar } from './conjugado';
 import { escolherProximaFicha, treinosDaFichaAtiva } from './proximo-treino';
 import { dias, deIso } from './stats';
 
@@ -39,6 +40,12 @@ function ler<T>(chave: string, padrao: T): T {
   }
 }
 
+/** Tira marcas de par que não formam par (dado antigo, importado ou de outro aparelho com defeito). */
+function comParesLimpos(f: Ficha): Ficha {
+  const itens = limparPares(f.itens);
+  return itens === f.itens ? f : { ...f, itens };
+}
+
 function gravar(chave: string, valor: unknown): void {
   try {
     localStorage.setItem(chave, JSON.stringify(valor));
@@ -58,7 +65,7 @@ export class PlanService {
   private readonly pesos = inject(PesoService);
   private readonly favoritos = inject(FavoritosService);
   private readonly injector = inject(Injector);
-  readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []));
+  readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []).map(comParesLimpos));
   readonly ativaId = signal<string | null>(ler<string | null>(CHAVE_ATIVA, null));
   /** Treinos apagados (id → dia e momento), guardados para o apagar valer também nos outros aparelhos. */
   private readonly excluidas = signal<Record<string, { data: string; em: number }>>(ler(CHAVE_EXCLUIDAS, {}));
@@ -283,7 +290,7 @@ export class PlanService {
     if (modelos.length === 0) return [];
     this.vencerAtivas();
     const periodo = this.novoPeriodo();
-    const novas = modelos.map((m) => ({ id: crypto.randomUUID(), nome: m.nome, itens: m.itens, ...periodo }));
+    const novas = modelos.map((m) => ({ id: crypto.randomUUID(), nome: m.nome, itens: limparPares(m.itens), ...periodo }));
     this.fichas.update((l) => [...l, ...novas]);
     this.ativaId.set(novas[0].id);
     return novas;
@@ -295,7 +302,7 @@ export class PlanService {
     this.vencerAtivas();
     const conjunto = { id: crypto.randomUUID(), nome: nome.trim() || 'Minha ficha' };
     const periodo = this.novoPeriodo();
-    const novas: Ficha[] = treinos.map((t) => ({ id: crypto.randomUUID(), nome: t.nome, itens: t.itens, conjunto, ...periodo }));
+    const novas: Ficha[] = treinos.map((t) => ({ id: crypto.randomUUID(), nome: t.nome, itens: limparPares(t.itens), conjunto, ...periodo }));
     this.fichas.update((l) => [...l, ...novas]);
     this.ativaId.set(novas[0].id);
     return novas;
@@ -314,7 +321,7 @@ export class PlanService {
       return { treino: primeiro, ficha: nome };
     }
     const conjunto = atual.conjunto ?? { id: crypto.randomUUID(), nome: atual.nome };
-    const treino: Ficha = { id: crypto.randomUUID(), nome, itens, conjunto };
+    const treino: Ficha = { id: crypto.randomUUID(), nome, itens: limparPares(itens), conjunto };
     this.inserirNoConjunto(treino, atual);
     return { treino: this.fichas().find((f) => f.id === treino.id)!, ficha: conjunto.nome };
   }
@@ -482,28 +489,40 @@ export class PlanService {
     }));
   }
 
+  /** Tira o exercício da ficha; se ele fazia par com outro, o outro fica sozinho. */
   removerItem(fichaId: string, indice: number): void {
-    this.atualizar(fichaId, (f) => ({ ...f, itens: f.itens.filter((_, i) => i !== indice) }));
+    this.atualizar(fichaId, (f) => ({ ...f, itens: removerDaLista(f.itens, indice) }));
   }
 
-  moverItem(fichaId: string, indice: number, direcao: -1 | 1): void {
+  /** Sobe ou desce um bloco da lista (um exercício sozinho ou um par, que anda junto). `bloco` é a posição do bloco. */
+  moverBloco(fichaId: string, bloco: number, direcao: -1 | 1): void {
     this.atualizar(fichaId, (f) => {
-      const alvo = indice + direcao;
-      if (alvo < 0 || alvo >= f.itens.length) return f;
-      const itens = [...f.itens];
-      [itens[indice], itens[alvo]] = [itens[alvo], itens[indice]];
-      return { ...f, itens };
+      const itens = moverBloco(f.itens, bloco, direcao);
+      return itens === f.itens ? f : { ...f, itens };
     });
   }
 
-  /** Leva o exercício da posição `de` para a posição `para` (arrastar na ficha). */
-  reordenarItem(fichaId: string, de: number, para: number): void {
+  /** Leva o bloco da posição `de` para a posição `para` (arrastar na ficha; o par anda junto). */
+  reordenarBloco(fichaId: string, de: number, para: number): void {
     this.atualizar(fichaId, (f) => {
-      if (de === para || de < 0 || para < 0 || de >= f.itens.length || para >= f.itens.length) return f;
-      const itens = [...f.itens];
-      const [item] = itens.splice(de, 1);
-      itens.splice(para, 0, item);
-      return { ...f, itens };
+      const itens = reordenarBlocos(f.itens, de, para);
+      return itens === f.itens ? f : { ...f, itens };
+    });
+  }
+
+  /** Conjuga o exercício da posição `indice` com o de baixo, se os dois estiverem sozinhos. */
+  conjugarComProximo(fichaId: string, indice: number): void {
+    this.atualizar(fichaId, (f) => {
+      const itens = conjugarComProximo(f.itens, indice, crypto.randomUUID());
+      return itens === f.itens ? f : { ...f, itens };
+    });
+  }
+
+  /** Desfaz o par do exercício da posição `indice`: cada um volta a ser sozinho. */
+  separarPar(fichaId: string, indice: number): void {
+    this.atualizar(fichaId, (f) => {
+      const itens = separarPar(f.itens, indice);
+      return itens === f.itens ? f : { ...f, itens };
     });
   }
 
@@ -672,6 +691,7 @@ export class PlanService {
   }
 
   private aplicarFichasDaNuvem(remoto: EstadoNuvem, mesclar: boolean): void {
+    remoto = { ...remoto, fichas: remoto.fichas.map(comParesLimpos) };
     if (mesclar) {
       const ids = new Set(remoto.fichas.map((f) => f.id));
       this.fichas.set([...remoto.fichas, ...this.fichas().filter((f) => !ids.has(f.id))]);
