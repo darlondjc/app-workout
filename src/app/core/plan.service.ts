@@ -16,6 +16,7 @@ const CHAVE_HISTORICO = 'app-workout:historico:v1';
 const CHAVE_EXCLUIDAS = 'app-workout:sessoes-excluidas:v1';
 const CHAVE_ANDAMENTO = 'app-workout:andamento:v1';
 const CHAVE_MESES = 'app-workout:ficha-meses:v1';
+const CHAVE_CARGAS_SINCRONIZADAS = 'app-workout:cargas-da-ficha-sincronizadas:v1';
 
 /** Parte do estado que vai para a nuvem num único documento. */
 export interface EstadoNuvem {
@@ -121,6 +122,7 @@ export class PlanService {
 
   constructor() {
     this.garantirPeriodos();
+    this.sincronizarCargasUmaVez();
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') this.hoje.set(dataLocal());
@@ -538,8 +540,48 @@ export class PlanService {
         ...(temFoto ? { temFoto: true } : {}),
       },
     ]);
+    this.atualizarCargasDaFicha(fichaId, registros);
     this.emAndamento.set(null);
     return id;
+  }
+
+  /**
+   * Fichas montadas antes de a carga acompanhar o treino ainda mostram a do dia em que foram criadas: uma vez por aparelho,
+   * leva para cada ficha a carga do último treino dela. Depois disso, editar a carga na ficha vale até o próximo treino.
+   */
+  private sincronizarCargasUmaVez(): void {
+    try {
+      if (localStorage.getItem(CHAVE_CARGAS_SINCRONIZADAS)) return;
+      localStorage.setItem(CHAVE_CARGAS_SINCRONIZADAS, '1');
+    } catch {
+      return;
+    }
+    const ultima = new Map<string, Sessao>();
+    for (const s of this.historico()) {
+      if (!s.fichaId || s.excluida || !s.registros?.length) continue;
+      const atual = ultima.get(s.fichaId);
+      if (!atual || (s.data + String(s.concluidaEm ?? 0).padStart(15, '0')) > (atual.data + String(atual.concluidaEm ?? 0).padStart(15, '0'))) ultima.set(s.fichaId, s);
+    }
+    for (const [fichaId, s] of ultima) this.atualizarCargasDaFicha(fichaId, s.registros ?? []);
+  }
+
+  /**
+   * A carga da ficha acompanha o que foi usado no último treino (a da primeira série de cada exercício), para a ficha
+   * mostrar a carga de hoje e não a do dia em que foi montada. Repetições e séries são a meta e não mudam; exercícios
+   * em minutos, sem carga ou trocados só naquele treino (que não estão na ficha) ficam como estão.
+   */
+  private atualizarCargasDaFicha(fichaId: string, registros: RegistroExercicio[]): void {
+    const cargas = new Map<string, number>();
+    for (const r of registros) {
+      const carga = r.series[0]?.carga ?? 0;
+      if (r.unidade !== 'min' && carga > 0 && !cargas.has(r.exerciseId)) cargas.set(r.exerciseId, carga);
+    }
+    if (cargas.size === 0) return;
+    const alvo = this.fichas().find((f) => f.id === fichaId);
+    if (!alvo || !alvo.itens.some((i) => cargas.has(i.exerciseId) && cargas.get(i.exerciseId) !== i.carga)) return;
+    this.fichas.update((l) =>
+      l.map((f) => (f.id === fichaId ? { ...f, itens: f.itens.map((i) => (cargas.has(i.exerciseId) ? { ...i, carga: cargas.get(i.exerciseId)! } : i)) } : f)),
+    );
   }
 
   /**

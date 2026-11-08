@@ -387,6 +387,61 @@ describe('PlanService: corrigir e apagar treinos do histórico', () => {
   });
 });
 
+describe('PlanService: carga da ficha acompanha o último treino', () => {
+  let plans: PlanService;
+  let fichaId: string;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({});
+    plans = TestBed.inject(PlanService);
+    [{ id: fichaId }] = plans.criarComItens([{ nome: 'A', itens: [item('supino', 0), item('remada', 40)] }]);
+  });
+
+  const cargas = () => plans.get(fichaId)!.itens.map((i) => i.carga);
+
+  it('depois de concluir, a ficha passa a mostrar a carga usada', () => {
+    plans.registrarSessao(fichaId, [{ exerciseId: 'supino', series: [{ carga: 47.5, reps: 8 }, { carga: 47.5, reps: 8 }] }]);
+    expect(cargas()).toEqual([47.5, 40]);
+  });
+
+  it('não mexe em repetições e séries da ficha', () => {
+    plans.registrarSessao(fichaId, [{ exerciseId: 'supino', series: [{ carga: 50, reps: 12 }] }]);
+    expect(plans.get(fichaId)!.itens[0]).toEqual(jasmine.objectContaining({ series: 4, reps: 8, carga: 50 }));
+  });
+
+  it('carga zero, exercício em minutos e exercício que não está na ficha não alteram nada', () => {
+    plans.registrarSessao(fichaId, [
+      { exerciseId: 'supino', series: [{ carga: 0, reps: 10 }] },
+      { exerciseId: 'remada', unidade: 'min', series: [{ carga: 99, reps: 20 }] },
+      { exerciseId: 'trocado', series: [{ carga: 30, reps: 10 }] },
+    ]);
+    expect(cargas()).toEqual([0, 40]);
+  });
+});
+
+describe('PlanService: ajuste único das cargas das fichas antigas', () => {
+  it('na primeira abertura, a ficha recebe a carga do último treino; depois disso, edições valem', () => {
+    localStorage.clear();
+    const ficha = { id: 'f1', nome: 'A', itens: [{ exerciseId: 'supino', series: 3, reps: 10, carga: 0, descanso: 60 }] };
+    localStorage.setItem('app-workout:fichas:v1', JSON.stringify([ficha]));
+    localStorage.setItem('app-workout:historico:v1', JSON.stringify([
+      { id: 's1', data: '2026-10-01', fichaId: 'f1', registros: [{ exerciseId: 'supino', series: [{ carga: 40, reps: 10 }] }] },
+      { id: 's2', data: '2026-11-01', fichaId: 'f1', registros: [{ exerciseId: 'supino', series: [{ carga: 47.5, reps: 8 }] }] },
+    ]));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+    const plans = TestBed.inject(PlanService);
+    expect(plans.get('f1')!.itens[0].carga).toBe(47.5);
+
+    plans.editarItem('f1', 0, 'carga', 10);
+    TestBed.flushEffects();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+    expect(TestBed.inject(PlanService).get('f1')!.itens[0].carga).toBe(10);
+  });
+});
+
 describe('PlanService: atividade fora da ficha', () => {
   let plans: PlanService;
 

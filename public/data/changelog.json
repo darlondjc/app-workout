@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.29.8",
+    "data": "2026-11-08",
+    "titulo": "A ficha mostra a carga de hoje",
+    "itens": [
+      "Ao concluir um treino, a carga de cada exercício na ficha passa a ser a que você usou. Antes ela ficava com a do dia em que a ficha foi montada.",
+      "As fichas que você já tinha também foram atualizadas com a carga do último treino de cada uma."
+    ]
+  },
+  {
     "versao": "1.29.7",
     "data": "2026-11-07",
     "titulo": "Cronômetro de descanso não trava ao sair e voltar",
