@@ -107,36 +107,36 @@ describe('Plans — fichas com vários treinos', () => {
   });
 
   describe('prazo da ficha', () => {
-    const botaoPrazo = () => [...el().querySelectorAll('.conjunto__compartilhar')].find((b) => b.textContent!.trim() === 'Alterar prazo') as HTMLButtonElement | undefined;
-
-    it('Alterar prazo fica no card da ficha e o formulário só abre ao tocar', () => {
-      expect(botaoPrazo()).toBeDefined();
-      expect(el().querySelector('.conjunto__prazo')).toBeNull();
-      botaoPrazo()!.click();
+    const linha = () => el().querySelector('.conjunto__prazo') as HTMLElement;
+    const campo = () => linha().querySelector('input[type="date"]') as HTMLInputElement;
+    const escolher = (data: string) => {
+      campo().value = data;
+      campo().dispatchEvent(new Event('change'));
       fixture.detectChanges();
-      expect(el().querySelector('.conjunto__prazo input[type="date"]')).not.toBeNull();
+    };
+
+    it('o prazo e o Alterar prazo ficam juntos numa linha só, sem campo nem botão Salvar embaixo', () => {
+      expect(linha().querySelector('.prazo')!.textContent).toMatch(/até \d{2}\/\d{2}\/\d{4}/);
+      expect(linha().textContent).toContain('Alterar prazo');
+      expect(el().querySelectorAll('input[type="date"]').length).toBe(1);
+      expect([...el().querySelectorAll('button')].some((b) => b.textContent!.trim() === 'Salvar')).toBeFalse();
+      expect(el().querySelector('.conjunto')!.textContent!.match(/até \d{2}\/\d{2}\/\d{4}/g)!.length).toBe(1);
     });
 
-    it('salvar a nova data vale para todos os treinos da ficha', () => {
-      botaoPrazo()!.click();
-      fixture.detectChanges();
+    it('escolher a nova data vale para todos os treinos da ficha e atualiza o texto', () => {
       const fim = somarDias(plans.hoje(), 90);
-      (el().querySelector('.conjunto__prazo input') as HTMLInputElement).value = fim;
-      (el().querySelector('.conjunto__prazo .btn') as HTMLButtonElement).click();
-      fixture.detectChanges();
+      escolher(fim);
       const bloco = plans.blocos().find((b) => b.conjunto)!;
       expect(bloco.fichas.every((f) => f.fim === fim)).toBeTrue();
-      expect(el().querySelector('.conjunto__prazo')).toBeNull();
+      const [ano, mes, dia] = fim.split('-');
+      expect(linha().querySelector('.prazo')!.textContent).toContain(`${dia}/${mes}/${ano}`);
     });
 
-    it('uma data que não é futura não é aceita', () => {
-      botaoPrazo()!.click();
-      fixture.detectChanges();
+    it('uma data que não é futura não é aceita e o campo volta à data atual', () => {
       const antes = plans.blocos().find((b) => b.conjunto)!.fim;
-      (el().querySelector('.conjunto__prazo input') as HTMLInputElement).value = plans.hoje();
-      (el().querySelector('.conjunto__prazo .btn') as HTMLButtonElement).click();
-      fixture.detectChanges();
+      escolher(plans.hoje());
       expect(plans.blocos().find((b) => b.conjunto)!.fim).toBe(antes);
+      expect(campo().value).toBe(antes!);
     });
   });
 

@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { somarDias } from '../core/ciclo';
 import { PlanService } from '../core/plan.service';
 import { PlanEditor } from './plan-editor';
 
@@ -109,5 +110,18 @@ describe('PlanEditor — prazo', () => {
     abrir(solto.id);
     expect(el().querySelector('.periodo')).not.toBeNull();
     expect(el().textContent).toContain('Alterar prazo');
+    // Uma data só, no mesmo lugar da opção de alterar: sem campo extra embaixo.
+    expect(el().querySelectorAll('input[type="date"]').length).toBe(1);
+    expect(el().querySelector('.periodo')!.querySelector('input[type="date"]')).not.toBeNull();
+  });
+
+  it('escolher uma nova data no treino solto atualiza o prazo da ficha', () => {
+    const [solto] = plans.criarComItens([{ nome: 'Solta', itens: [item] }]);
+    abrir(solto.id);
+    const campo = el().querySelector('.periodo input[type="date"]') as HTMLInputElement;
+    const fim = somarDias(plans.hoje(), 60);
+    campo.value = fim;
+    campo.dispatchEvent(new Event('change'));
+    expect(plans.get(solto.id)!.fim).toBe(fim);
   });
 });

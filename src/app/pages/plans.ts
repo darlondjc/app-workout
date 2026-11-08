@@ -82,10 +82,17 @@ import { ToastService } from '../core/toast.service';
               <span class="conjunto__texto">
                 <strong class="conjunto__nome">{{ c.nome }}</strong>
                 <span class="apoio">{{ b.fichas.length }} {{ b.fichas.length === 1 ? 'treino' : 'treinos' }}@if (!aberto(b)) { · {{ resumo(b) }} }</span>
-                <span class="prazo" [class.prazo--aviso]="aviso(b)">{{ prazo(b) }}</span>
               </span>
               <app-icon [name]="aberto(b) ? 'up' : 'down'" [size]="22" [stroke]="2.2" />
             </button>
+            <!-- O prazo e o jeito de mudá-lo ficam juntos, num lugar só: o seletor de data é invisível e cobre "Alterar prazo". -->
+            <div class="conjunto__prazo">
+              <span class="prazo" [class.prazo--aviso]="aviso(b)">{{ prazo(b) }}</span>
+              <label class="prazo__alterar">
+                Alterar prazo
+                <input class="prazo__data" type="date" lang="pt-BR" [min]="amanha()" [value]="b.fim ?? ''" [attr.aria-label]="'Alterar o prazo da ficha ' + c.nome" (click)="abrirSeletor($event)" (change)="salvarPrazo(b, $event)" />
+              </label>
+            </div>
             @if (aberto(b)) {
               <ul class="lista" [id]="'conj-' + c.id">
                 @for (f of b.fichas; track f.id) {
@@ -96,9 +103,6 @@ import { ToastService } from '../core/toast.service';
                 <a class="conjunto__compartilhar" routerLink="/fichas/treino-novo" [queryParams]="{ conjunto: c.id }">
                   <app-icon name="plus" [size]="18" [stroke]="2.5" /> Adicionar treino
                 </a>
-                <button type="button" class="conjunto__compartilhar" [attr.aria-expanded]="editandoPrazo() === b.chave" (click)="editandoPrazo.set(editandoPrazo() === b.chave ? null : b.chave)">
-                  Alterar prazo
-                </button>
                 <button type="button" class="conjunto__compartilhar" aria-haspopup="dialog" (click)="compartilhar(c.nome, b.fichas)">
                   <app-icon name="share" [size]="18" [stroke]="2" /> Compartilhar
                 </button>
@@ -106,13 +110,6 @@ import { ToastService } from '../core/toast.service';
                   <app-icon name="trash" [size]="18" [stroke]="2" /> Excluir ficha
                 </button>
               </div>
-              @if (editandoPrazo() === b.chave) {
-                <div class="conjunto__prazo">
-                  <label [for]="'fim-' + c.id" class="apoio">Termina em</label>
-                  <input [id]="'fim-' + c.id" type="date" [min]="amanha()" [value]="b.fim ?? ''" #fimInput />
-                  <button type="button" class="btn btn--escuro" (click)="salvarPrazo(b, fimInput.value)">Salvar</button>
-                </div>
-              }
             }
           </li>
         } @else {
@@ -239,9 +236,9 @@ import { ToastService } from '../core/toast.service';
       font-size: 17px;
     }
     .conjunto__acoes { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-    .conjunto__prazo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 10px 8px; }
-    .conjunto__prazo .apoio { margin: 0; }
-    .conjunto__prazo input { min-height: 44px; padding: 0 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
+    .conjunto__prazo { display: flex; align-items: center; flex-wrap: wrap; gap: 0 12px; padding: 0 10px; margin-top: -10px; }
+    .prazo__alterar { position: relative; display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: underline; cursor: pointer; }
+    .prazo__data { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     .conjunto__compartilhar {
       display: inline-flex;
       align-items: center;
@@ -334,22 +331,28 @@ export class Plans {
 
   protected readonly vencidasAbertas = signal(false);
 
-  /** Chave da ficha cujo prazo está sendo alterado (o formulário abre no card dela). */
-  protected readonly editandoPrazo = signal<string | null>(null);
   protected readonly amanha = computed(() => somarDias(this.plans.hoje(), 1));
 
+  /** Alguns navegadores só abrem o seletor ao tocar no ícone do campo; com o campo invisível, abre ao tocar em qualquer parte. */
+  protected abrirSeletor(evento: Event): void {
+    try {
+      (evento.target as HTMLInputElement).showPicker?.();
+    } catch {
+      /* sem showPicker, vale o comportamento do navegador */
+    }
+  }
+
   /** O prazo é da ficha, não de cada treino: vale para todos os treinos dela. Escolher outra data reativa uma ficha vencida. */
-  protected salvarPrazo(b: BlocoFichas, fim: string): void {
-    if (!fim) return;
-    if (fim <= this.plans.hoje()) {
-      this.toast.mostrar('Escolha uma data a partir de amanhã');
+  protected salvarPrazo(b: BlocoFichas, evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    const fim = campo.value;
+    if (!fim || fim <= this.plans.hoje()) {
+      if (fim) this.toast.mostrar('Escolha uma data a partir de amanhã');
+      campo.value = b.fim ?? '';
       return;
     }
     if (this.plans.situacaoDe(b.fichas[0]) !== 'ativa') this.plans.reativarBloco(b.chave);
-    if (this.plans.definirFimBloco(b.chave, fim)) {
-      this.editandoPrazo.set(null);
-      this.toast.mostrar('Prazo atualizado');
-    }
+    if (this.plans.definirFimBloco(b.chave, fim)) this.toast.mostrar('Prazo atualizado');
   }
 
   protected vencidasResumo(): string {

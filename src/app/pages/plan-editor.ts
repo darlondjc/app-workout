@@ -46,15 +46,11 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
           @if (!f.conjunto && periodo(); as per) {
             <div class="periodo">
               <span class="apoio">{{ per }}</span>
-              <button type="button" class="periodo__btn" [attr.aria-expanded]="editandoPrazo()" (click)="editandoPrazo.set(!editandoPrazo())">Alterar prazo</button>
+              <label class="periodo__btn">
+                Alterar prazo
+                <input class="periodo__data" type="date" lang="pt-BR" [min]="amanha()" [value]="fimAtual()" aria-label="Alterar o prazo da ficha" (click)="abrirSeletor($event)" (change)="salvarPrazo($event)" />
+              </label>
             </div>
-            @if (editandoPrazo()) {
-              <div class="periodo__form">
-                <label for="fim-ficha" class="apoio">Termina em</label>
-                <input id="fim-ficha" type="date" [min]="amanha()" [value]="fimAtual()" #fimInput />
-                <button type="button" class="btn btn--escuro" (click)="salvarPrazo(fimInput.value)">Salvar</button>
-              </div>
-            }
           }
           <label class="sr-only" for="nome-ficha">Nome da ficha</label>
           <input
@@ -168,10 +164,9 @@ type Campo = keyof Omit<ItemFicha, 'exerciseId'>;
   `,
   styles: `
     .periodo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .periodo .apoio, .periodo__form .apoio { margin: 0; }
-    .periodo__btn { border: 0; background: none; padding: 0; min-height: 44px; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); text-decoration: underline; }
-    .periodo__form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .periodo__form input { min-height: 44px; padding: 0 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
+    .periodo .apoio { margin: 0; }
+    .periodo__btn { position: relative; display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 700; color: var(--ink); text-decoration: underline; cursor: pointer; }
+    .periodo__data { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     .nome {
       width: 100%;
       border: none;
@@ -368,7 +363,6 @@ export class PlanEditor {
   /** Ficha ainda vazia e não gravada: em vez de excluir, só dá para cancelar. */
   protected readonly rascunho = computed(() => this.plans.rascunho()?.id === this.id());
   protected readonly excluindo = signal(false);
-  protected readonly editandoPrazo = signal(false);
   private readonly blocoDaFicha = computed(() => {
     const f = this.ficha();
     return f ? this.plans.blocos().find((b) => b.fichas.some((x) => x.id === f.id)) ?? null : null;
@@ -385,18 +379,27 @@ export class PlanEditor {
     return `${textoDoPrazo(dias)} · até ${dataCurta(b.fim)}`;
   });
 
-  protected salvarPrazo(fim: string): void {
+  /** Alguns navegadores só abrem o seletor ao tocar no ícone do campo; com o campo invisível, abre ao tocar em qualquer parte. */
+  protected abrirSeletor(evento: Event): void {
+    try {
+      (evento.target as HTMLInputElement).showPicker?.();
+    } catch {
+      /* sem showPicker, vale o comportamento do navegador */
+    }
+  }
+
+  protected salvarPrazo(evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    const fim = campo.value;
     const b = this.blocoDaFicha();
-    if (!b || !fim) return;
-    if (fim <= this.plans.hoje()) {
-      this.toast.mostrar('Escolha uma data a partir de amanhã');
+    if (!b) return;
+    if (!fim || fim <= this.plans.hoje()) {
+      if (fim) this.toast.mostrar('Escolha uma data a partir de amanhã');
+      campo.value = b.fim ?? '';
       return;
     }
     if (this.plans.situacaoDe(b.fichas[0]) !== 'ativa') this.plans.reativarBloco(b.chave);
-    if (this.plans.definirFimBloco(b.chave, fim)) {
-      this.editandoPrazo.set(false);
-      this.toast.mostrar('Prazo atualizado');
-    }
+    if (this.plans.definirFimBloco(b.chave, fim)) this.toast.mostrar('Prazo atualizado');
   }
   protected readonly removendo = signal<{ indice: number; nome: string } | null>(null);
   protected readonly linhas = computed(() =>

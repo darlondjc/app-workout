@@ -4,7 +4,8 @@
     "data": "2026-11-08",
     "titulo": "O prazo é da ficha",
     "itens": [
-      "A tela de um treino não mostra mais o prazo da ficha. Alterar prazo agora fica no card da ficha, na lista, e vale para todos os treinos dela."
+      "A tela de um treino não mostra mais o prazo da ficha. Na lista de fichas, o prazo e o Alterar prazo ficam juntos na mesma linha do card da ficha e valem para todos os treinos dela.",
+      "Ao tocar em Alterar prazo, o seletor de data do aparelho abre direto e a linha do prazo (em português, dia/mês/ano) já se atualiza, sem campo extra nem botão Salvar."
     ]
   },
   {
