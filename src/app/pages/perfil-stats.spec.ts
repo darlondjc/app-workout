@@ -7,13 +7,13 @@ import { Conquista } from '../core/medalhas';
 import { MedalhasService } from '../core/medalhas.service';
 import { Sessao } from '../core/models';
 import { PlanService } from '../core/plan.service';
-import { MyStats } from './my-stats';
+import { PerfilStats } from './perfil-stats';
 
 const conquista = (id: string, titulo: string, nivel: Conquista['nivel']): Conquista =>
   ({ id, titulo, descricao: '', atual: 5, degraus: [], nivel, dataDoNivel: null, proximo: nivel ? { nivel: 'ouro', alvo: 50, conquistado: false, data: null } : null }) as Conquista;
 
-describe('MyStats', () => {
-  let fixture: ComponentFixture<MyStats>;
+describe('PerfilStats', () => {
+  let fixture: ComponentFixture<PerfilStats>;
   const el = () => fixture.nativeElement as HTMLElement;
 
   beforeEach(() => {
@@ -35,7 +35,7 @@ describe('MyStats', () => {
         },
       ],
     });
-    fixture = TestBed.createComponent(MyStats);
+    fixture = TestBed.createComponent(PerfilStats);
     fixture.detectChanges();
   });
 

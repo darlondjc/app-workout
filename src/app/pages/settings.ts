@@ -1,52 +1,36 @@
 import { BarraTopo } from '../core/barra-topo';
 import { MESES_MAX, MESES_MIN } from '../core/ciclo';
 import { PlanService } from '../core/plan.service';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { ChangelogService } from '../core/changelog.service';
 import { CloudService } from '../core/cloud.service';
 import { Avatar } from '../core/avatar';
 import { Dialogo } from '../core/dialogo';
 import { FotoBotao } from '../core/foto-botao';
-import { Icon } from '../core/icon';
+import { Icon, IconName } from '../core/icon';
 import { PesoRegistro } from '../core/peso-registro';
 import { SocialService } from '../core/social.service';
 import { PreferenciaTema, TemaService } from '../core/tema.service';
 import { Carregando } from '../core/spinner';
 import { UpdateService } from '../core/update.service';
+import { PerfilStats } from './perfil-stats';
+
+type Aba = 'dados' | 'stats' | 'ajustes';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, RouterLink, BarraTopo],
+  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, BarraTopo, PerfilStats],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <app-barra-topo titulo="Perfil">
-        <span class="barra-acoes">
-          <a class="estatisticas" routerLink="/estatisticas" tabindex="-1" aria-label="Minhas estatísticas">
-            <app-icon name="chart" [size]="20" [stroke]="2.2" />
-          </a>
-          @if (nuvem.usuario()) {
-            <button type="button" class="sair" tabindex="-1" aria-label="Sair da conta" (click)="confirmando.set(true)">
-              <app-icon name="logout" [size]="20" [stroke]="2.2" />
-            </button>
-          }
-        </span>
-      </app-barra-topo>
+      <app-barra-topo titulo="Perfil" />
       <header class="cabeca">
         <h1 class="titulo">Perfil</h1>
-        <div class="acoes-topo">
-          <a class="estatisticas" routerLink="/estatisticas" aria-label="Minhas estatísticas">
-            <app-icon name="chart" [size]="22" [stroke]="2.2" />
-          </a>
-          @if (nuvem.usuario()) {
-            <button type="button" class="sair" aria-label="Sair da conta" (click)="confirmando.set(true)">
-              <app-icon name="logout" [size]="22" [stroke]="2.2" />
-            </button>
-          }
-        </div>
       </header>
 
+      @switch (abaAtiva()) {
+        @case ('dados') {
       <article class="card bloco" aria-labelledby="t-conta">
         <h2 id="t-conta" class="sub">Conta</h2>
         @if (!nuvem.configurado) {
@@ -95,6 +79,18 @@ import { UpdateService } from '../core/update.service';
 
       <app-peso-registro />
 
+      @if (nuvem.usuario()) {
+        <article class="card bloco">
+          <button type="button" class="sair-conta" (click)="confirmando.set(true)">
+            <app-icon name="logout" [size]="20" [stroke]="2.2" /> Sair da conta
+          </button>
+        </article>
+      }
+        }
+        @case ('stats') {
+          <app-perfil-stats />
+        }
+        @case ('ajustes') {
       @if (social.eu(); as eu) {
         <article class="card bloco" aria-labelledby="t-priv">
           <h2 id="t-priv" class="sub">Amigos mais chegados</h2>
@@ -237,6 +233,18 @@ import { UpdateService } from '../core/update.service';
           <app-carregando texto="Carregando histórico…" />
         }
       </article>
+
+        }
+      }
+
+      <nav class="abas" role="tablist" aria-label="Seções do perfil">
+        @for (a of abas; track a.chave) {
+          <button type="button" role="tab" class="aba" [attr.aria-selected]="abaAtiva() === a.chave" (click)="escolherAba(a.chave)">
+            <app-icon [name]="a.icone" [size]="20" [stroke]="2.2" />
+            <span>{{ a.rotulo }}</span>
+          </button>
+        }
+      </nav>
 
       @if (fotoAberta()) {
         @if (nuvem.usuario(); as u) {
@@ -395,6 +403,57 @@ import { UpdateService } from '../core/update.service';
       font-size: 14px;
       line-height: 1.4;
     }
+    .page { padding-bottom: 76px; }
+    /* Abas flutuantes logo acima da barra inferior do app (84px) */
+    .abas {
+      position: fixed;
+      z-index: 9;
+      bottom: calc(84px + 12px + env(safe-area-inset-bottom));
+      /* O app tem no máximo 480px de largura e fica centralizado. */
+      left: max(16px, calc(50% - 240px + 16px));
+      right: max(16px, calc(50% - 240px + 16px));
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      background: var(--card);
+      box-shadow: 0 0 0 1px var(--line), 0 8px 22px rgba(20, 23, 26, 0.14);
+    }
+    .aba {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .aba[aria-selected='true'] {
+      background: var(--ink-bg);
+      color: #fff;
+    }
+    .aba[aria-selected='true'] app-icon {
+      color: var(--accent);
+    }
+    .sair-conta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--perigo);
+      font: inherit;
+      font-size: 15px;
+      font-weight: 700;
+    }
     .cabeca {
       display: flex;
       align-items: center;
@@ -446,36 +505,6 @@ import { UpdateService } from '../core/update.service';
       transform: translateX(20px);
       background: var(--accent);
     }
-    .acoes-topo {
-      display: flex;
-      gap: 8px;
-    }
-    /* Os mesmos botões na barra que aparece ao rolar, um pouco menores. */
-    .barra-acoes { display: flex; align-items: center; gap: 8px; }
-    .barra-acoes .estatisticas, .barra-acoes .sair { width: 38px; height: 38px; }
-    .estatisticas {
-      flex: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--ink-bg);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .sair {
-      flex: none;
-      width: 44px;
-      height: 44px;
-      border: 0;
-      border-radius: 50%;
-      background: #d93025;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     .foto {
       flex: none;
       padding: 0;
@@ -519,6 +548,24 @@ import { UpdateService } from '../core/update.service';
   `,
 })
 export class Settings {
+  /** A aba vem da URL (`/perfil?aba=stats`), para os atalhos e o botão voltar levarem à aba certa. */
+  readonly aba = input<string>('dados');
+  protected readonly abaAtiva = linkedSignal<Aba>(() => {
+    const a = this.aba();
+    return a === 'stats' || a === 'ajustes' ? a : 'dados';
+  });
+  protected readonly abas: { chave: Aba; rotulo: string; icone: IconName }[] = [
+    { chave: 'dados', rotulo: 'Dados', icone: 'user' },
+    { chave: 'stats', rotulo: 'Stats', icone: 'chart' },
+    { chave: 'ajustes', rotulo: 'Ajustes', icone: 'settings' },
+  ];
+  private readonly router = inject(Router);
+
+  protected escolherAba(chave: Aba): void {
+    this.abaAtiva.set(chave);
+    void this.router.navigate([], { queryParams: { aba: chave === 'dados' ? null : chave }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
   protected readonly tema = inject(TemaService);
   protected readonly temas: { valor: PreferenciaTema; rotulo: string }[] = [
     { valor: 'sistema', rotulo: 'Sistema' },

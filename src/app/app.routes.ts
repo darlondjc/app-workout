@@ -1,5 +1,9 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { logado } from './core/auth.guard';
+
+/** As estatísticas da própria pessoa agora são a aba Stats do Perfil; os atalhos antigos levam para lá. */
+export const paraStats = () => inject(Router).parseUrl('/perfil?aba=stats');
 
 export const routes: Routes = [
   {
@@ -129,14 +133,9 @@ export const routes: Routes = [
     title: 'Amigo · App Workout',
     loadComponent: () => import('./pages/friend-join').then((m) => m.FriendJoin),
   },
-  { path: 'progresso', redirectTo: 'estatisticas' },
+  { path: 'progresso', redirectTo: paraStats },
   { path: 'ajustes', redirectTo: 'perfil' },
-  {
-    path: 'estatisticas',
-    canActivate: [logado],
-    title: 'Minhas estatísticas · App Workout',
-    loadComponent: () => import('./pages/my-stats').then((m) => m.MyStats),
-  },
+  { path: 'estatisticas', redirectTo: paraStats },
   {
     path: 'perfil',
     canActivate: [logado],

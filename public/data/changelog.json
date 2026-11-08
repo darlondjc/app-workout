@@ -1,5 +1,14 @@
 [
   {
+    "versao": "1.30.0",
+    "data": "2026-11-08",
+    "titulo": "Perfil em abas",
+    "itens": [
+      "O Perfil agora tem três abas flutuantes logo acima da barra inferior: Dados (conta e peso), Stats (suas estatísticas, o calendário e as medalhas) e Ajustes (aparência, fichas, privacidade e versão do app).",
+      "As suas estatísticas deixaram de ser uma tela à parte: o ícone de gráfico no topo saiu, e os atalhos antigos levam direto à aba Stats. Sair da conta agora fica no fim da aba Dados."
+    ]
+  },
+  {
     "versao": "1.29.12",
     "data": "2026-11-08",
     "titulo": "Exercícios do treino mais compactos",
