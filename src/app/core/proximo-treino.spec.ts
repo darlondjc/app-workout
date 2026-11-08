@@ -1,5 +1,5 @@
 import { Exercise, Ficha, Sessao } from './models';
-import { escolherProximaFicha, pontuacaoDaFicha, treinosDaFichaAtual } from './proximo-treino';
+import { escolherProximaFicha, pontuacaoDaFicha, treinosDaFichaAtiva } from './proximo-treino';
 
 const ex = (id: string, primary: string[], category = 'strength', secondary: string[] = []) =>
   ({ id, category, primaryMuscles: primary, secondaryMuscles: secondary }) as unknown as Exercise;
@@ -63,32 +63,28 @@ describe('próximo treino pelos músculos menos trabalhados', () => {
   });
 });
 
-describe('treinosDaFichaAtual', () => {
+describe('treinosDaFichaAtiva', () => {
   const conj = { id: 'c1', nome: 'Divisão' };
   const doConjunto = (id: string, ...ids: string[]) => ({ ...ficha(id, ...ids), conjunto: conj }) as Ficha;
   const a = doConjunto('A', 'supino');
   const b = doConjunto('B', 'remada');
   const solta = ficha('S', 'agachamento');
 
-  it('sem histórico nem ficha ativa, devolve todos', () => {
-    expect(treinosDaFichaAtual([a, b, solta], [], null)).toEqual([a, b, solta]);
+  it('sem ficha ativa nem histórico, devolve todos', () => {
+    expect(treinosDaFichaAtiva([a, b, solta], null, [])).toEqual([a, b, solta]);
   });
 
-  it('sem histórico, usa a ficha ativa', () => {
-    expect(treinosDaFichaAtual([a, b, solta], [], 'B')).toEqual([a, b]);
-    expect(treinosDaFichaAtual([a, b, solta], [], 'S')).toEqual([solta]);
+  it('vale a ficha ativa, mesmo que o último treino seja de outra', () => {
+    expect(treinosDaFichaAtiva([a, b, solta], 'B', [sessao('S', '2026-11-05', 'agachamento')])).toEqual([a, b]);
+    expect(treinosDaFichaAtiva([a, b, solta], 'S', [sessao('A', '2026-11-05', 'supino')])).toEqual([solta]);
   });
 
-  it('com histórico, vale a ficha do último treino concluído, mesmo que a ativa seja outra', () => {
-    expect(treinosDaFichaAtual([a, b, solta], [sessao('A', '2026-11-05', 'supino')], 'S')).toEqual([a, b]);
+  it('sem ficha ativa em uso, vale a ficha do último treino concluído', () => {
+    expect(treinosDaFichaAtiva([a, b, solta], null, [sessao('A', '2026-11-05', 'supino')])).toEqual([a, b]);
   });
 
-  it('atividade fora da ficha não muda a ficha atual', () => {
+  it('atividade fora da ficha não conta como último treino', () => {
     const h = [sessao('S', '2026-11-04', 'agachamento'), { id: 'x', data: '2026-11-06', fichaId: '', registros: [] } as unknown as Sessao];
-    expect(treinosDaFichaAtual([a, b, solta], h, 'A')).toEqual([solta]);
-  });
-
-  it('se a ficha do último treino saiu de uso, cai para a ficha ativa', () => {
-    expect(treinosDaFichaAtual([a, b], [sessao('S', '2026-11-05', 'agachamento')], 'B')).toEqual([a, b]);
+    expect(treinosDaFichaAtiva([a, b, solta], null, h)).toEqual([solta]);
   });
 });

@@ -10,7 +10,7 @@ describe('Library', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    const exercicios = ['supino', 'remada'].map((id) => ({ id, name: id, primaryMuscles: ['chest'], category: 'strength', equipment: 'barbell', level: 'beginner' }));
+    const exercicios = ['supino', 'remada'].map((id) => ({ id, name: id, primaryMuscles: ['chest'], secondaryMuscles: [], category: 'strength', equipment: 'barbell', level: 'beginner' }));
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -23,6 +23,7 @@ describe('Library', () => {
             equipamentos: signal([]),
             niveis: signal([]),
             buscar: () => exercicios,
+            get: (id: string) => exercicios.find((e) => e.id === id),
             nome: (e: { name: string }) => e.name,
             musculo: (m: string) => m,
             categoria: (c: string) => c,

@@ -1,6 +1,9 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
-import { ItemFicha } from './models';
+import { Exercise, ItemFicha } from './models';
 import { PlanService, dataLocal } from './plan.service';
 
 const item = (exerciseId: string, carga: number): ItemFicha => ({ exerciseId, series: 4, reps: 8, carga, descanso: 90 });
@@ -384,6 +387,67 @@ describe('PlanService: corrigir e apagar treinos do histórico', () => {
     expect(plans.historico()[0].nota).toBe('de fora');
     plans.mesclarSessoes([{ ...base, nota: 'velha', editadaEm: 50 }]);
     expect(plans.historico()[0].nota).toBe('de fora');
+  });
+});
+
+describe('PlanService: próximo treino sugerido', () => {
+  let plans: PlanService;
+  let ids: string[];
+
+  const ex = (id: string, primaryMuscles: string[]) =>
+    ({ id, name: id, category: 'strength', primaryMuscles, secondaryMuscles: [], instructions: [], images: [] }) as unknown as Exercise;
+  const feito = (exerciseId: string) => [{ exerciseId, series: [{ carga: 20, reps: 10 }, { carga: 20, reps: 10 }, { carga: 20, reps: 10 }] }];
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.inject(ExerciseService).exercises.set([ex('supino', ['chest']), ex('remada', ['middle back']), ex('agachamento', ['quadriceps'])]);
+    plans = TestBed.inject(PlanService);
+    ids = plans.criarConjunto('Divisão', [
+      { nome: 'A', itens: [item('supino', 0)] },
+      { nome: 'B', itens: [item('remada', 0)] },
+      { nome: 'C', itens: [item('agachamento', 0)] },
+    ]).map((f) => f.id);
+    TestBed.flushEffects();
+  });
+
+  it('ao concluir um treino, recalcula pelos músculos menos trabalhados da ficha', () => {
+    plans.registrarSessao(ids[0], feito('supino'));
+    // Costas e pernas estão frios; vale o rodízio depois de A.
+    expect(plans.proxima()?.id).toBe(ids[1]);
+    plans.registrarSessao(ids[1], feito('remada'));
+    expect(plans.proxima()?.id).toBe(ids[2]);
+  });
+
+  it('só muda ao concluir um treino ou salvar um treino da ficha: mudar o histórico por fora não mexe', () => {
+    plans.registrarSessao(ids[0], feito('supino'));
+    expect(plans.proxima()?.id).toBe(ids[1]);
+    // Costas ficam quentes sem passar pelos dois momentos: a sugestão guardada continua a mesma.
+    plans.historico.update((h) => [...h, { id: 'x', data: dataLocal(), fichaId: '', registros: feito('remada') }]);
+    TestBed.flushEffects();
+    expect(plans.proxima()?.id).toBe(ids[1]);
+  });
+
+  it('ao salvar um treino da ficha ativa, recalcula: a mudança pode trazer músculos frios', () => {
+    plans.registrarSessao(ids[0], feito('supino'));
+    expect(plans.proxima()?.id).toBe(ids[1]); // B (costas)
+    // B passa a ter um exercício de peito, que está quente: as pernas (C) viram a melhor opção.
+    plans.trocarNaFicha(ids[1], 0, 'supino');
+    TestBed.flushEffects();
+    expect(plans.proxima()?.id).toBe(ids[2]);
+  });
+
+  it('salvar um treino de outra ficha não recalcula a sugestão', () => {
+    plans.registrarSessao(ids[0], feito('supino'));
+    expect(plans.proxima()?.id).toBe(ids[1]);
+    plans.historico.update((h) => [...h, { id: 'y', data: dataLocal(), fichaId: '', registros: feito('remada') }]);
+    const [outra] = plans.criarComItens([{ nome: 'Solta', itens: [item('supino', 0)] }]);
+    plans.blocos().forEach((b) => plans.reativarBloco(b.chave)); // criar uma ficha nova vence as anteriores
+    plans.definirAtiva(ids[0]);
+    TestBed.flushEffects();
+    plans.trocarNaFicha(outra.id, 0, 'remada');
+    TestBed.flushEffects();
+    expect(plans.proxima()?.id).toBe(ids[1]);
   });
 });
 
