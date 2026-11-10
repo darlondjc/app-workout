@@ -8,6 +8,57 @@ export const PESO_MAXIMO = 400;
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
+export type ChaveMedida = 'gordura' | 'musculo' | 'visceral' | 'cintura' | 'tmb';
+
+export interface Medida {
+  chave: ChaveMedida;
+  rotulo: string;
+  unidade: string;
+  min: number;
+  max: number;
+  /** Casas decimais aceitas e mostradas. */
+  casas: number;
+}
+
+/** As medidas opcionais de um registro: as principais da bioimpedância, mais a circunferência abdominal. */
+export const MEDIDAS: readonly Medida[] = [
+  { chave: 'gordura', rotulo: 'Gordura corporal', unidade: '%', min: 2, max: 70, casas: 1 },
+  { chave: 'musculo', rotulo: 'Massa muscular', unidade: 'kg', min: 5, max: 100, casas: 1 },
+  { chave: 'visceral', rotulo: 'Gordura visceral', unidade: 'nível', min: 1, max: 30, casas: 0 },
+  { chave: 'cintura', rotulo: 'Circunferência abdominal', unidade: 'cm', min: 40, max: 250, casas: 1 },
+  { chave: 'tmb', rotulo: 'Taxa metabólica basal', unidade: 'kcal', min: 500, max: 5000, casas: 0 },
+];
+
+/** "33,3" → 33.3. Campo vazio → `undefined` (medida não informada); texto inválido ou fora da faixa → `null`. */
+export function lerMedida(texto: string, m: Medida): number | null | undefined {
+  const t = texto.trim().replace(',', '.');
+  if (t === '') return undefined;
+  const regra = m.casas === 0 ? /^\d{1,5}$/ : /^\d{1,3}(\.\d{1,2})?$/;
+  if (!regra.test(t)) return null;
+  const f = 10 ** m.casas;
+  const v = Math.round(Number(t) * f) / f;
+  return v >= m.min && v <= m.max ? v : null;
+}
+
+export function formatarMedida(v: number, m: Medida): string {
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: m.casas, maximumFractionDigits: m.casas });
+}
+
+/** O valor mais recente de cada medida que já foi informada (não precisa ser do último registro). */
+export function ultimasMedidas(registros: RegistroPeso[]): { medida: Medida; valor: number }[] {
+  const saida: { medida: Medida; valor: number }[] = [];
+  for (const medida of MEDIDAS) {
+    const r = [...registros].reverse().find((x) => typeof x[medida.chave] === 'number');
+    if (r) saida.push({ medida, valor: r[medida.chave] as number });
+  }
+  return saida;
+}
+
+/** Só o peso: é o que se compartilha com os amigos (as medidas de bioimpedância ficam com a pessoa). */
+export function soPeso(registros: RegistroPeso[]): RegistroPeso[] {
+  return registros.map((r) => ({ data: r.data, kg: r.kg, ...(r.em !== undefined ? { em: r.em } : {}) }));
+}
+
 /** "72,5" ou "72.5" → 72.5 (uma casa decimal). Texto inválido ou fora de 20–400 kg → `null`. */
 export function lerPeso(texto: string): number | null {
   const t = texto.trim().replace(',', '.');
@@ -23,7 +74,12 @@ export function limparPesos(bruto: unknown): RegistroPeso[] {
   for (const r of bruto as Partial<RegistroPeso>[]) {
     if (!r || typeof r.data !== 'string' || !ISO.test(r.data)) continue;
     if (typeof r.kg !== 'number' || !Number.isFinite(r.kg) || r.kg < PESO_MINIMO || r.kg > PESO_MAXIMO) continue;
-    porDia.set(r.data, { data: r.data, kg: r.kg, ...(typeof r.em === 'number' ? { em: r.em } : {}) });
+    const limpo: RegistroPeso = { data: r.data, kg: r.kg, ...(typeof r.em === 'number' ? { em: r.em } : {}) };
+    for (const m of MEDIDAS) {
+      const v = r[m.chave];
+      if (typeof v === 'number' && Number.isFinite(v) && v >= m.min && v <= m.max) limpo[m.chave] = v;
+    }
+    porDia.set(r.data, limpo);
   }
   return [...porDia.values()].sort((a, b) => a.data.localeCompare(b.data));
 }

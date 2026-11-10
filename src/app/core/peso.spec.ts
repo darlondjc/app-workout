@@ -1,5 +1,5 @@
 import { RegistroPeso } from './models';
-import { limparPesos, lerPeso, mesclarPesos, registrarPeso, serieDePeso } from './peso';
+import { MEDIDAS, lerMedida, limparPesos, lerPeso, mesclarPesos, registrarPeso, serieDePeso, soPeso, ultimasMedidas } from './peso';
 
 const r = (data: string, kg: number, em?: number): RegistroPeso => ({ data, kg, ...(em !== undefined ? { em } : {}) });
 
@@ -87,5 +87,34 @@ describe('serieDePeso', () => {
 
   it('um único ponto não tem variação', () => {
     expect(serieDePeso([r('2026-10-23', 71)], 'semana', hoje).variacao).toBeNull();
+  });
+});
+
+describe('medidas de bioimpedância', () => {
+  const m = (chave: string) => MEDIDAS.find((x) => x.chave === chave)!;
+
+  it('lerMedida: vazio é opcional, inválido é null, e respeita as casas', () => {
+    expect(lerMedida('', m('cintura'))).toBeUndefined();
+    expect(lerMedida('111,8', m('cintura'))).toBe(111.8);
+    expect(lerMedida('15', m('visceral'))).toBe(15);
+    expect(lerMedida('15,5', m('visceral'))).toBeNull();
+    expect(lerMedida('1849', m('tmb'))).toBe(1849);
+    expect(lerMedida('10', m('cintura'))).toBeNull();
+    expect(lerMedida('abc', m('gordura'))).toBeNull();
+  });
+
+  it('limparPesos mantém medidas válidas e descarta as absurdas', () => {
+    const [x] = limparPesos([{ data: '2026-11-02', kg: 101.4, cintura: 111.8, tmb: 1, gordura: 'x' }]);
+    expect(x).toEqual({ data: '2026-11-02', kg: 101.4, cintura: 111.8 });
+  });
+
+  it('ultimasMedidas pega o valor mais recente de cada medida', () => {
+    const lista = [{ ...r('2026-10-01', 100), cintura: 115 }, { ...r('2026-11-01', 99), cintura: 111.8, tmb: 1849 }, r('2026-11-05', 98)];
+    const u = ultimasMedidas(lista).map((x) => [x.medida.chave, x.valor]);
+    expect(u).toEqual([['cintura', 111.8], ['tmb', 1849]]);
+  });
+
+  it('soPeso tira as medidas antes de compartilhar com amigos', () => {
+    expect(soPeso([{ ...r('2026-11-01', 99, 5), cintura: 111.8 }])).toEqual([r('2026-11-01', 99, 5)]);
   });
 });

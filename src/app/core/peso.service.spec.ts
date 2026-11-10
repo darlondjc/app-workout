@@ -21,6 +21,12 @@ describe('PesoService', () => {
     expect(s.atual()?.kg).toBe(71.2);
   });
 
+  it('guarda as medidas informadas junto do peso do dia', () => {
+    const s = TestBed.inject(PesoService);
+    s.registrar('2026-11-02', 101.4, { cintura: 111.8, visceral: 15 });
+    expect(s.atual()).toEqual(jasmine.objectContaining({ kg: 101.4, cintura: 111.8, visceral: 15 }));
+  });
+
   it('remove um registro', () => {
     const s = TestBed.inject(PesoService);
     s.registrar('2026-10-22', 72);

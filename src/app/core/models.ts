@@ -114,6 +114,12 @@ export interface RegistroPeso {
   kg: number;
   /** Quando foi registrado (ms); desempata o mesmo dia vindo de dois aparelhos. */
   em?: number;
+  /** Medidas opcionais da bioimpedância e da fita métrica (ver `MEDIDAS`). */
+  gordura?: number;
+  musculo?: number;
+  visceral?: number;
+  cintura?: number;
+  tmb?: number;
 }
 
 export interface SerieEmAndamento {

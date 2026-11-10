@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { dataCurta, formatarKg } from './data-texto';
 import { Icon } from './icon';
 import { PesoService } from './peso.service';
-import { PESO_MAXIMO, PESO_MINIMO, lerPeso } from './peso';
+import { ChaveMedida, MEDIDAS, PESO_MAXIMO, PESO_MINIMO, formatarMedida, lerMedida, lerPeso, ultimasMedidas } from './peso';
 import { dataISO } from './stats';
 import { ToastService } from './toast.service';
 
@@ -23,6 +23,17 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
         <p class="apoio">Registre o seu peso para acompanhar a evolução em Social, na aba Estatísticas.</p>
       }
 
+      @if (ultimas().length > 0) {
+        <dl class="atuais">
+          @for (u of ultimas(); track u.medida.chave) {
+            <div>
+              <dt>{{ u.medida.rotulo }}</dt>
+              <dd>{{ medida(u.valor, u.medida) }} <small>{{ u.medida.unidade }}</small></dd>
+            </div>
+          }
+        </dl>
+      }
+
       <form class="form" (submit)="salvar($event)" novalidate>
         <label class="campo">
           <span class="apoio">Peso (kg)</span>
@@ -36,6 +47,17 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
             <input #campoDia type="date" aria-label="Dia" [value]="data()" [max]="hoje" (input)="data.set(campoDia.value)" />
           </span>
         </label>
+        <details class="medidas">
+          <summary>Bioimpedância e medidas (opcional)</summary>
+          <div class="medidas__grade">
+            @for (m of medidas; track m.chave) {
+              <label class="campo">
+                <span class="apoio">{{ m.rotulo }} ({{ m.unidade }})</span>
+                <input type="text" inputmode="decimal" autocomplete="off" [placeholder]="exemploMedida(m.chave)" [value]="extras()[m.chave]" (input)="digitou(m.chave, $event)" />
+              </label>
+            }
+          </div>
+        </details>
         <button type="submit" class="btn btn--escuro">{{ jaTem() ? 'Atualizar' : 'Registrar' }}</button>
       </form>
       @if (jaTem()) {
@@ -92,6 +114,14 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
     .data { position: relative; display: flex; align-items: center; height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
     .data:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
     .data input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
+    .atuais { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin: 0; }
+    .atuais div { min-width: 0; }
+    .atuais dt { font-size: 12px; color: var(--muted); }
+    .atuais dd { margin: 0; font-weight: 700; font-size: 16px; }
+    .atuais small { font-weight: 500; color: var(--muted); font-size: 12px; }
+    .medidas { grid-column: 1 / -1; }
+    .medidas summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; font-size: 14px; cursor: pointer; }
+    .medidas__grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .erro { color: var(--perigo); }
     .historico summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; font-size: 14px; cursor: pointer; }
     .historico ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -108,6 +138,9 @@ export class PesoRegistro {
   protected readonly texto = signal('');
   protected readonly data = signal(this.hoje);
   protected readonly erro = signal('');
+  protected readonly medidas = MEDIDAS;
+  protected readonly extras = signal<Record<ChaveMedida, string>>(this.extrasVazios());
+  protected readonly ultimas = computed(() => ultimasMedidas(this.peso.registros()));
 
   protected readonly jaTem = computed(() => this.peso.registros().some((r) => r.data === this.data()));
   protected readonly recentes = computed(() => this.peso.registros().slice(-15).reverse());
@@ -123,6 +156,15 @@ export class PesoRegistro {
       this.erro.set(`Digite um peso entre ${PESO_MINIMO} e ${PESO_MAXIMO} kg, como 72,5.`);
       return;
     }
+    const valores: Partial<Record<ChaveMedida, number>> = {};
+    for (const m of MEDIDAS) {
+      const v = lerMedida(this.extras()[m.chave], m);
+      if (v === null) {
+        this.erro.set(`${m.rotulo}: digite um valor entre ${m.min} e ${m.max} ${m.unidade}.`);
+        return;
+      }
+      if (v !== undefined) valores[m.chave] = v;
+    }
     const dia = this.data();
     if (!ISO.test(dia)) {
       this.erro.set('Escolha o dia da pesagem.');
@@ -133,11 +175,28 @@ export class PesoRegistro {
       return;
     }
     const atualizou = this.jaTem();
-    this.peso.registrar(dia, kg);
+    this.peso.registrar(dia, kg, valores);
     this.texto.set('');
+    this.extras.set(this.extrasVazios());
     this.erro.set('');
     this.toast.mostrar(atualizou ? 'Peso atualizado' : 'Peso registrado');
   }
+
+  private extrasVazios(): Record<ChaveMedida, string> {
+    return { gordura: '', musculo: '', visceral: '', cintura: '', tmb: '' };
+  }
+
+  protected digitou(chave: ChaveMedida, e: Event): void {
+    const texto = (e.target as HTMLInputElement).value;
+    this.extras.update((x) => ({ ...x, [chave]: texto }));
+  }
+
+  protected exemploMedida(chave: ChaveMedida): string {
+    const u = this.ultimas().find((x) => x.medida.chave === chave);
+    return u ? formatarMedida(u.valor, u.medida) : '';
+  }
+
+  protected medida = formatarMedida;
 
   protected apagar(data: string): void {
     const r = this.peso.remover(data);
