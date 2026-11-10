@@ -114,7 +114,17 @@ export interface RegistroPeso {
   kg: number;
   /** Quando foi registrado (ms); desempata o mesmo dia vindo de dois aparelhos. */
   em?: number;
-  /** Medidas opcionais da bioimpedância e da fita métrica (ver `MEDIDAS`). */
+}
+
+/**
+ * Bioimpedância e circunferência abdominal de um dia. Independente do peso (que se mede com outra frequência):
+ * cada campo é opcional, e registrar de novo no mesmo dia só altera os campos informados.
+ */
+export interface RegistroMedidas {
+  /** Data local no formato yyyy-mm-dd */
+  data: string;
+  /** Quando foi registrado (ms); desempata o mesmo dia vindo de dois aparelhos. */
+  em?: number;
   gordura?: number;
   musculo?: number;
   visceral?: number;

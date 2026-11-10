@@ -4,7 +4,6 @@ import { ExerciseService } from './exercise.service';
 import { RegistroPeso, Sessao } from './models';
 import { resumoAtividade } from './atividade';
 import { MedalhasService } from './medalhas.service';
-import { soPeso } from './peso';
 import { PesoService } from './peso.service';
 import { PlanService } from './plan.service';
 import {
@@ -310,7 +309,7 @@ export class SocialService {
     // Com o compartilhamento ligado, o peso vai para os amigos (e vai de novo a cada registro novo).
     effect(() => {
       const compartilha = this.eu()?.compartilhaPeso === true;
-      const registros = soPeso(this.peso.registros());
+      const registros = this.peso.registros();
       if (compartilha) untracked(() => void this.publicarPeso(registros));
     });
     effect(() => {

@@ -9,6 +9,7 @@ import { Avatar } from '../core/avatar';
 import { Dialogo } from '../core/dialogo';
 import { FotoBotao } from '../core/foto-botao';
 import { Icon, IconName } from '../core/icon';
+import { MedidasRegistro } from '../core/medidas-registro';
 import { PesoRegistro } from '../core/peso-registro';
 import { SocialService } from '../core/social.service';
 import { PreferenciaTema, TemaService } from '../core/tema.service';
@@ -20,7 +21,7 @@ type Aba = 'dados' | 'stats' | 'ajustes';
 
 @Component({
   selector: 'app-settings',
-  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, BarraTopo, PerfilStats],
+  imports: [Icon, Carregando, Avatar, Dialogo, FotoBotao, PesoRegistro, MedidasRegistro, BarraTopo, PerfilStats],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -78,6 +79,7 @@ type Aba = 'dados' | 'stats' | 'ajustes';
       </article>
 
       <app-peso-registro />
+      <app-medidas-registro />
 
       @if (nuvem.usuario()) {
         <article class="card bloco">

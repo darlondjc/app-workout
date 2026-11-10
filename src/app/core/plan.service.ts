@@ -1,11 +1,12 @@
 import { Injectable, Injector, computed, effect, inject, signal, untracked } from '@angular/core';
-import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroPeso, Sessao } from './models';
+import { AtividadeRegistro, EmAndamento, Ficha, ItemFicha, RegistroExercicio, RegistroMedidas, RegistroPeso, Sessao } from './models';
 import { duracaoDoTreino } from './calorias';
 import { BlocoFichas, MESES_PADRAO, Situacao, agruparEmBlocos, chaveDe, limitarMeses, situacoes, somarMeses } from './ciclo';
 import { NOTA_EXERCICIO_MAX, NOTA_TREINO_MAX, limparNota } from './notas';
 import { ExerciseService } from './exercise.service';
 import { FavoritosService } from './favoritos.service';
 import { haDias } from './musculos';
+import { MedidasService } from './medidas.service';
 import { PesoService } from './peso.service';
 import { conjugarComProximo, limparPares, moverBloco, removerDaLista, reordenarBlocos, separarPar } from './conjugado';
 import { escolherProximaFicha, treinosDaFichaAtiva } from './proximo-treino';
@@ -27,6 +28,8 @@ export interface EstadoNuvem {
   emAndamento: EmAndamento | null;
   /** Registros de peso corporal. Ausente em documentos gravados por versões antigas do app. */
   pesos?: RegistroPeso[];
+  /** Bioimpedância e circunferência abdominal. Ausente em documentos gravados por versões antigas do app. */
+  medidas?: RegistroMedidas[];
   /** Exercícios favoritos da biblioteca. Ausente em documentos gravados por versões antigas do app. */
   favoritos?: string[];
 }
@@ -63,6 +66,7 @@ export function dataLocal(d: Date = new Date()): string {
 @Injectable({ providedIn: 'root' })
 export class PlanService {
   private readonly pesos = inject(PesoService);
+  private readonly medidas = inject(MedidasService);
   private readonly favoritos = inject(FavoritosService);
   private readonly injector = inject(Injector);
   readonly fichas = signal<Ficha[]>(ler<Ficha[]>(CHAVE_FICHAS, []).map(comParesLimpos));
@@ -103,6 +107,7 @@ export class PlanService {
     ativaId: this.ativaId(),
     emAndamento: this.emAndamento(),
     pesos: this.pesos.registros(),
+    medidas: this.medidas.registros(),
     favoritos: [...this.favoritos.ids()],
   }));
 
@@ -687,6 +692,7 @@ export class PlanService {
   aplicarEstadoNuvem(remoto: EstadoNuvem, mesclar = false): void {
     this.aplicarFichasDaNuvem(remoto, mesclar);
     this.pesos.aplicar(remoto.pesos, mesclar);
+    this.medidas.aplicar(remoto.medidas, mesclar);
     this.favoritos.aplicar(remoto.favoritos, mesclar);
   }
 
@@ -783,6 +789,7 @@ export class PlanService {
     this.excluidas.set({});
     this.emAndamento.set(null);
     this.pesos.limpar();
+    this.medidas.limpar();
     this.favoritos.limpar();
   }
 

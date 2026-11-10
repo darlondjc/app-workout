@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { RegistroPeso } from './models';
-import { ChaveMedida, limparPesos, mesclarPesos, registrarPeso } from './peso';
+import { limparPesos, mesclarPesos, registrarPeso } from './peso';
 
 const CHAVE_PESO = 'app-workout:peso:v1';
 
@@ -34,8 +34,8 @@ export class PesoService {
   }
 
   /** Registra o peso do dia `data` (yyyy-mm-dd); se o dia já tinha um registro, ele é substituído. */
-  registrar(data: string, kg: number, medidas: Partial<Record<ChaveMedida, number>> = {}): void {
-    this.registros.update((l) => registrarPeso(l, { ...medidas, data, kg, em: Date.now() }));
+  registrar(data: string, kg: number): void {
+    this.registros.update((l) => registrarPeso(l, { data, kg, em: Date.now() }));
   }
 
   remover(data: string): RegistroPeso | undefined {
