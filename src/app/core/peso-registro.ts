@@ -71,7 +71,9 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
     .sub { margin: 0; font-size: 15px; color: var(--muted); font-weight: 500; }
     .grande { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1; margin: 0; }
     .grande small { font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--muted); }
-    .form { display: flex; flex-direction: column; gap: 10px; }
+    .form { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 10px; }
+    .form .btn { grid-column: 1 / -1; }
+    .data__texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .campo input:not([type='date']) {
       display: block;
@@ -79,7 +81,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
       min-width: 0;
       max-width: 100%;
       height: 48px;
-      padding: 0 14px;
+      padding: 0 12px;
       border: 1px solid var(--line);
       border-radius: 12px;
       background: var(--card);
@@ -87,7 +89,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
       appearance: none;
     }
     /* O campo de data nativo muda de altura e alinhamento conforme o navegador (no iOS o texto sobe); por isso só o texto formatado aparece. */
-    .data { position: relative; display: flex; align-items: center; height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .data { position: relative; display: flex; align-items: center; height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
     .data:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
     .data input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
     .erro { color: var(--perigo); }
