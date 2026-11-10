@@ -1,4 +1,4 @@
-import { MEDIDAS, lerMedida, limparMedidas, mesclarMedidas, registrarMedidas, restaurarMedidas, ultimasMedidas } from './medidas';
+import { MEDIDAS, lerMedida, limparMedidas, mesclarMedidas, registrarMedidas, restaurarMedidas, serieDeMedida, ultimasMedidas } from './medidas';
 
 const m = (chave: string) => MEDIDAS.find((x) => x.chave === chave)!;
 
@@ -63,5 +63,36 @@ describe('ultimasMedidas', () => {
       { data: '2026-11-01', cintura: 111.8 },
     ]).map((x) => [x.medida.chave, x.valor, x.data]);
     expect(u).toEqual([['cintura', 111.8, '2026-11-01'], ['tmb', 1800, '2026-09-01']]);
+  });
+});
+
+describe('serieDeMedida', () => {
+  const hoje = new Date(2026, 10, 10);
+  const regs = [
+    { data: '2026-01-10', cintura: 115 },
+    { data: '2026-05-10', cintura: 113, tmb: 1800 },
+    { data: '2026-11-02', cintura: 111.8 },
+  ];
+
+  it('posiciona pelo dia e calcula a variação', () => {
+    const s = serieDeMedida(regs, 'cintura', 'ano', hoje);
+    expect(s.pontos.map((p) => p.valor)).toEqual([115, 113, 111.8]);
+    expect(s.pontos[2].x).toBeGreaterThan(s.pontos[1].x);
+    expect(s.variacao).toBe(-3.2);
+    expect(s.minimo).toBe(111.8);
+    expect(s.maximo).toBe(115);
+  });
+
+  it('6 meses corta o que é mais antigo; tudo começa no primeiro registro', () => {
+    expect(serieDeMedida(regs, 'cintura', 'semestre', hoje).pontos.length).toBe(1);
+    const t = serieDeMedida(regs, 'cintura', 'tudo', hoje);
+    expect(t.pontos[0].x).toBe(0);
+    expect(t.inicio).toBe('2026-01-10');
+  });
+
+  it('só considera os dias em que a medida foi informada', () => {
+    expect(serieDeMedida(regs, 'tmb', 'ano', hoje).pontos.length).toBe(1);
+    expect(serieDeMedida(regs, 'tmb', 'ano', hoje).variacao).toBeNull();
+    expect(serieDeMedida([], 'tmb', 'ano', hoje).pontos).toEqual([]);
   });
 });

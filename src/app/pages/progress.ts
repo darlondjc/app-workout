@@ -11,6 +11,7 @@ import { SessaoPropria } from '../core/sessao-propria';
 import { LIMITE_SESSOES_MEMBRO, SocialService } from '../core/social.service';
 import { CHAVE_META, lerMeta, metaPadrao } from '../core/meta';
 import { MapaMuscular } from '../core/mapa-muscular';
+import { MedidasGrafico } from '../core/medidas-grafico';
 import { PesoGrafico } from '../core/peso-grafico';
 import { caloriasDaSessao, caloriasNoMes, kcalTexto } from '../core/calorias';
 import { PesoService } from '../core/peso.service';
@@ -30,7 +31,7 @@ function lerDispensadas(): string[] {
 
 @Component({
   selector: 'app-progress',
-  imports: [ExercicioDialogo, Icon, SessaoDetalhe, SessaoPropria, Dialogo, PesoGrafico, MapaMuscular],
+  imports: [ExercicioDialogo, Icon, SessaoDetalhe, SessaoPropria, Dialogo, PesoGrafico, MedidasGrafico, MapaMuscular],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pagina" [class.pagina--calendario-primeiro]="calendarioPrimeiro()">
@@ -178,6 +179,7 @@ function lerDispensadas(): string[] {
 
       @if (editavel()) {
         <app-peso-grafico />
+        <app-medidas-grafico />
       } @else if (pesos(); as p) {
         <app-peso-grafico [registros]="p" [somenteLeitura]="true" />
       }

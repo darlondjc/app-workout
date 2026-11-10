@@ -1,4 +1,5 @@
 import { RegistroMedidas } from './models';
+import { deIso } from './stats';
 
 export type ChaveMedida = 'gordura' | 'musculo' | 'visceral' | 'cintura' | 'tmb';
 
@@ -102,4 +103,54 @@ export function ultimasMedidas(registros: RegistroMedidas[]): UltimaMedida[] {
     if (r) saida.push({ medida, valor: r[medida.chave] as number, data: r.data });
   }
   return saida;
+}
+
+export type PeriodoMedida = 'semestre' | 'ano' | 'tudo';
+
+export interface PontoMedida {
+  /** Posição na janela do período, de 0 (início) a 1 (fim). */
+  x: number;
+  valor: number;
+  data: string;
+}
+
+export interface SerieMedida {
+  pontos: PontoMedida[];
+  /** Último ponto menos o primeiro; `null` com menos de dois pontos. */
+  variacao: number | null;
+  minimo: number;
+  maximo: number;
+  /** Primeiro e último dia da janela (yyyy-mm-dd). */
+  inicio: string;
+  fim: string;
+}
+
+const DIA_MS = 86_400_000;
+
+/**
+ * Pontos do gráfico de uma medida: só os dias em que ela foi informada, posicionados pela data. Semestre e ano
+ * olham os últimos 180 e 365 dias; "tudo" vai do primeiro registro até hoje.
+ */
+export function serieDeMedida(registros: RegistroMedidas[], chave: ChaveMedida, periodo: PeriodoMedida, hoje: Date): SerieMedida {
+  const dia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const fimData = dia(hoje);
+  const todos = registros.filter((r) => typeof r[chave] === 'number').map((r) => ({ data: r.data, valor: r[chave] as number }));
+  let inicioData = new Date(fimData.getTime() - (periodo === 'semestre' ? 180 : 365) * DIA_MS);
+  if (periodo === 'tudo' && todos.length > 0) inicioData = deIso(todos[0].data);
+  const ini = inicioData.getTime();
+  const span = Math.max(fimData.getTime() - ini, DIA_MS);
+  const pontos = todos
+    .filter((p) => deIso(p.data).getTime() >= ini && deIso(p.data).getTime() <= fimData.getTime())
+    .map((p) => ({ x: (deIso(p.data).getTime() - ini) / span, valor: p.valor, data: p.data }));
+  const valores = pontos.map((p) => p.valor);
+  const f = 10 ** (MEDIDAS.find((m) => m.chave === chave)?.casas ?? 1);
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return {
+    pontos,
+    variacao: pontos.length >= 2 ? Math.round((pontos[pontos.length - 1].valor - pontos[0].valor) * f) / f : null,
+    minimo: valores.length ? Math.min(...valores) : 0,
+    maximo: valores.length ? Math.max(...valores) : 0,
+    inicio: iso(inicioData),
+    fim: iso(fimData),
+  };
 }
