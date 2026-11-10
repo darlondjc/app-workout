@@ -166,7 +166,7 @@ function lerDispensadas(): string[] {
         <ol class="barras">
           @for (b of barras(); track b.inicio) {
             <li [attr.aria-label]="b.descricao">
-              <span class="barra" [class.atual]="b.atual" [class.meta-ok]="b.treinos >= resumo().metaSemanal" [style.height.%]="b.altura"></span>
+              <span class="barra" [class.atual]="b.atual" [class.meta-ok]="b.treinos >= resumo().metaSemanal" [style.height.%]="b.altura" [style.min-height.px]="b.treinos ? 20 : null">{{ b.treinos || '' }}</span>
               <span class="apoio" aria-hidden="true">{{ b.rotulo }}</span>
             </li>
           }
@@ -239,8 +239,8 @@ function lerDispensadas(): string[] {
     .num span { font-size: 12px; line-height: 1.3; }
     .barras { list-style: none; margin: 0; padding: 0; height: 88px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; align-items: end; }
     .barras li { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; font-size: 11px; }
-    .barra { width: 100%; min-height: 4px; border-radius: 6px; background: var(--line); }
-    .barra.meta-ok { background: var(--progresso); }
+    .barra { width: 100%; min-height: 4px; border-radius: 6px; background: var(--line); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; line-height: 1; color: var(--ink); overflow: hidden; }
+    .barra.meta-ok { background: var(--progresso); color: var(--card); }
     .barra.atual { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
     .recordes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
     .recordes li { display: flex; justify-content: space-between; gap: 12px; }

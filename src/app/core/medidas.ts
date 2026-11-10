@@ -5,6 +5,8 @@ export type ChaveMedida = 'gordura' | 'musculo' | 'visceral' | 'cintura' | 'tmb'
 export interface Medida {
   chave: ChaveMedida;
   rotulo: string;
+  /** Nome abreviado, para caber numa linha no formulário e no histórico. */
+  curto: string;
   unidade: string;
   min: number;
   max: number;
@@ -14,11 +16,11 @@ export interface Medida {
 
 /** As principais da bioimpedância, mais a circunferência abdominal. */
 export const MEDIDAS: readonly Medida[] = [
-  { chave: 'gordura', rotulo: 'Gordura corporal', unidade: '%', min: 2, max: 70, casas: 1 },
-  { chave: 'musculo', rotulo: 'Massa muscular', unidade: 'kg', min: 5, max: 100, casas: 1 },
-  { chave: 'visceral', rotulo: 'Gordura visceral', unidade: 'nível', min: 1, max: 30, casas: 0 },
-  { chave: 'cintura', rotulo: 'Circunferência abdominal', unidade: 'cm', min: 40, max: 250, casas: 1 },
-  { chave: 'tmb', rotulo: 'Taxa metabólica basal', unidade: 'kcal', min: 500, max: 5000, casas: 0 },
+  { chave: 'gordura', curto: 'Gordura', rotulo: 'Gordura corporal', unidade: '%', min: 2, max: 70, casas: 1 },
+  { chave: 'musculo', curto: 'Massa muscular', rotulo: 'Massa muscular', unidade: 'kg', min: 5, max: 100, casas: 1 },
+  { chave: 'visceral', curto: 'Visceral', rotulo: 'Gordura visceral', unidade: 'nível', min: 1, max: 30, casas: 0 },
+  { chave: 'cintura', curto: 'Abdômen', rotulo: 'Circunferência abdominal', unidade: 'cm', min: 40, max: 250, casas: 1 },
+  { chave: 'tmb', curto: 'TMB', rotulo: 'Taxa metabólica basal', unidade: 'kcal', min: 500, max: 5000, casas: 0 },
 ];
 
 export type ValoresMedidas = Partial<Record<ChaveMedida, number>>;

@@ -34,7 +34,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
       <form class="form" (submit)="salvar($event)" novalidate>
         @for (m of medidas; track m.chave) {
           <label class="campo">
-            <span class="apoio">{{ m.rotulo }} ({{ m.unidade }})</span>
+            <span class="apoio">{{ m.curto }} ({{ m.unidade }})</span>
             <input type="text" inputmode="decimal" autocomplete="off" [placeholder]="exemplo(m.chave)" [value]="texto()[m.chave]" (input)="digitou(m.chave, $event)" />
           </label>
         }
@@ -176,7 +176,7 @@ export class MedidasRegistro {
 
   protected resumo(r: RegistroMedidas): string {
     return MEDIDAS.filter((m) => typeof r[m.chave] === 'number')
-      .map((m) => `${m.rotulo.split(' ')[0]} ${formatarMedida(r[m.chave] as number, m)}`)
+      .map((m) => `${m.curto} ${formatarMedida(r[m.chave] as number, m)}`)
       .join(' · ');
   }
 
