@@ -89,8 +89,6 @@ export class MedidasGrafico {
   protected readonly largura = LARGURA;
   protected readonly altura = ALTURA;
   protected readonly margem = MARGEM;
-  private readonly hoje = new Date();
-
   private readonly ultimas = computed(() => ultimasMedidas(this.servico.registros()));
   /** Só as medidas que a pessoa já registrou alguma vez. */
   protected readonly disponiveis = computed(() => this.ultimas().map((u) => u.medida));
@@ -99,21 +97,25 @@ export class MedidasGrafico {
 
   protected readonly grafico = computed(() => {
     const m = this.medida();
-    const s = serieDeMedida(this.servico.registros(), m.chave, this.periodo(), this.hoje);
+    // A data de hoje é lida a cada cálculo: o app pode ficar aberto de um dia para o outro.
+    const hoje = new Date();
+    const s = serieDeMedida(this.servico.registros(), m.chave, this.periodo(), hoje);
     const folga = s.maximo - s.minimo === 0 ? Math.max(Math.abs(s.maximo) * 0.05, 1) : (s.maximo - s.minimo) * 0.2;
     const min = s.minimo - folga;
     const max = s.maximo + folga;
     const x = (v: number) => MARGEM.esq + 14 + v * (LARGURA - MARGEM.esq - MARGEM.dir - 28);
     const y = (v: number) => MARGEM.topo + (1 - (v - min) / (max - min)) * (ALTURA - MARGEM.topo - MARGEM.base);
-    const pontos = s.pontos.map((p) => ({
+    // Com muitos pontos os números se atropelam: aí só o primeiro, o último, o menor e o maior ganham rótulo.
+    const muitos = s.pontos.length > 8;
+    const pontos = s.pontos.map((p, i) => ({
       cx: x(p.x),
       cy: y(p.valor),
       data: p.data,
-      texto: formatarMedida(p.valor, m),
+      texto: !muitos || i === 0 || i === s.pontos.length - 1 || p.valor === s.minimo || p.valor === s.maximo ? formatarMedida(p.valor, m) : '',
       ancora: p.x < 0.08 ? 'start' : p.x > 0.92 ? 'end' : 'middle',
     }));
     const caminho = pontos.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.cx.toFixed(1)} ${p.cy.toFixed(1)}`).join(' ');
-    return { pontos, caminho, variacao: s.variacao, minimo: s.minimo, maximo: s.maximo, inicio: dataCurta(s.inicio, this.hoje), fim: dataCurta(s.fim, this.hoje) };
+    return { pontos, caminho, variacao: s.variacao, minimo: s.minimo, maximo: s.maximo, inicio: dataCurta(s.inicio, hoje), fim: dataCurta(s.fim, hoje) };
   });
 
   protected readonly textoVariacao = computed(() => {
@@ -134,6 +136,6 @@ export class MedidasGrafico {
   }
 
   protected data(iso: string): string {
-    return dataCurta(iso, this.hoje);
+    return dataCurta(iso);
   }
 }

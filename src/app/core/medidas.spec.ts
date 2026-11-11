@@ -95,4 +95,18 @@ describe('serieDeMedida', () => {
     expect(serieDeMedida(regs, 'tmb', 'ano', hoje).variacao).toBeNull();
     expect(serieDeMedida([], 'tmb', 'ano', hoje).pontos).toEqual([]);
   });
+
+  it('ignora registros depois de hoje e aceita o do limite exato da janela', () => {
+    const r = [{ data: '2025-11-10', cintura: 120 }, { data: '2026-11-11', cintura: 100 }];
+    const s = serieDeMedida(r, 'cintura', 'ano', hoje);
+    expect(s.pontos.map((p) => p.valor)).toEqual([120]);
+    expect(s.pontos[0].x).toBe(0);
+    expect(s.inicio).toBe('2025-11-10');
+    expect(s.fim).toBe('2026-11-10');
+  });
+
+  it('um só dia no período não divide por zero', () => {
+    const s = serieDeMedida([{ data: '2026-11-10', cintura: 111 }], 'cintura', 'tudo', hoje);
+    expect(s.pontos).toEqual([{ x: 0, valor: 111, data: '2026-11-10' }]);
+  });
 });

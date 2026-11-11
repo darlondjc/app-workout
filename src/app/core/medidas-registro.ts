@@ -35,7 +35,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
         @for (m of medidas; track m.chave) {
           <label class="campo">
             <span class="apoio">{{ m.curto }} ({{ m.unidade }})</span>
-            <input type="text" inputmode="decimal" autocomplete="off" [placeholder]="exemplo(m.chave)" [value]="texto()[m.chave]" (input)="digitou(m.chave, $event)" />
+            <input type="text" inputmode="decimal" autocomplete="off" [attr.aria-label]="m.rotulo + ' (' + m.unidade + ')'" [placeholder]="exemplo(m.chave)" [value]="texto()[m.chave]" (input)="digitou(m.chave, $event)" />
           </label>
         }
         <label class="campo">
