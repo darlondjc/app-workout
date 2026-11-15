@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TituloEmDuasLinhas } from '../core/ajuste-titulo';
@@ -36,7 +37,7 @@ function lerPreferencia(): boolean {
 
 @Component({
   selector: 'app-workout',
-  imports: [RouterLink, Icon, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
+  imports: [NgTemplateOutlet, RouterLink, Icon, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'fecharMenuMembro()' },
   templateUrl: './workout.html',
@@ -69,7 +70,13 @@ export class Workout {
     return (p ? this.itemDe(p.b)?.descanso : this.item()?.descanso) || 60;
   });
   private descansoDesde = 0;
+  /** O cartão de descanso fica oculto depois de "Começar" (o cronômetro segue contando, para guardar o descanso da série). */
+  protected readonly descansoOculto = signal(false);
   protected readonly confirmandoSaida = signal(false);
+  /** Série (ou rodada) escolhida na faixa para editar; sem escolha, a em foco é a primeira que falta. */
+  protected readonly serieEscolhida = signal<number | null>(null);
+  /** Relógio de 1 s: o tempo total do treino. */
+  private readonly agora = signal(Date.now());
   /** Quantas vezes cada série (pela chave do exercício e do número) foi preenchida sozinha; o valor mudando refaz a animação. */
   protected readonly piscadas = signal<Record<number, number>>({});
   protected chave(i: number, n: number): number {
@@ -176,6 +183,131 @@ export class Workout {
 
   protected readonly feitas = computed(() => this.series().filter((s) => s.feita).length);
 
+  /** Posição da série (ou rodada) em foco: a escolhida na faixa, senão a primeira que falta; -1 com todas feitas. */
+  protected readonly foco = computed(() => {
+    const feitas = this.par() ? this.rodadas().map((r) => r.feita) : this.series().map((s) => s.feita);
+    const e = this.serieEscolhida();
+    if (e !== null && e < feitas.length) return e;
+    return feitas.findIndex((f) => !f);
+  });
+
+  /** Uma célula por série (ou rodada) na faixa: valores, estado e se a linha acabou de ser preenchida sozinha. */
+  protected readonly faixa = computed(() => {
+    const p = this.par();
+    const kg = (v: number) => v.toLocaleString('pt-BR');
+    const pisca = (n: number) => {
+      const v = p ? (this.piscadas()[this.chave(p.a, n)] ?? 0) + (this.piscadas()[this.chave(p.b, n)] ?? 0) : (this.piscadas()[this.chave(this.indice(), n)] ?? 0);
+      return { a: v % 2 === 1, b: v > 0 && v % 2 === 0 };
+    };
+    if (p) {
+      return this.rodadas().map((r) => ({
+        k: r.k,
+        n: r.n,
+        feita: r.feita,
+        texto: [r.a, r.b].filter((x) => !!x).map((x) => kg(x!.carga)).join('·'),
+        pisca: pisca(r.n),
+      }));
+    }
+    const min = this.item()?.unidade === 'min';
+    return this.series().map((s) => ({ k: s.n - 1, n: s.n, feita: s.feita, texto: min ? `${s.reps} min` : `${s.reps}×${kg(s.carga)}`, pisca: pisca(s.n) }));
+  });
+
+  /** Quanto de cada bloco já foi feito (0 a 100), para a barra segmentada do topo. */
+  protected readonly segmentos = computed(() =>
+    this.blocos().map((b) => {
+      const idx = b.tipo === 'solo' ? [b.i] : [b.a, b.b];
+      const todas = idx.flatMap((i) => this.seriesDe(i));
+      return todas.length ? Math.round((todas.filter((s) => s.feita).length / todas.length) * 100) : 0;
+    }),
+  );
+
+  /** Nomes do próximo bloco para o botão do rodapé: um, ou os dois de um par. */
+  protected readonly proximosNomes = computed(() => {
+    const b = this.blocos()[this.numBloco() + 1];
+    if (!b) return [];
+    return b.tipo === 'solo' ? [this.nomeDe(b.i)] : [this.nomeDe(b.a), this.nomeDe(b.b)];
+  });
+
+  /** Tempo total do treino em andamento (desde a primeira série marcada). */
+  protected readonly tempoTotal = computed(() => {
+    const ini = this.estado()?.iniciadoEm;
+    const s = ini ? Math.max(0, Math.floor((this.agora() - ini) / 1000)) : 0;
+    const h = Math.floor(s / 3600);
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return h > 0 ? `${h}:${m}:${ss}` : `${m}:${ss}`;
+  });
+
+  /** Músculos principais do exercício i, para os rótulos do cabeçalho. */
+  protected musculosDe(i: number): string[] {
+    const it = this.itemDe(i);
+    const e = it ? this.ex.get(it.exerciseId) : undefined;
+    return (e?.primaryMuscles ?? []).slice(0, 2).map((m) => this.ex.musculo(m));
+  }
+
+  /** O que a pessoa fez na série k da última vez (ou na última série, se k passou), para mostrar sob o valor. */
+  protected dica(i: number, k: number, campo: 'reps' | 'carga'): string {
+    const r = this.anteriorDe(i);
+    const it = this.itemDe(i);
+    if (!r || !it) return '';
+    if (campo === 'reps' && (r.unidade === 'min') !== (it.unidade === 'min')) return '';
+    const s = r.series[k] ?? r.series.at(-1);
+    if (!s) return '';
+    return campo === 'reps' ? String(s.reps) : `${s.carga.toLocaleString('pt-BR')} kg`;
+  }
+
+  /** Fechamento do exercício (ou par) da vez: volume feito e a diferença para a última vez. */
+  protected readonly concluido = computed(() => {
+    const p = this.par();
+    const idx = p ? [p.a, p.b] : [this.indice()];
+    let feito = 0;
+    let antes = 0;
+    let temAntes = false;
+    for (const i of idx) {
+      if (this.itemDe(i)?.unidade === 'min') continue;
+      feito += this.seriesDe(i).filter((s) => s.feita).reduce((t, s) => t + s.reps * s.carga, 0);
+      const r = this.anteriorDe(i);
+      if (r && r.unidade !== 'min') {
+        temAntes = true;
+        antes += r.series.reduce((t, s) => t + s.reps * s.carga, 0);
+      }
+    }
+    return { feito, diferenca: temAntes ? feito - antes : null };
+  });
+
+  /** O cartão de descanso aparece enquanto o cronômetro conta e a pessoa não tocou em "Começar". */
+  protected readonly mostrarDescanso = computed(() => this.descansando() && !this.descansoOculto() && this.foco() >= 0);
+
+  protected readonly circunferencia = 2 * Math.PI * 80;
+  protected readonly anelDeslocamento = computed(() => this.circunferencia * (1 - Math.min(1, this.descansoAtivo() / Math.max(1, this.limiteAtivo()))));
+  protected texto(segundos: number): string {
+    const m = String(Math.floor(segundos / 60)).padStart(2, '0');
+    return `${m}:${String(Math.floor(segundos % 60)).padStart(2, '0')}`;
+  }
+  protected readonly estourou = computed(() => this.descansando() && this.descansoAtivo() >= this.limiteAtivo());
+
+  protected escolher(k: number): void {
+    this.serieEscolhida.set(k);
+    this.descansoOculto.set(true);
+  }
+
+  /** "Começar": esconde o cartão de descanso; o cronômetro segue, e o tempo vira o descanso da série que for marcada. */
+  protected comecar(): void {
+    this.descansoOculto.set(true);
+  }
+
+  /** "Pular descanso": para o cronômetro; a próxima série fica sem descanso guardado. */
+  protected pular(): void {
+    this.zerarDescanso();
+  }
+
+  /** −15 s / +15 s mudam o tempo de descanso previsto (o limite do anel), não o que já passou. */
+  protected ajustarLimite(delta: number): void {
+    const novo = Math.max(15, this.limiteAtivo() + delta);
+    this.limiteAtivo.set(novo);
+    this.plans.andamento(this.id(), (a) => (a.descanso ? { ...a, descanso: { ...a.descanso, limite: novo } } : a));
+  }
+
   /** As rodadas do par da vez: a série k de cada exercício. Se um tem mais séries, as últimas rodadas têm só um. */
   protected readonly rodadas = computed(() => {
     const p = this.par();
@@ -234,7 +366,9 @@ export class Workout {
         this.iniciarDescanso(d.decorrido + fora, d.limite);
       });
     });
+    const relogio = setInterval(() => this.agora.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => {
+      clearInterval(relogio);
       // Saiu com o treino ainda em andamento (pausa, ou ver as instruções de um exercício): guarda o cronômetro para retomar.
       if (this.descansando() && this.estado()) {
         const descanso = { decorrido: (Date.now() - this.descansoDesde) / 1000, limite: this.limiteAtivo(), saiuEm: Date.now(), pausado: this.pausado };
@@ -353,7 +487,17 @@ export class Workout {
   /** Ao mudar carga ou repetições de uma série, as de baixo que ainda não foram feitas ganham o mesmo valor. */
   protected editar(k: number, campo: 'carga' | 'reps', evento: Event, i = this.indice()): void {
     const v = (evento.target as HTMLInputElement).valueAsNumber;
-    const valor = Number.isFinite(v) && v >= 0 ? v : 0;
+    this.definirValor(k, campo, Number.isFinite(v) && v >= 0 ? v : 0, i);
+  }
+
+  /** Botões − e +: mudam o valor da série k em `delta` (carga em passos de 2,5 kg; repetições de 1 em 1). */
+  protected ajustar(k: number, campo: 'carga' | 'reps', delta: number, i = this.indice()): void {
+    const atual = this.seriesDe(i)[k]?.[campo];
+    if (atual === undefined) return;
+    this.definirValor(k, campo, Math.max(0, Math.round((atual + delta) * 2) / 2), i);
+  }
+
+  private definirValor(k: number, campo: 'carga' | 'reps', valor: number, i: number): void {
     const series = this.seriesDe(i);
     const base = series.map((s, j) => (j >= k && (j === k || !s.feita) ? { ...s, [campo]: valor } : s));
     // Só as linhas de baixo que mudaram sozinhas piscam, para a pessoa notar o que foi copiado.
@@ -426,6 +570,7 @@ export class Workout {
   protected marcarTodos(i = this.indice()): void {
     const series = this.seriesDe(i);
     const marcar = series.filter((s) => s.feita).length < series.length;
+    this.serieEscolhida.set(null);
     const base = series.map((s) => this.paraSalvar({ ...s, feita: marcar, descanso: marcar ? s.descanso : undefined }));
     this.plans.andamento(this.id(), (a) => ({ ...a, indice: this.indice(), series: { ...a.series, [i]: base } }));
     // Exercício terminado: o cronômetro zera e fica parado até a primeira série do próximo.
@@ -455,6 +600,7 @@ export class Workout {
     // O descanso desta série é o tempo corrido desde a anterior; sem timer rodando (primeira série), não há o que guardar.
     const descanso = ficouFeita && this.descansando() ? Math.round((Date.now() - this.descansoDesde) / 1000) : undefined;
     const ultimaDoExercicio = ficouFeita && this.feitas() + 1 === this.series().length;
+    this.serieEscolhida.set(null);
     this.gravarSerie(this.indice(), k, { feita: ficouFeita, descanso });
     // Marcar uma série reinicia o cronômetro, que segue contando ao trocar de tela; a última do exercício o zera.
     // Desmarcar não mexe nele.
@@ -470,6 +616,7 @@ export class Workout {
     const rodada = this.rodadas()[k];
     if (!p || !rodada) return;
     const marcar = !rodada.feita;
+    this.serieEscolhida.set(null);
     const descanso = marcar && this.descansando() ? Math.round((Date.now() - this.descansoDesde) / 1000) : undefined;
     const doDescanso = rodada.a ? p.a : p.b;
     const nova = (i: number, existe: boolean) => {
@@ -524,6 +671,7 @@ export class Workout {
   private irPara(indice: number): void {
     this.piscadas.set({});
     this.mostrarConcluidas.set(false);
+    this.serieEscolhida.set(null);
     this.menuMembro.set(null);
     this.plans.andamento(this.id(), (a) => ({ ...a, indice }));
   }
@@ -637,6 +785,7 @@ export class Workout {
     this.limiteAtivo.set(limite);
     this.descansoAtivo.set(Math.floor(decorrido));
     this.descansando.set(true);
+    this.descansoOculto.set(false);
     // Guardado desde o início: se o app for fechado ou reiniciado, o cronômetro retoma de onde estava (com o tempo fora).
     const descanso = { decorrido, limite, saiuEm: Date.now(), pausado: false };
     this.plans.andamento(this.id(), (a) => ({ ...a, descanso }));

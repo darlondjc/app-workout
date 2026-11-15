@@ -16,13 +16,22 @@ describe('Workout — marcar séries em bloco', () => {
   const el = () => fixture.nativeElement as HTMLElement;
   const botao = (texto: string) =>
     [...el().querySelectorAll('button')].find((b) => b.textContent?.replace(/\s+/g, ' ').trim() === texto) as HTMLButtonElement | undefined;
-  const marcas = () => [...el().querySelectorAll('.marca')] as HTMLButtonElement[];
-  const feitas = () => marcas().filter((m) => m.getAttribute('aria-pressed') === 'true').length;
+  const celulas = () => [...el().querySelectorAll('.celula')] as HTMLButtonElement[];
+  const feitas = () => celulas().filter((c) => c.classList.contains('celula--feita')).length;
+  const valores = () => celulas().map((c) => c.querySelector('b')!.textContent!.trim());
   const chave = () => el().querySelector('.chave input') as HTMLInputElement;
-  const clicar = (b: HTMLElement | undefined) => {
-    b!.click();
+  const clicar = (b: Element | null | undefined) => {
+    (b as HTMLElement).click();
     fixture.detectChanges();
   };
+  const ok = () => el().querySelector('.foco__ok');
+  /** Escolhe a série k na faixa e toca no botão grande (marca, ou desmarca se já estava feita). */
+  const marcar = (k: number) => {
+    clicar(celulas()[k]);
+    clicar(ok());
+  };
+  const proximo = () => clicar(el().querySelector('.proximo'));
+  const anterior = () => clicar(el().querySelector('.anterior'));
 
   beforeEach(() => {
     localStorage.clear();
@@ -63,13 +72,13 @@ describe('Workout — marcar séries em bloco', () => {
   });
 
   it('"Marcar todos" com algumas já feitas completa as que faltam', () => {
-    clicar(marcas()[0]);
+    marcar(0);
     clicar(botao('Marcar todos'));
     expect(feitas()).toBe(3);
   });
 
   it('ao finalizar com séries sem marcar, pergunta antes de concluir', () => {
-    clicar(botao('Próximo exercício'));
+    proximo();
     clicar(botao('Finalizar treino'));
     const dialogo = el().querySelector('[role="alertdialog"]')!;
     expect(dialogo.textContent).toContain('Marcar o que falta como feito?');
@@ -78,7 +87,7 @@ describe('Workout — marcar séries em bloco', () => {
   });
 
   it('"Marcar e finalizar" grava todas as séries de todos os exercícios, inclusive os não visitados', () => {
-    clicar(botao('Próximo exercício'));
+    proximo();
     clicar(botao('Finalizar treino'));
     clicar(botao('Marcar e finalizar'));
     const [sessao] = plans.historico();
@@ -88,7 +97,7 @@ describe('Workout — marcar séries em bloco', () => {
   });
 
   it('ao concluir, mostra o resumo e só volta para o início quando a pessoa toca em OK', () => {
-    clicar(botao('Próximo exercício'));
+    proximo();
     clicar(botao('Finalizar treino'));
     clicar(botao('Marcar e finalizar'));
     const navegar = TestBed.inject(Router).navigate as jasmine.Spy;
@@ -103,7 +112,7 @@ describe('Workout — marcar séries em bloco', () => {
 
   it('"Finalizar sem marcar" grava só o que foi marcado', () => {
     clicar(botao('Marcar todos'));
-    clicar(botao('Próximo exercício'));
+    proximo();
     clicar(botao('Finalizar treino'));
     expect(el().querySelector('[role="alertdialog"]')!.textContent).toContain('Faltam 2 séries');
     clicar(botao('Finalizar sem marcar'));
@@ -113,7 +122,7 @@ describe('Workout — marcar séries em bloco', () => {
   });
 
   it('"Voltar ao treino" fecha a pergunta sem concluir', () => {
-    clicar(botao('Próximo exercício'));
+    proximo();
     clicar(botao('Finalizar treino'));
     clicar(botao('Voltar ao treino'));
     expect(el().querySelector('[role="alertdialog"]')).toBeNull();
@@ -122,20 +131,23 @@ describe('Workout — marcar séries em bloco', () => {
 
   it('com tudo marcado, conclui direto, sem perguntar', () => {
     clicar(botao('Marcar todos'));
-    clicar(botao('Próximo exercício'));
+    proximo();
     clicar(botao('Marcar todos'));
     clicar(botao('Finalizar treino'));
     expect(el().querySelector('[role="alertdialog"]')).toBeNull();
     expect(plans.historico().length).toBe(1);
   });
 
-  it('com a chave ligada, marca o que falta e conclui sem perguntar; a escolha fica guardada', () => {
+  it('a chave fica na pergunta; ligada, da próxima vez marca o que falta e conclui sem perguntar', () => {
+    expect(chave()).toBeNull();
+    proximo();
+    clicar(botao('Finalizar treino'));
     expect(chave().checked).toBeFalse();
     chave().click();
     fixture.detectChanges();
     expect(chave().checked).toBeTrue();
     expect(localStorage.getItem('app-workout:marcar-tudo-ao-finalizar:v1')).toBe('1');
-    clicar(botao('Próximo exercício'));
+    clicar(botao('Voltar ao treino'));
     clicar(botao('Finalizar treino'));
     expect(el().querySelector('[role="alertdialog"]')).toBeNull();
     expect(plans.historico()[0].registros!.map((r) => r.series.length)).toEqual([3, 2]);
@@ -146,14 +158,114 @@ describe('Workout — marcar séries em bloco', () => {
     fixture = TestBed.createComponent(Workout);
     fixture.componentRef.setInput('id', fichaId);
     fixture.detectChanges();
-    expect(chave().checked).toBeTrue();
+    proximo();
+    clicar(botao('Finalizar treino'));
+    expect(el().querySelector('[role="alertdialog"]')).toBeNull();
+    expect(plans.historico().length).toBe(1);
+  });
+
+  describe('série em foco', () => {
+    const botaoAria = (rotulo: string) => el().querySelector(`[aria-label="${rotulo}"]`);
+
+    it('começa na primeira série e avança para a próxima ao concluir', () => {
+      expect(ok()!.textContent).toContain('Concluir série 1');
+      expect(el().querySelector('.foco__rotulo')!.textContent).toContain('Série 1 de 3');
+      clicar(ok());
+      clicar(el().querySelector('.proxima__ir'));
+      expect(ok()!.textContent).toContain('Concluir série 2');
+    });
+
+    it('− e + mudam a série em foco e copiam para as de baixo que ainda não foram feitas', () => {
+      clicar(botaoAria('Aumentar carga'));
+      expect(valores()).toEqual(['10×22,5', '10×22,5', '10×22,5']);
+      clicar(botaoAria('Diminuir repetições'));
+      expect(valores()).toEqual(['9×22,5', '9×22,5', '9×22,5']);
+      expect(plans.emAndamento()?.series[0].map((x) => [x.reps, x.carga])).toEqual([[9, 22.5], [9, 22.5], [9, 22.5]]);
+    });
+
+    it('os valores nunca ficam abaixo de zero', () => {
+      for (let i = 0; i < 12; i++) clicar(botaoAria('Diminuir repetições'));
+      expect(valores()[0]).toBe('0×20');
+    });
+
+    it('escolher uma série na faixa traz os valores dela para edição', () => {
+      clicar(celulas()[2]);
+      expect(el().querySelector('.foco__rotulo')!.textContent).toContain('Série 3 de 3');
+      expect(celulas()[2].classList.contains('celula--agora')).toBeTrue();
+    });
+
+    it('o rodapé mostra o nome do próximo exercício', () => {
+      expect(el().querySelector('.proximo')!.textContent).toContain('x2');
+    });
+
+    it('a barra do topo tem um segmento por exercício e enche ao marcar', () => {
+      const cheios = () => [...el().querySelectorAll('.seg__cheio')].map((e) => (e as HTMLElement).style.width);
+      expect(cheios()).toEqual(['0%', '0%']);
+      clicar(botao('Marcar todos'));
+      expect(cheios()).toEqual(['100%', '0%']);
+    });
+
+    it('ao terminar o exercício, mostra o volume e a diferença para a última vez', () => {
+      plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 15, reps: 10 }, { carga: 15, reps: 10 }] }]);
+      fixture.detectChanges();
+      clicar(botao('Marcar todos'));
+      const c = el().querySelector('.concluido')!;
+      expect(c.textContent).toContain('Exercício concluído');
+      expect(c.textContent).toContain('450 kg de volume');
+      expect(c.textContent).toContain('+150 kg');
+    });
+
+    describe('descanso', () => {
+      beforeEach(() => jasmine.clock().install().mockDate(new Date(2026, 9, 23, 10, 0, 0)));
+      afterEach(() => jasmine.clock().uninstall());
+
+      it('mostra o cartão de descanso e a próxima série; "Começar" o esconde sem parar o cronômetro', () => {
+        clicar(ok());
+        expect(el().querySelector('.descanso')).not.toBeNull();
+        expect(el().querySelector('.proxima__valor')!.textContent).toContain('10 reps × 20 kg');
+        clicar(el().querySelector('.proxima__ir'));
+        expect(el().querySelector('.descanso')).toBeNull();
+        jasmine.clock().tick(4000);
+        fixture.detectChanges();
+        expect(el().querySelector('.tempo--mini')!.textContent).toContain('00:04');
+      });
+
+      it('"Pular descanso" para o cronômetro; a próxima série fica sem descanso guardado', () => {
+        clicar(ok());
+        jasmine.clock().tick(5000);
+        clicar(botao('Pular descanso'));
+        expect(el().querySelector('.descanso')).toBeNull();
+        expect(el().querySelector('.tempo')).toBeNull();
+        clicar(ok());
+        expect(plans.emAndamento()?.series[0][1].descanso).toBeUndefined();
+      });
+
+      it('−15 s e +15 s mudam o tempo de descanso previsto', () => {
+        clicar(ok());
+        clicar(botao('+15 s'));
+        expect(el().querySelector('.anel__limite')!.textContent).toContain('01:15');
+        expect(plans.emAndamento()?.descanso?.limite).toBe(75);
+        clicar(botao('−15 s'));
+        clicar(botao('−15 s'));
+        expect(plans.emAndamento()?.descanso?.limite).toBe(45);
+      });
+
+      it('passando do limite, o anel avisa quanto passou e segue contando', () => {
+        clicar(ok());
+        jasmine.clock().tick(68000);
+        fixture.detectChanges();
+        expect(el().querySelector('.descanso')!.classList).toContain('estourou');
+        expect(el().querySelector('.anel__limite')!.textContent).toContain('+00:08');
+        expect(el().querySelector('.tempo')!.textContent!.trim()).toBe('01:08');
+      });
+    });
   });
 
   describe('séries a mais ou a menos no treino', () => {
     it('"Série extra" acrescenta uma série só neste treino, com os valores da última', () => {
-      expect(marcas().length).toBe(3);
+      expect(celulas().length).toBe(3);
       clicar(botao('Série extra'));
-      expect(marcas().length).toBe(4);
+      expect(celulas().length).toBe(4);
       expect(plans.emAndamento()?.qtdSeries?.[0]).toBe(4);
       expect(plans.get(fichaId)!.itens[0].series).toBe(3);
     });
@@ -161,19 +273,20 @@ describe('Workout — marcar séries em bloco', () => {
     it('"Tirar série" remove a última e sempre deixa pelo menos uma', () => {
       clicar(botao('Tirar série'));
       clicar(botao('Tirar série'));
-      expect(marcas().length).toBe(1);
+      expect(celulas().length).toBe(1);
       expect(botao('Tirar série')?.disabled).toBeTrue();
     });
 
     it('a série extra entra no que é gravado ao finalizar', () => {
       clicar(botao('Série extra'));
-      marcas().forEach((m) => clicar(m));
+      [0, 1, 2, 3].forEach(marcar);
       expect(plans.emAndamento()?.series[0].filter((s) => s.feita).length).toBe(4);
     });
   });
 
   describe('cronômetro de descanso', () => {
-    const tempo = () => el().querySelector('.tempo')?.textContent?.trim();
+    /** O cronômetro só aparece enquanto conta; parado, é 00:00. */
+    const tempo = () => el().querySelector('.tempo')?.textContent?.trim() ?? '00:00';
     const passar = (ms: number) => {
       jasmine.clock().tick(ms);
       fixture.detectChanges();
@@ -183,48 +296,48 @@ describe('Workout — marcar séries em bloco', () => {
     afterEach(() => jasmine.clock().uninstall());
 
     it('marcar uma série que não é a última inicia o cronômetro', () => {
-      clicar(marcas()[0]);
+      marcar(0);
       passar(3000);
       expect(tempo()).toBe('00:03');
     });
 
     it('marcar a última série do exercício zera o cronômetro e o deixa parado', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       passar(3000);
-      clicar(marcas()[2]);
+      marcar(2);
       passar(5000);
       expect(tempo()).toBe('00:00');
-      clicar(botao('Próximo exercício'));
+      proximo();
       passar(5000);
       expect(tempo()).toBe('00:00');
     });
 
     it('a primeira série do exercício seguinte não guarda descanso', () => {
-      marcas().forEach((m) => clicar(m));
+      [0, 1, 2].forEach(marcar);
       passar(5000);
-      clicar(botao('Próximo exercício'));
-      clicar(marcas()[0]);
+      proximo();
+      marcar(0);
       const salvo = plans.emAndamento()?.series[1][0];
       expect(salvo?.descanso).toBeUndefined();
     });
 
     it('trocar de exercício não interrompe nem reinicia o cronômetro', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       passar(5000);
-      clicar(botao('Próximo exercício'));
+      proximo();
       expect(tempo()).toBe('00:05');
       passar(2000);
       expect(tempo()).toBe('00:07');
-      clicar(botao('Anterior'));
+      anterior();
       passar(1000);
       expect(tempo()).toBe('00:08');
     });
 
     it('marcar uma série no exercício seguinte reinicia a contagem', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       passar(5000);
-      clicar(botao('Próximo exercício'));
-      clicar(marcas()[0]);
+      proximo();
+      marcar(0);
       expect(tempo()).toBe('00:00');
     });
 
@@ -235,15 +348,15 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('desmarcar uma série não mexe no cronômetro', () => {
-      clicar(marcas()[0]);
+      marcar(0);
       passar(4000);
-      clicar(marcas()[0]);
+      marcar(0);
       passar(1000);
       expect(tempo()).toBe('00:05');
     });
 
     it('ao ver as instruções de um exercício e voltar, o cronômetro seguiu contando', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       passar(7000);
       fixture.destroy(); // vai para a tela do exercício, sem pausar
       jasmine.clock().tick(10000);
@@ -255,7 +368,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('sair e voltar nos primeiros segundos não perde frações de segundo', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       passar(1900);
       expect(tempo()).toBe('00:01');
       fixture.destroy();
@@ -268,7 +381,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('várias saídas e voltas seguidas não atrasam o cronômetro', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       for (let i = 0; i < 4; i++) {
         passar(900);
         fixture.destroy();
@@ -283,7 +396,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('se o app fechar ou reiniciar sem sair da tela, o cronômetro retoma contando o tempo fora', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       passar(7000);
       // Sem destroy: a tela some de uma vez (app encerrado), só o que foi guardado sobrevive.
       jasmine.clock().tick(20000);
@@ -296,7 +409,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('depois de pausar e continuar, o cronômetro segue de onde estava', () => {
-      marcas().slice(0, 2).forEach((m) => clicar(m));
+      [0, 1].forEach(marcar);
       passar(7000);
       (fixture.componentInstance as unknown as { pausar(): void }).pausar();
       fixture.destroy();
@@ -312,10 +425,11 @@ describe('Workout — marcar séries em bloco', () => {
   });
 
   describe('linhas copiadas piscam', () => {
-    const linhas = () => [...el().querySelectorAll('.serie')] as HTMLElement[];
+    const linhas = () => celulas();
     const piscando = () => linhas().map((l) => l.classList.contains('pisca-a') || l.classList.contains('pisca-b'));
     const digitar = (linha: number, campo: 0 | 1, valor: string) => {
-      const input = linhas()[linha].querySelectorAll('input')[campo] as HTMLInputElement;
+      clicar(celulas()[linha]);
+      const input = el().querySelectorAll('.passos input')[campo] as HTMLInputElement;
       input.value = valor;
       input.dispatchEvent(new Event('change'));
       fixture.detectChanges();
@@ -327,7 +441,7 @@ describe('Workout — marcar séries em bloco', () => {
     });
 
     it('séries já feitas não são alteradas e não piscam', () => {
-      clicar(marcas()[1]);
+      marcar(1);
       digitar(0, 1, '40');
       expect(piscando()).toEqual([false, false, true]);
     });
@@ -352,7 +466,7 @@ describe('Workout — marcar séries em bloco', () => {
 
     it('ao trocar de exercício o efeito é limpo', () => {
       digitar(0, 1, '40');
-      clicar(botao('Próximo exercício'));
+      proximo();
       expect(piscando().some(Boolean)).toBeFalse();
     });
   });
@@ -367,7 +481,8 @@ describe('Workout — marcar séries em bloco', () => {
     it('abre o último treino com as séries em repetições × carga', () => {
       plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 45, reps: 10 }, { carga: 47.5, reps: 8 }] }]);
       fixture.detectChanges();
-      expect(el().textContent).not.toContain('Última vez');
+      const dicas = [...el().querySelectorAll('.stp__dica')].map((d) => d.textContent!.trim());
+      expect(dicas).toEqual(['Última vez: 10', 'Última vez: 45 kg']);
       clicar(botaoUltimo());
       const itens = [...el().querySelectorAll('.ultimo-lista li')].map((li) => li.textContent!.replace(/\s+/g, ' ').trim());
       expect(itens).toEqual(['1 10 × 45 kg', '2 8 × 47.5 kg']);
@@ -379,37 +494,33 @@ describe('Workout — marcar séries em bloco', () => {
   });
 
   describe('repetições do último treino', () => {
-    const reps = () => [...el().querySelectorAll('input[aria-label^="Repetições"]')].map((i) => Number((i as HTMLInputElement).value));
-
     it('sem treino anterior, vêm da ficha', () => {
-      expect(reps()).toEqual([10, 10, 10]);
+      expect(valores()).toEqual(['10×20', '10×20', '10×20']);
     });
 
     it('depois de um treino, repetem o que foi feito em cada série', () => {
       plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 20, reps: 12 }, { carga: 20, reps: 9 }, { carga: 20, reps: 7 }] }]);
       fixture.detectChanges();
-      expect(reps()).toEqual([12, 9, 7]);
+      expect(valores()).toEqual(['12×20', '9×20', '7×20']);
     });
 
     it('série extra repete a última', () => {
       plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 20, reps: 12 }, { carga: 20, reps: 9 }, { carga: 20, reps: 7 }] }]);
       fixture.detectChanges();
       clicar(botao('Série extra'));
-      expect(reps()).toEqual([12, 9, 7, 7]);
+      expect(valores()).toEqual(['12×20', '9×20', '7×20', '7×20']);
     });
 
     it('"Usar" a carga sugerida volta as repetições para a meta da ficha', () => {
       plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: [{ carga: 40, reps: 12 }, { carga: 40, reps: 12 }, { carga: 40, reps: 12 }] }]);
       fixture.detectChanges();
       clicar(el().querySelector('.sugestao__botao') as HTMLElement);
-      expect(reps()).toEqual([10, 10, 10]);
+      expect(valores()).toEqual(['10×42', '10×42', '10×42']);
     });
   });
 
   describe('sugestão de carga', () => {
     const sugestao = () => el().querySelector('.sugestao');
-    const cargas = () =>
-      [...el().querySelectorAll('input[aria-label^="Carga"]')].map((i) => Number((i as HTMLInputElement).value));
     const treinoAnterior = (series: [number, number][]) => {
       plans.registrarSessao(fichaId, [{ exerciseId: 'x1', series: series.map(([carga, reps]) => ({ carga, reps })) }]);
       fixture.detectChanges();
@@ -434,9 +545,9 @@ describe('Workout — marcar séries em bloco', () => {
 
     it('"Usar" põe a carga sugerida em todas as séries e some com o aviso', () => {
       treinoAnterior([[40, 10], [40, 10], [40, 10]]);
-      expect(cargas()).toEqual([40, 40, 40]);
+      expect(valores()).toEqual(['10×40', '10×40', '10×40']);
       clicar(botao('Usar 42 kg'));
-      expect(cargas()).toEqual([42, 42, 42]);
+      expect(valores()).toEqual(['10×42', '10×42', '10×42']);
       expect(sugestao()).toBeNull();
     });
 
@@ -447,7 +558,7 @@ describe('Workout — marcar séries em bloco', () => {
 
     it('depois de marcar uma série, o aviso some', () => {
       treinoAnterior([[40, 10], [40, 10], [40, 10]]);
-      clicar(marcas()[0]);
+      marcar(0);
       expect(sugestao()).toBeNull();
     });
   });
@@ -494,7 +605,7 @@ describe('Workout — marcar séries em bloco', () => {
       abrir();
       digitar(campos()[1], 'treino pesado');
       clicar(botao('Salvar notas'));
-      clicar(botao('Próximo exercício'));
+      proximo();
       clicar(botao('Finalizar treino'));
       clicar(botao('Marcar e finalizar'));
       expect(plans.historico()[0].nota).toBe('treino pesado');
@@ -502,7 +613,7 @@ describe('Workout — marcar séries em bloco', () => {
 
     it('sem nota escrita, a sessão não ganha o campo', () => {
       clicar(botao('Marcar todos'));
-      clicar(botao('Próximo exercício'));
+      proximo();
       clicar(botao('Marcar todos'));
       clicar(botao('Finalizar treino'));
       expect('nota' in plans.historico()[0]).toBeFalse();
@@ -545,7 +656,7 @@ describe('Workout — tela ligada', () => {
 
   it('solta a tela ao concluir o treino', () => {
     const el = fixture.nativeElement as HTMLElement;
-    (el.querySelector('.marca') as HTMLButtonElement).click();
+    (el.querySelector('.foco__ok') as HTMLButtonElement).click();
     fixture.detectChanges();
     ([...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Finalizar treino')) as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -565,8 +676,16 @@ describe('Workout — exercícios conjugados', () => {
 
   const el = () => fixture.nativeElement as HTMLElement;
   const item = (exerciseId: string, extra: object = {}) => ({ exerciseId, series: 3, reps: 12, carga: 20, descanso: 60, ...extra });
-  const rodadas = () => [...el().querySelectorAll('.rodada')] as HTMLElement[];
-  const checks = () => [...el().querySelectorAll('.marca--rodada')] as HTMLButtonElement[];
+  const celulas = () => [...el().querySelectorAll('.celula')] as HTMLButtonElement[];
+  const ok = () => el().querySelector('.foco__ok');
+  /** Conclui a rodada em foco (se o descanso está na tela, toca em "Começar" antes). */
+  const concluir = () => {
+    const comecar = el().querySelector('.proxima__ir');
+    if (comecar) clicar(comecar);
+    clicar(ok());
+  };
+  const proximo = () => clicar(el().querySelector('.proximo'));
+  const anterior = () => clicar(el().querySelector('.anterior'));
   const botao = (texto: string) =>
     [...el().querySelectorAll('button')].find((b) => b.textContent?.replace(/\s+/g, ' ').trim() === texto) as HTMLButtonElement | undefined;
   const clicar = (e: Element | null | undefined) => {
@@ -575,7 +694,7 @@ describe('Workout — exercícios conjugados', () => {
   };
   const estado = () => plans.emAndamento()!;
   const feitas = (i: number) => (estado()?.series[i] ?? []).map((s) => !!s.feita);
-  const tempo = () => el().querySelector('.tempo')?.textContent?.trim();
+  const tempo = () => el().querySelector('.tempo')?.textContent?.trim() ?? '00:00';
 
   function abrir(itens: object[]): void {
     localStorage.clear();
@@ -599,72 +718,78 @@ describe('Workout — exercícios conjugados', () => {
     localStorage.clear();
   });
 
-  it('o par aparece numa tela só, com rodadas e um só ✓ por rodada', () => {
+  it('o par aparece numa tela só, sem rótulo, com uma rodada por vez em foco', () => {
     abrir(par());
-    expect(el().querySelector('.conjugado-tag')!.textContent).toContain('Conjugado');
+    expect(el().querySelector('.conjugado-tag')).toBeNull();
     expect(el().querySelector('.posicao')!.textContent).toContain('Exercícios 1 e 2 de 3');
     expect([...el().querySelectorAll('.membro__nome')].length).toBe(2);
     expect([...el().querySelectorAll('.membro .rot')].map((r) => r.textContent!.trim())).toEqual(['A1', 'A2']);
-    expect(rodadas().length).toBe(3);
-    expect(checks().length).toBe(3);
-    expect(el().querySelectorAll('.serie').length).toBe(0);
-    expect(rodadas()[0].classList.contains('rodada--agora')).toBeTrue();
+    expect(celulas().length).toBe(3);
+    expect(el().querySelector('.serie')).toBeNull();
+    expect(celulas()[0].classList.contains('celula--agora')).toBeTrue();
+    expect(el().querySelector('.foco__rotulo')!.textContent).toContain('Rodada 1 de 3');
+    expect(ok()!.textContent).toContain('Concluir rodada 1');
   });
 
-  it('marcar a rodada marca a série dos dois exercícios e passa o "agora" para a próxima', () => {
+  it('tocar na imagem abre os detalhes do exercício, com a lupa como indicação', () => {
     abrir(par());
-    clicar(checks()[0]);
+    const link = el().querySelector('.membro a.foto') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toContain('/exercicio/rosca');
+    expect(link.querySelector('.lupa')).not.toBeNull();
+  });
+
+  it('concluir a rodada marca a série dos dois exercícios, mostra o descanso e depois a próxima rodada', () => {
+    abrir(par());
+    clicar(ok());
     expect(feitas(0)).toEqual([true, false, false]);
     expect(feitas(1)).toEqual([true, false, false]);
-    // A rodada 1 concluída recolhe numa linha, e o "agora" passa para a rodada 2.
-    expect(el().querySelector('.concluidas__texto')!.textContent).toContain('Rodada 1 concluída');
-    expect(rodadas().length).toBe(2);
-    expect(rodadas()[0].querySelector('.rodada__titulo')!.textContent).toContain('Rodada 2');
-    expect(rodadas()[0].classList.contains('rodada--agora')).toBeTrue();
-    // Ver mostra a rodada 1 de novo, já marcada.
-    clicar(el().querySelector('.concluidas'));
-    expect(rodadas().length).toBe(3);
-    expect(rodadas()[0].classList.contains('rodada--feita')).toBeTrue();
+    expect(celulas()[0].classList.contains('celula--feita')).toBeTrue();
+    expect(el().querySelector('.descanso')).not.toBeNull();
+    expect(el().querySelector('.proxima__rotulo')!.textContent).toContain('Rodada 2 de 3');
+    clicar(el().querySelector('.proxima__ir'));
+    expect(el().querySelector('.descanso')).toBeNull();
+    expect(el().querySelector('.foco__rotulo')!.textContent).toContain('Rodada 2 de 3');
+    expect(celulas()[1].classList.contains('celula--agora')).toBeTrue();
   });
 
   it('o descanso começa ao marcar a rodada, com o tempo do par (o do segundo exercício)', () => {
     abrir(par());
-    clicar(checks()[0]);
+    clicar(ok());
     jasmine.clock().tick(5000);
     fixture.detectChanges();
     expect(tempo()).toBe('00:05');
     expect(estado().descanso?.limite).toBe(90);
   });
 
-  it('guarda um descanso só por rodada, na primeira série dela', () => {
+  it('"Começar" esconde o descanso, mas o cronômetro segue e guarda um descanso só por rodada, na primeira série dela', () => {
     abrir(par());
-    clicar(checks()[0]);
+    clicar(ok());
     jasmine.clock().tick(40000);
-    clicar(el().querySelector('.rodada--agora .marca--rodada'));
+    concluir();
     expect(estado().series[0][1].descanso).toBe(40);
     expect(estado().series[1][1].descanso).toBeUndefined();
   });
 
-  it('marcar a última rodada zera o cronômetro', () => {
+  it('marcar a última rodada zera o cronômetro e mostra o exercício concluído', () => {
     abrir(par());
     for (let k = 0; k < 3; k++) {
-      clicar(el().querySelector('.rodada--agora .marca--rodada'));
+      concluir();
       jasmine.clock().tick(2000);
       fixture.detectChanges();
     }
     expect(feitas(0)).toEqual([true, true, true]);
     expect(tempo()).toBe('00:00');
     expect(estado().descanso).toBeUndefined();
-    // Todas feitas: nenhuma fica recolhida.
-    expect(el().querySelector('.concluidas')).toBeNull();
-    expect(rodadas().length).toBe(3);
+    expect(el().querySelector('.concluido')).not.toBeNull();
+    expect(celulas().every((c) => c.classList.contains('celula--feita'))).toBeTrue();
   });
 
-  it('tocar de novo no ✓ desmarca a rodada inteira', () => {
+  it('escolher uma rodada feita e tocar no botão desmarca a rodada inteira', () => {
     abrir(par());
-    clicar(checks()[0]);
-    clicar(el().querySelector('.concluidas'));
-    clicar(checks()[0]);
+    clicar(ok());
+    clicar(celulas()[0]);
+    expect(ok()!.textContent).toContain('Desmarcar rodada 1');
+    clicar(ok());
     expect(feitas(0)).toEqual([false, false, false]);
     expect(feitas(1)).toEqual([false, false, false]);
     expect(estado().series[0][0].descanso).toBeUndefined();
@@ -672,11 +797,11 @@ describe('Workout — exercícios conjugados', () => {
 
   it('com séries diferentes, a rodada extra tem só o exercício que tem mais séries', () => {
     abrir([item('rosca', { par: 'p', series: 4 }), item('triceps', { par: 'p', series: 3 })]);
-    expect(rodadas().length).toBe(4);
-    const ultima = rodadas()[3];
-    expect(ultima.querySelector('.sem-par')!.textContent).toContain('sem par nesta rodada');
-    expect(ultima.querySelectorAll('input').length).toBe(2);
-    for (let k = 0; k < 4; k++) clicar(el().querySelector('.rodada--agora .marca--rodada'));
+    expect(celulas().length).toBe(4);
+    clicar(celulas()[3]);
+    expect(el().querySelector('.sem-par')!.textContent).toContain('sem par nesta rodada');
+    expect(el().querySelectorAll('.foco input').length).toBe(2);
+    for (let k = 0; k < 4; k++) concluir();
     expect(feitas(0)).toEqual([true, true, true, true]);
     expect(feitas(1)).toEqual([true, true, true]);
     expect(tempo()).toBe('00:00');
@@ -684,19 +809,27 @@ describe('Workout — exercícios conjugados', () => {
 
   it('o cardio em minutos pode ser um dos dois', () => {
     abrir([item('supino', { par: 'p', series: 3 }), item('esteira', { par: 'p', series: 3, reps: 3, unidade: 'min', carga: 0 })]);
-    expect(el().querySelector('.cabecalho--rodada')!.textContent).toContain('Reps / min');
+    expect([...el().querySelectorAll('.vbox__valor small')].map((x) => x.textContent)).toContain('min');
     expect(el().querySelector('input[aria-label*="Minutos"]')).not.toBeNull();
   });
 
   it('editar reps de um exercício copia para as rodadas de baixo, só dele', () => {
     abrir(par());
-    const reps = [...el().querySelectorAll('.rodada')].map((r) => (r.querySelectorAll('.linha-par input')[0] as HTMLInputElement));
-    reps[0].value = '8';
-    reps[0].dispatchEvent(new Event('change'));
+    const reps = el().querySelectorAll('.linha-par input')[0] as HTMLInputElement;
+    reps.value = '8';
+    reps.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     expect(estado().series[0].map((s) => s.reps)).toEqual([8, 8, 8]);
-    const segunda = [...el().querySelectorAll('.rodada')].map((r) => (r.querySelectorAll('.linha-par')[1].querySelector('input') as HTMLInputElement).value);
-    expect(segunda).toEqual(['12', '12', '12']);
+    expect(estado().series[1]).toBeUndefined();
+  });
+
+  it('os botões − e + mudam repetições e carga do exercício da linha', () => {
+    abrir(par());
+    const botoes = [...el().querySelectorAll('.linha-par')[1].querySelectorAll('.vbox__btn')] as HTMLButtonElement[];
+    clicar(botoes[3]); // + carga de A2: 25 → 27,5
+    clicar(botoes[0]); // − reps de A2: 12 → 11
+    expect(estado().series[1].map((s) => [s.reps, s.carga])).toEqual([[11, 27.5], [11, 27.5], [11, 27.5]]);
+    expect(estado().series[0]).toBeUndefined();
   });
 
   it('o menu ⋯ de cada exercício tem Série extra, Tirar série, Marcar todas e Notas', () => {
@@ -705,11 +838,12 @@ describe('Workout — exercícios conjugados', () => {
     expect([...el().querySelectorAll('.menu button')].map((b) => b.textContent!.trim())).toEqual(['Série extra', 'Tirar série', 'Marcar todas as séries', 'Adicionar nota']);
     clicar(botao('Série extra'));
     expect(el().querySelector('.menu')).toBeNull();
-    expect(rodadas().length).toBe(4);
-    expect(rodadas()[3].querySelector('.sem-par')).not.toBeNull();
+    expect(celulas().length).toBe(4);
+    clicar(celulas()[3]);
+    expect(el().querySelector('.sem-par')).not.toBeNull();
     clicar(el().querySelectorAll('[data-menu]')[1]);
     clicar(botao('Tirar série'));
-    expect(rodadas().length).toBe(3);
+    expect(celulas().length).toBe(3);
   });
 
   it('Marcar todas as séries de um exercício marca só o dele', () => {
@@ -748,21 +882,28 @@ describe('Workout — exercícios conjugados', () => {
 
   it('Próximo vai para o bloco seguinte e Anterior volta ao par', () => {
     abrir(par());
-    clicar(botao('Próximo exercício'));
+    proximo();
     expect(el().querySelector('.posicao')!.textContent).toContain('Exercício 3 de 3');
-    expect(el().querySelector('.conjugado-tag')).toBeNull();
-    expect(el().querySelectorAll('.serie').length).toBe(3);
+    expect(el().querySelector('.membro')).toBeNull();
+    expect(celulas().length).toBe(3);
     expect(botao('Finalizar treino')).toBeDefined();
-    clicar(botao('Anterior'));
+    anterior();
     expect(el().querySelector('.posicao')!.textContent).toContain('Exercícios 1 e 2 de 3');
-    expect(el().querySelector('.conjugado-tag')).not.toBeNull();
+    expect(el().querySelector('.membro')).not.toBeNull();
+  });
+
+  it('quando o próximo é um par, o botão mostra os dois nomes', () => {
+    abrir([item('supino'), item('rosca', { par: 'p' }), item('triceps', { par: 'p' })]);
+    const nomes = [...el().querySelectorAll('.proximo__texto b')].map((b) => b.textContent!.trim());
+    expect(nomes).toEqual(['rosca', 'triceps']);
   });
 
   it('concluir grava os dois exercícios do par com as séries feitas', () => {
     abrir(par());
-    for (let k = 0; k < 3; k++) clicar(el().querySelector('.rodada--agora .marca--rodada'));
-    clicar(botao('Próximo exercício'));
-    clicar(el().querySelector('.marca'));
+    for (let k = 0; k < 3; k++) concluir();
+    proximo();
+    clicar(celulas()[0]);
+    clicar(ok());
     clicar(botao('Marcar todos'));
     clicar(botao('Finalizar treino'));
     const sessao = plans.historico().at(-1)!;
@@ -772,7 +913,7 @@ describe('Workout — exercícios conjugados', () => {
 
   it('Finalizar com rodadas sem marcar pergunta se pode marcar o que falta', () => {
     abrir([item('rosca', { par: 'p' }), item('triceps', { par: 'p' })]);
-    clicar(checks()[0]);
+    clicar(ok());
     clicar(botao('Finalizar treino'));
     expect(el().querySelector('[role="alertdialog"]')!.textContent).toContain('Faltam 4 séries');
   });
@@ -781,7 +922,7 @@ describe('Workout — exercícios conjugados', () => {
     abrir(par());
     const barra = () => Number(el().querySelector('[role="progressbar"]')!.getAttribute('aria-valuenow'));
     expect(barra()).toBe(0);
-    for (let k = 0; k < 3; k++) clicar(el().querySelector('.rodada--agora .marca--rodada'));
+    for (let k = 0; k < 3; k++) concluir();
     expect(barra()).toBe(50); // o par (1 de 2 blocos) está pronto
   });
 

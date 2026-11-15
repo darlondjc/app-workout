@@ -5,13 +5,17 @@
         <button type="button" class="sair" (click)="sair()" aria-label="Sair do treino">
           <app-icon name="close" [size]="20" [stroke]="2.2" />
         </button>
-        <div>
+        <div class="topo__texto">
           <p class="rotulo">{{ f.conjunto ? 'Treino ' + plans.letra(f.id) : 'Ficha ' + plans.letra(f.id) }} · {{ f.nome }}</p>
           @if (par(); as p) {
             <p class="posicao">Exercícios {{ p.a + 1 }} e {{ p.b + 1 }} de {{ f.itens.length }}</p>
           } @else {
             <p class="posicao">Exercício {{ indice() + 1 }} de {{ f.itens.length }}</p>
           }
+        </div>
+        <div class="total" role="timer" aria-label="Tempo de treino">
+          <app-icon name="clock" [size]="14" [stroke]="2.4" />
+          <span>{{ tempoTotal() }}</span>
         </div>
       </header>
 
@@ -34,6 +38,11 @@
             {{ faltantes() === 1 ? 'Falta 1 série' : 'Faltam ' + faltantes() + ' séries' }} sem marcar. Posso marcar
             {{ faltantes() === 1 ? 'ela' : 'todas' }} como feita{{ faltantes() === 1 ? '' : 's' }}, com as repetições e cargas que estão na tela.
           </p>
+          <label class="chave">
+            <input type="checkbox" role="switch" [checked]="marcarAoFinalizar()" (change)="alternarMarcarAoFinalizar()" />
+            <span class="trilho" aria-hidden="true"></span>
+            <span class="chave__texto">Marcar tudo como feito ao finalizar treino</span>
+          </label>
           <button type="button" class="btn btn--destaque" (click)="finalizarMarcandoTudo()">Marcar e finalizar</button>
           <button type="button" class="btn btn--escuro-suave" (click)="finalizarSemMarcar()">Finalizar sem marcar</button>
           <button type="button" class="btn btn--escuro-suave" (click)="perguntandoFaltantes.set(false)">Voltar ao treino</button>
@@ -61,40 +70,45 @@
       }
 
       <div class="barra" role="progressbar" aria-label="Progresso do treino" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progresso()">
-        <div class="barra__cheia" [style.width.%]="progresso()"></div>
+        @for (v of segmentos(); track $index) {
+          <div class="seg"><div class="seg__cheio" [style.width.%]="v"></div></div>
+        }
       </div>
 
       @if (par(); as p) {
-        <p class="conjugado-tag"><app-icon name="link" [size]="13" [stroke]="2.4" /> Conjugado</p>
-        @for (m of [p.a, p.b]; track m; let k = $index) {
-          <div class="membro">
-            <span class="rot">{{ letraDoPar() }}{{ k + 1 }}</span>
-            <a class="foto foto--par" [routerLink]="['/exercicio', itemDe(m)!.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }" aria-label="Ver instruções do exercício">
-              <app-exercise-image [id]="itemDe(m)!.exerciseId" [descricao]="'Demonstração: ' + nomeDe(m)" />
-            </a>
-            <div class="membro__texto">
-              <p class="membro__nome">{{ nomeDe(m) }}</p>
-              <div class="ver-linha">
-                <a class="ver" [routerLink]="['/exercicio', itemDe(m)!.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }" [attr.aria-label]="'Ver instruções de ' + nomeDe(m)">Instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
-                @if (ultimasSeriesDe(m).length > 0) {
-                  <button type="button" class="ver" aria-haspopup="dialog" (click)="verUltimo.set(m)">Último treino</button>
-                }
-              </div>
-            </div>
-            <div class="menu-ancora">
-              <button type="button" class="membro__mais" data-menu aria-haspopup="menu" [attr.aria-expanded]="menuMembro() === m" [attr.aria-label]="'Mais opções de ' + nomeDe(m)" (click)="alternarMenuMembro(m, $event)">
-                <app-icon name="more" [size]="20" [stroke]="2.4" />
-              </button>
-              @if (menuMembro() === m) {
-                <div class="menu" role="menu">
-                  <button type="button" role="menuitem" [disabled]="seriesDe(m).length >= maxSeries" (click)="adicionarSerieDe(m)">Série extra</button>
-                  <button type="button" role="menuitem" [disabled]="seriesDe(m).length <= 1" (click)="removerSerieDe(m)">Tirar série</button>
-                  <button type="button" role="menuitem" (click)="marcarTodosDe(m)">{{ todasFeitas(m) ? 'Desmarcar todas as séries' : 'Marcar todas as séries' }}</button>
-                  <button type="button" role="menuitem" aria-haspopup="dialog" (click)="abrirNotasDe(m)">{{ notaDoExercicio(m) || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}</button>
+        <div class="par">
+          @for (m of [p.a, p.b]; track m; let k = $index) {
+            <div class="membro">
+              <div class="membro__imagem">
+                <a class="foto foto--par" [routerLink]="['/exercicio', itemDe(m)!.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }" [attr.aria-label]="'Ver detalhes de ' + nomeDe(m)">
+                  <app-exercise-image [id]="itemDe(m)!.exerciseId" [descricao]="'Demonstração: ' + nomeDe(m)" />
+                  <span class="lupa" aria-hidden="true"><app-icon name="search" [size]="15" [stroke]="2.4" /></span>
+                </a>
+                <div class="menu-ancora">
+                  <button type="button" class="membro__mais" data-menu aria-haspopup="menu" [attr.aria-expanded]="menuMembro() === m" [attr.aria-label]="'Mais opções de ' + nomeDe(m)" (click)="alternarMenuMembro(m, $event)">
+                    <app-icon name="more" [size]="18" [stroke]="2.6" />
+                  </button>
+                  @if (menuMembro() === m) {
+                    <div class="menu" [class.menu--direita]="k === 1" role="menu">
+                      <button type="button" role="menuitem" [disabled]="seriesDe(m).length >= maxSeries" (click)="adicionarSerieDe(m)">Série extra</button>
+                      <button type="button" role="menuitem" [disabled]="seriesDe(m).length <= 1" (click)="removerSerieDe(m)">Tirar série</button>
+                      <button type="button" role="menuitem" (click)="marcarTodosDe(m)">{{ todasFeitas(m) ? 'Desmarcar todas as séries' : 'Marcar todas as séries' }}</button>
+                      <button type="button" role="menuitem" aria-haspopup="dialog" (click)="abrirNotasDe(m)">{{ notaDoExercicio(m) || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}</button>
+                    </div>
+                  }
                 </div>
+              </div>
+              <div class="membro__linha">
+                <span class="rot">{{ letraDoPar() }}{{ k + 1 }}</span>
+                <p class="membro__nome">{{ nomeDe(m) }}</p>
+              </div>
+              @if (ultimasSeriesDe(m).length > 0) {
+                <button type="button" class="ver ver--mini" aria-haspopup="dialog" (click)="verUltimo.set(m)">Último treino</button>
               }
             </div>
-          </div>
+          }
+        </div>
+        @for (m of [p.a, p.b]; track m; let k = $index) {
           @if (notaDoExercicio(m); as n) {
             <p class="nota-fixa"><span class="nota-fixa__rotulo">Nota {{ letraDoPar() }}{{ k + 1 }}</span> {{ n }}</p>
           }
@@ -103,77 +117,91 @@
           <p class="nota-fixa"><span class="nota-fixa__rotulo">Hoje</span> {{ n }}</p>
         }
 
-        <div class="rodadas" role="group" aria-label="Rodadas">
-          <div class="cabecalho cabecalho--rodada" aria-hidden="true">
-            <span>{{ itemDe(p.a)!.unidade === 'min' || itemDe(p.b)!.unidade === 'min' ? 'Reps / min' : 'Reps' }}</span><span>Carga (kg)</span><span>Feito</span>
-          </div>
-          @if (recolhidas() > 0) {
-            <button type="button" class="concluidas" (click)="mostrarConcluidas.set(true)">
-              <span class="concluidas__ok"><app-icon name="check" [size]="14" [stroke]="3.4" /></span>
-              <span class="concluidas__texto">{{ recolhidas() === 1 ? 'Rodada 1 concluída' : recolhidas() === 2 ? 'Rodadas 1 e 2 concluídas' : 'Rodadas 1 a ' + recolhidas() + ' concluídas' }}</span>
-              <span class="concluidas__ver">Ver</span>
+        @for (x of sugestoesDoPar(); track x.i) {
+          <div class="sugestao">
+            <span class="sugestao__icone"><app-icon name="trend" [size]="18" [stroke]="2.6" /></span>
+            <p class="sugestao__texto"><b>{{ x.nome }}</b> Última vez: {{ kg(x.sg.de) }} kg em todas as séries.</p>
+            <button type="button" class="sugestao__botao" (click)="aplicarSugestao(x.i)">Usar {{ kg(x.sg.para) }} kg</button>
+            <button type="button" class="sugestao__fechar" aria-label="Fechar sugestão" (click)="fecharSugestao(x.i)">
+              <app-icon name="close" [size]="15" [stroke]="2.6" />
             </button>
-          }
-          @for (r of rodadasVisiveis(); track r.n) {
-            <div class="rodada" [class.rodada--feita]="r.feita" [class.rodada--agora]="r.k === rodadaAgora()">
-              <p class="rodada__titulo">
-                <span>Rodada {{ r.n }} de {{ rodadas().length }}</span>
-                @if (r.k === rodadaAgora()) {
-                  <em>agora</em>
-                }
-              </p>
-              <div class="rodada__corpo">
-                <div class="rodada__linhas">
-                  @for (m of [p.a, p.b]; track m; let j = $index) {
-                    @let sr = j === 0 ? r.a : r.b;
-                    <div class="linha-par" [class.pisca-a]="sr && piscadas()[chave(m, r.n)] % 2 === 1" [class.pisca-b]="sr && piscadas()[chave(m, r.n)] > 0 && piscadas()[chave(m, r.n)] % 2 === 0">
-                      <span class="rot">{{ letraDoPar() }}{{ j + 1 }}</span>
-                      @if (sr) {
-                        <input class="valor" type="number" inputmode="numeric" min="0" [value]="sr.reps"
-                          [attr.aria-label]="(itemDe(m)!.unidade === 'min' ? 'Minutos' : 'Repetições') + ' de ' + nomeDe(m) + ' na rodada ' + r.n" (change)="editar(r.k, 'reps', $event, m)" />
-                        <input class="valor" type="number" inputmode="decimal" min="0" step="0.5" [value]="sr.carga"
-                          [attr.aria-label]="'Carga de ' + nomeDe(m) + ' na rodada ' + r.n + ' (kg)'" (change)="editar(r.k, 'carga', $event, m)" />
-                      } @else {
-                        <span class="sem-par">sem par nesta rodada</span>
-                      }
-                    </div>
-                  }
-                </div>
-                <button type="button" class="marca marca--rodada" [attr.aria-pressed]="r.feita" [attr.aria-label]="'Marcar a rodada ' + r.n + ' como feita'" (click)="alternarRodada(r.k)">
-                  <app-icon name="check" [size]="24" [stroke]="3" />
-                </button>
-              </div>
-            </div>
-          }
-          @if (mostrarConcluidas() && rodadaAgora() > 0 && rodadaAgora() < rodadas().length) {
-            <button type="button" class="concluidas concluidas--ocultar" (click)="mostrarConcluidas.set(false)">Ocultar as rodadas concluídas</button>
+          </div>
+        }
+
+        <div class="faixa" role="group" aria-label="Rodadas">
+          @for (c of faixa(); track c.k) {
+            <button type="button" class="celula" [class.celula--feita]="c.feita" [class.celula--agora]="c.k === foco() && !mostrarDescanso()" [class.pisca-a]="c.pisca.a" [class.pisca-b]="c.pisca.b" [attr.aria-label]="'Rodada ' + c.n" (click)="escolher(c.k)">
+              <small>@if (c.feita) {<app-icon name="check" [size]="12" [stroke]="3.4" />}R{{ c.n }}</small>
+              <b>{{ c.texto }}</b>
+            </button>
           }
         </div>
 
-        @for (x of sugestoesDoPar(); track x.i) {
-          <div class="sugestao">
-            <button type="button" class="sugestao__fechar" aria-label="Fechar sugestão" (click)="fecharSugestao(x.i)">
-              <app-icon name="close" [size]="16" [stroke]="2.6" />
+        @if (mostrarDescanso()) {
+          <ng-container *ngTemplateOutlet="descansoTpl" />
+        } @else if (foco() < 0) {
+          <ng-container *ngTemplateOutlet="concluidoTpl" />
+        } @else {
+          @let r = rodadas()[foco()];
+          <section class="foco foco--par" aria-label="Rodada em foco">
+            <div class="foco__topo">
+              <span class="foco__rotulo">Rodada {{ r.n }} de {{ rodadas().length }}</span>
+              @if (descansando()) {
+                <span class="tempo tempo--mini" [class.estourou]="estourou()"><app-icon name="clock" [size]="13" [stroke]="2.4" />{{ tempo() }}</span>
+              }
+            </div>
+            @for (m of [p.a, p.b]; track m; let j = $index) {
+              @let sr = j === 0 ? r.a : r.b;
+              <div class="linha-par">
+                <span class="rot">{{ letraDoPar() }}{{ j + 1 }}</span>
+                @if (sr) {
+                  <div class="vbox">
+                    <button type="button" class="vbox__btn" [attr.aria-label]="'Diminuir ' + (itemDe(m)!.unidade === 'min' ? 'minutos' : 'repetições') + ' de ' + nomeDe(m)" (click)="ajustar(r.k, 'reps', -1, m)"><app-icon name="minus" [size]="13" [stroke]="2.6" /></button>
+                    <div class="vbox__valor">
+                      <input class="valor" type="number" inputmode="numeric" min="0" [value]="sr.reps"
+                        [attr.aria-label]="(itemDe(m)!.unidade === 'min' ? 'Minutos' : 'Repetições') + ' de ' + nomeDe(m) + ' na rodada ' + r.n" (change)="editar(r.k, 'reps', $event, m)" />
+                      <small>{{ itemDe(m)!.unidade === 'min' ? 'min' : 'reps' }}</small>
+                    </div>
+                    <button type="button" class="vbox__btn" [attr.aria-label]="'Aumentar ' + (itemDe(m)!.unidade === 'min' ? 'minutos' : 'repetições') + ' de ' + nomeDe(m)" (click)="ajustar(r.k, 'reps', 1, m)"><app-icon name="plus" [size]="13" [stroke]="2.6" /></button>
+                  </div>
+                  <div class="vbox">
+                    <button type="button" class="vbox__btn" [attr.aria-label]="'Diminuir carga de ' + nomeDe(m)" (click)="ajustar(r.k, 'carga', -2.5, m)"><app-icon name="minus" [size]="13" [stroke]="2.6" /></button>
+                    <div class="vbox__valor">
+                      <input class="valor" type="number" inputmode="decimal" min="0" step="0.5" [value]="sr.carga"
+                        [attr.aria-label]="'Carga de ' + nomeDe(m) + ' na rodada ' + r.n + ' (kg)'" (change)="editar(r.k, 'carga', $event, m)" />
+                      <small>kg</small>
+                    </div>
+                    <button type="button" class="vbox__btn" [attr.aria-label]="'Aumentar carga de ' + nomeDe(m)" (click)="ajustar(r.k, 'carga', 2.5, m)"><app-icon name="plus" [size]="13" [stroke]="2.6" /></button>
+                  </div>
+                } @else {
+                  <span class="sem-par">sem par nesta rodada</span>
+                }
+              </div>
+            }
+            <button type="button" class="btn foco__ok" [class.btn--destaque]="!r.feita" [class.btn--claro-escuro]="r.feita" (click)="alternarRodada(r.k)">
+              @if (r.feita) {
+                Desmarcar rodada {{ r.n }}
+              } @else {
+                Concluir rodada {{ r.n }}
+                <app-icon name="check" [size]="20" [stroke]="3" />
+              }
             </button>
-            <p>{{ x.nome }}: na última vez você fez todas as séries com {{ kg(x.sg.de) }} kg. Que tal {{ kg(x.sg.para) }} kg hoje?</p>
-            <button type="button" class="sugestao__botao" (click)="aplicarSugestao(x.i)">Usar {{ kg(x.sg.para) }} kg</button>
-          </div>
-        }
-
-        <!-- Uma rodada só não tem descanso entre rodadas: o cronômetro não faz sentido. -->
-        @if (rodadas().length > 1) {
-          <div class="descanso" role="timer" aria-live="off">
-            <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso depois de cada rodada' }}</p>
-            <p class="tempo" [class.estourou]="descansando() && descansoAtivo() >= limiteAtivo()">{{ tempo() }}</p>
-          </div>
+          </section>
         }
       } @else {
         <div class="exercicio">
-          <a class="foto" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }" aria-label="Ver instruções do exercício">
+          <a class="foto" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }" [attr.aria-label]="'Ver detalhes de ' + nome()">
             <app-exercise-image [id]="it.exerciseId" [descricao]="'Demonstração: ' + nome()" />
+            <span class="lupa" aria-hidden="true"><app-icon name="search" [size]="15" [stroke]="2.4" /></span>
           </a>
-          <div>
+          <div class="exercicio__texto">
             <h1 [appTituloEmDuasLinhas]="nome()">{{ nome() }}</h1>
+            <div class="meta">
+              @for (g of musculosDe(indice()); track g) {
+                <span class="musculo">{{ g }}</span>
+              }
+              <span class="meta__plano">{{ series().length }} × {{ it.reps }}{{ it.unidade === 'min' ? ' min' : '' }}{{ series().length > 1 ? ' · ' + it.descanso + ' s' : '' }}</span>
+            </div>
             <div class="ver-linha">
               <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
               @if (ultimasSeries().length > 0) {
@@ -189,69 +217,148 @@
         @if (notaTreino(); as n) {
           <p class="nota-fixa"><span class="nota-fixa__rotulo">Hoje</span> {{ n }}</p>
         }
-        <div class="acoes">
-          <button type="button" class="nota-botao" aria-haspopup="dialog" (click)="abrirNotas()">
-            {{ notaExercicio() || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}
-          </button>
-          <button type="button" class="todos__botao" (click)="marcarTodos()">
-            <app-icon name="check" [size]="16" [stroke]="3" />
-            {{ feitas() === series().length ? 'Desmarcar todos' : 'Marcar todos' }}
-          </button>
-        </div>
-
-        <div class="tabela" role="group" aria-label="Séries">
-          <div class="lista">
-            <div class="cabecalho" aria-hidden="true">
-              <span>Série</span><span>{{ it.unidade === 'min' ? 'Min' : 'Reps' }}</span><span>Carga (kg)</span><span>Feito</span>
-            </div>
-            @for (s of series(); track s.n) {
-              <div class="serie" [class.feita]="s.feita" [class.pisca-a]="piscadas()[chave(indice(), s.n)] % 2 === 1" [class.pisca-b]="piscadas()[chave(indice(), s.n)] > 0 && piscadas()[chave(indice(), s.n)] % 2 === 0">
-                <span class="n">{{ s.n }}</span>
-                <input class="valor" type="number" inputmode="numeric" min="0" [value]="s.reps"
-                  [attr.aria-label]="(it.unidade === 'min' ? 'Minutos' : 'Repetições') + ' da série ' + s.n" (change)="editar(s.n - 1, 'reps', $event)" />
-                <input class="valor" type="number" inputmode="decimal" min="0" step="0.5" [value]="s.carga"
-                  [attr.aria-label]="'Carga da série ' + s.n + ' (kg)'" (change)="editar(s.n - 1, 'carga', $event)" />
-                <button
-                  type="button"
-                  class="marca"
-                  [attr.aria-pressed]="s.feita"
-                  [attr.aria-label]="'Marcar série ' + s.n + ' como feita'"
-                  (click)="alternar(s.n - 1)"
-                >
-                  <app-icon name="check" [size]="20" [stroke]="3" />
-                </button>
-              </div>
-            }
-          </div>
-          <div class="ajuste-series">
-            <button type="button" class="todos__botao" [disabled]="series().length <= 1" (click)="removerSerie()">
-              <app-icon name="close" [size]="14" [stroke]="3" /> Tirar série
-            </button>
-            <button type="button" class="todos__botao" [disabled]="series().length >= maxSeries" (click)="adicionarSerie()">
-              <app-icon name="plus" [size]="14" [stroke]="3" /> Série extra
-            </button>
-          </div>
-        </div>
 
         @if (sugestaoCarga(); as sg) {
           <div class="sugestao">
-            <button type="button" class="sugestao__fechar" aria-label="Fechar sugestão" (click)="fecharSugestao()">
-              <app-icon name="close" [size]="16" [stroke]="2.6" />
-            </button>
-            <p>Na última vez você fez todas as séries com {{ kg(sg.de) }} kg. Que tal {{ kg(sg.para) }} kg hoje?</p>
+            <span class="sugestao__icone"><app-icon name="trend" [size]="18" [stroke]="2.6" /></span>
+            <p class="sugestao__texto"><b>Hora de subir a carga</b> Última vez: {{ kg(sg.de) }} kg em todas as séries.</p>
             <button type="button" class="sugestao__botao" (click)="aplicarSugestao()">Usar {{ kg(sg.para) }} kg</button>
+            <button type="button" class="sugestao__fechar" aria-label="Fechar sugestão" (click)="fecharSugestao()">
+              <app-icon name="close" [size]="15" [stroke]="2.6" />
+            </button>
           </div>
         }
 
-        <!-- Com uma série só (como o cardio) não há descanso entre séries: o cronômetro não faz sentido. -->
-        @if (series().length > 1) {
-          <div class="descanso" role="timer" aria-live="off">
-            <p class="rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
-            <p class="tempo" [class.estourou]="descansando() && descansoAtivo() >= limiteAtivo()">{{ tempo() }}</p>
-          </div>
+        <div class="faixa" role="group" aria-label="Séries">
+          @for (c of faixa(); track c.k) {
+            <button type="button" class="celula" [class.celula--feita]="c.feita" [class.celula--agora]="c.k === foco() && !mostrarDescanso()" [class.pisca-a]="c.pisca.a" [class.pisca-b]="c.pisca.b" [attr.aria-label]="'Série ' + c.n" (click)="escolher(c.k)">
+              <small>@if (c.feita) {<app-icon name="check" [size]="12" [stroke]="3.4" />}S{{ c.n }}</small>
+              <b>{{ c.texto }}</b>
+            </button>
+          }
+        </div>
+
+        @if (mostrarDescanso()) {
+          <ng-container *ngTemplateOutlet="descansoTpl" />
+        } @else if (foco() < 0) {
+          <ng-container *ngTemplateOutlet="concluidoTpl" />
+        } @else {
+          @let s = series()[foco()];
+          <section class="foco" aria-label="Série em foco">
+            <div class="foco__topo">
+              <span class="foco__rotulo">Série {{ s.n }} de {{ series().length }}</span>
+              @if (descansando()) {
+                <span class="tempo tempo--mini" [class.estourou]="estourou()"><app-icon name="clock" [size]="13" [stroke]="2.4" />{{ tempo() }}</span>
+              }
+            </div>
+            <div class="passos">
+              <div class="stp">
+                <span class="stp__rotulo">{{ it.unidade === 'min' ? 'Minutos' : 'Repetições' }}</span>
+                <div class="stp__linha">
+                  <button type="button" class="stp__btn" [attr.aria-label]="'Diminuir ' + (it.unidade === 'min' ? 'minutos' : 'repetições')" (click)="ajustar(s.n - 1, 'reps', -1)"><app-icon name="minus" [size]="16" [stroke]="2.6" /></button>
+                  <input class="valor valor--grande" type="number" inputmode="numeric" min="0" [value]="s.reps"
+                    [attr.aria-label]="(it.unidade === 'min' ? 'Minutos' : 'Repetições') + ' da série ' + s.n" (change)="editar(s.n - 1, 'reps', $event)" />
+                  <button type="button" class="stp__btn" [attr.aria-label]="'Aumentar ' + (it.unidade === 'min' ? 'minutos' : 'repetições')" (click)="ajustar(s.n - 1, 'reps', 1)"><app-icon name="plus" [size]="16" [stroke]="2.6" /></button>
+                </div>
+                <span class="stp__dica">{{ dica(indice(), s.n - 1, 'reps') ? 'Última vez: ' + dica(indice(), s.n - 1, 'reps') : ' ' }}</span>
+              </div>
+              <div class="stp">
+                <span class="stp__rotulo">Carga (kg)</span>
+                <div class="stp__linha">
+                  <button type="button" class="stp__btn" aria-label="Diminuir carga" (click)="ajustar(s.n - 1, 'carga', -2.5)"><app-icon name="minus" [size]="16" [stroke]="2.6" /></button>
+                  <input class="valor valor--grande" type="number" inputmode="decimal" min="0" step="0.5" [value]="s.carga"
+                    [attr.aria-label]="'Carga da série ' + s.n + ' (kg)'" (change)="editar(s.n - 1, 'carga', $event)" />
+                  <button type="button" class="stp__btn" aria-label="Aumentar carga" (click)="ajustar(s.n - 1, 'carga', 2.5)"><app-icon name="plus" [size]="16" [stroke]="2.6" /></button>
+                </div>
+                <span class="stp__dica">{{ dica(indice(), s.n - 1, 'carga') ? 'Última vez: ' + dica(indice(), s.n - 1, 'carga') : ' ' }}</span>
+              </div>
+            </div>
+            <button type="button" class="btn foco__ok" [class.btn--destaque]="!s.feita" [class.btn--claro-escuro]="s.feita" (click)="alternar(s.n - 1)">
+              @if (s.feita) {
+                Desmarcar série {{ s.n }}
+              } @else {
+                Concluir série {{ s.n }}
+                <app-icon name="check" [size]="20" [stroke]="3" />
+              }
+            </button>
+          </section>
         }
 
+        <div class="acoes">
+          <button type="button" class="todos__botao" aria-haspopup="dialog" (click)="abrirNotas()">
+            <app-icon name="clipboard" [size]="14" [stroke]="2.4" />
+            {{ notaExercicio() || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}
+          </button>
+          <button type="button" class="todos__botao" [disabled]="series().length >= maxSeries" (click)="adicionarSerie()">
+            <app-icon name="plus" [size]="14" [stroke]="3" /> Série extra
+          </button>
+          <button type="button" class="todos__botao" [disabled]="series().length <= 1" (click)="removerSerie()">
+            <app-icon name="minus" [size]="14" [stroke]="3" /> Tirar série
+          </button>
+          <button type="button" class="todos__botao" (click)="marcarTodos()">
+            <app-icon name="check" [size]="14" [stroke]="3" />
+            {{ feitas() === series().length ? 'Desmarcar todos' : 'Marcar todos' }}
+          </button>
+        </div>
       }
+
+      <ng-template #descansoTpl>
+        <section class="descanso" [class.descanso--par]="!!par()" [class.estourou]="estourou()" role="timer" aria-live="off">
+          <p class="descanso__rotulo">Descansando</p>
+          <div class="descanso__corpo">
+            <div class="anel">
+              <svg viewBox="0 0 176 176" aria-hidden="true">
+                <circle class="anel__trilho" cx="88" cy="88" r="80" />
+                <circle class="anel__arco" cx="88" cy="88" r="80" transform="rotate(-90 88 88)" [attr.stroke-dasharray]="circunferencia" [attr.stroke-dashoffset]="anelDeslocamento()" />
+              </svg>
+              <div class="anel__centro">
+                <span class="tempo" [class.estourou]="estourou()">{{ tempo() }}</span>
+                <span class="anel__limite">{{ estourou() ? '+' + texto(descansoAtivo() - limiteAtivo()) + ' do limite' : 'de ' + texto(limiteAtivo()) }}</span>
+              </div>
+            </div>
+            <div class="descanso__acoes">
+              <button type="button" (click)="ajustarLimite(-15)">−15 s</button>
+              <button type="button" class="descanso__pular" (click)="pular()"><app-icon name="skip" [size]="14" [stroke]="2.4" /> Pular descanso</button>
+              <button type="button" (click)="ajustarLimite(15)">+15 s</button>
+            </div>
+          </div>
+        </section>
+        @let alvo = foco();
+        <section class="proxima">
+          <div class="proxima__texto">
+            <p class="proxima__rotulo">A seguir · {{ par() ? 'Rodada' : 'Série' }} {{ alvo + 1 }} de {{ par() ? rodadas().length : series().length }}</p>
+            @if (par()) {
+              @for (m of [par()!.a, par()!.b]; track m; let j = $index) {
+                <p class="proxima__valor proxima__valor--par">{{ letraDoPar() }}{{ j + 1 }} {{ seriesDe(m)[alvo]?.reps ?? '–' }} × {{ seriesDe(m)[alvo] ? kg(seriesDe(m)[alvo].carga) : '–' }} kg</p>
+              }
+            } @else {
+              <p class="proxima__valor">{{ series()[alvo].reps }} {{ item()?.unidade === 'min' ? 'min' : 'reps' }} × {{ kg(series()[alvo].carga) }} kg</p>
+            }
+          </div>
+          <button type="button" class="btn btn--destaque proxima__ir" (click)="comecar()">Começar <app-icon name="chevron" [size]="18" [stroke]="3" /></button>
+        </section>
+      </ng-template>
+
+      <ng-template #concluidoTpl>
+        <section class="concluido">
+          <span class="concluido__ok"><app-icon name="check" [size]="24" [stroke]="3.2" /></span>
+          <h2 class="concluido__titulo">{{ par() ? 'Exercícios concluídos' : 'Exercício concluído' }}</h2>
+          @if (concluido().feito > 0) {
+            <p class="concluido__texto">
+              {{ concluido().feito.toLocaleString('pt-BR') }} kg de volume.
+              @if (concluido().diferenca !== null) {
+                @if (concluido().diferenca! > 0) {
+                  <b>+{{ concluido().diferenca!.toLocaleString('pt-BR') }} kg</b> em relação à última vez.
+                } @else if (concluido().diferenca! < 0) {
+                  {{ (-concluido().diferenca!).toLocaleString('pt-BR') }} kg a menos que na última vez.
+                } @else {
+                  Igual à última vez.
+                }
+              }
+            </p>
+          }
+        </section>
+      </ng-template>
 
       @if (verUltimo() !== null) {
         <app-dialogo titulo="Último treino" [subtitulo]="nomeDe(verUltimo()!)" (fechar)="verUltimo.set(null)">
@@ -263,20 +370,24 @@
         </app-dialogo>
       }
 
-      <label class="chave">
-        <input type="checkbox" role="switch" [checked]="marcarAoFinalizar()" (change)="alternarMarcarAoFinalizar()" />
-        <span class="trilho" aria-hidden="true"></span>
-        <span class="chave__texto">Marcar tudo como feito ao finalizar treino</span>
-      </label>
-
       <div class="rodape">
         @if (numBloco() > 0) {
-          <button type="button" class="btn btn--claro-escuro" (click)="anterior()">Anterior</button>
+          <button type="button" class="anterior" aria-label="Exercício anterior" (click)="anterior()">
+            <app-icon name="back" [size]="22" [stroke]="2.6" />
+          </button>
         }
-        <button type="button" class="btn btn--destaque" (click)="proximo()">
-          {{ ultimo() ? 'Finalizar treino' : numBloco() > 0 ? 'Próximo' : 'Próximo exercício' }}
-          @if (!ultimo()) {
-            <app-icon name="chevron" [size]="18" [stroke]="2.5" />
+        <button type="button" class="proximo" [class.proximo--fim]="ultimo()" [class.proximo--pronto]="!ultimo() && foco() < 0" (click)="proximo()">
+          @if (ultimo()) {
+            Finalizar treino
+            <app-icon name="check" [size]="20" [stroke]="3" />
+          } @else {
+            <span class="proximo__texto" [class.proximo__texto--duo]="proximosNomes().length > 1">
+              <small>A seguir</small>
+              @for (n of proximosNomes(); track $index) {
+                <b>{{ n }}</b>
+              }
+            </span>
+            <app-icon name="chevron" [size]="20" [stroke]="2.6" />
           }
         </button>
       </div>
