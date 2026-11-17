@@ -32,6 +32,33 @@ const MOVIMENTOS: Record<string, Grupo[]> = {
   abdomen: ['abdomen', 'abdomen', 'abdomen', 'abdomen', 'abdomen', 'abdomen'],
 };
 
+/**
+ * Grupos que o treino sugerido sabe montar, dos maiores para os menores: é a ordem em que a ficha é completada
+ * quando faltam vários.
+ */
+export const GRUPOS_PARA_COMPLETAR = ['pernas', 'costas', 'peito', 'ombros', 'abdomen', 'biceps', 'triceps'] as const;
+
+/**
+ * Grupos musculares principais que nenhum exercício de musculação da lista trabalha (como músculo principal).
+ * É o mesmo critério dos grupos que a ficha mostra no início. Cardio não conta, e ids que não estão na base
+ * são ignorados. Devolve chaves de `GRUPOS`, dos maiores para os menores.
+ */
+export function gruposFaltantes(todos: readonly Exercise[], ids: readonly string[]): string[] {
+  const porId = new Map(todos.map((e) => [e.id, e]));
+  const tem = new Set<string>();
+  for (const id of ids) {
+    const e = porId.get(id);
+    if (!e || e.category === 'cardio') continue;
+    for (const g of GRUPOS) if (e.primaryMuscles.some((m) => g.muscles.includes(m))) tem.add(g.key);
+  }
+  return GRUPOS_PARA_COMPLETAR.filter((k) => !tem.has(k));
+}
+
+/** "A", "A e B", "A, B e C". */
+export function listaEm(itens: readonly string[]): string {
+  return itens.length < 2 ? itens.join('') : `${itens.slice(0, -1).join(', ')} e ${itens.at(-1)}`;
+}
+
 /** Quantos exercícios por grupo, conforme quantos grupos foram escolhidos. */
 function porGrupo(qtdGrupos: number): number {
   return [6, 6, 4, 3, 2, 2][qtdGrupos] ?? 1;

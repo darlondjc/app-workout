@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { ExerciseService, GRUPOS } from '../core/exercise.service';
 import { Icon } from '../core/icon';
 import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
+import { gruposFaltantes, listaEm } from '../core/treino-do-dia';
 
-/** Acrescenta um treino a uma ficha que já existe: monta do zero ou pede um treino sugerido. */
+/** Acrescenta um treino a uma ficha que já existe: monta do zero, pede um treino sugerido ou completa o que falta na ficha. */
 @Component({
   selector: 'app-new-workout',
   imports: [RouterLink, Icon],
@@ -43,6 +45,30 @@ import { PlanService } from '../core/plan.service';
               <app-icon class="seta" name="chevron" [size]="18" [stroke]="2.2" />
             </a>
           </li>
+          <li>
+            @if (faltam().length > 0 || !ex.ready()) {
+              <a class="caminho" routerLink="/treino-do-dia" [queryParams]="{ conjunto: conjunto(), completar: 1 }">
+                <span class="caminho__icone"><app-icon name="trend" [size]="24" [stroke]="2" /></span>
+                <span class="caminho__txt">
+                  <strong>Completar a ficha</strong>
+                  @if (ex.ready()) {
+                    <span>Faltam na ficha: {{ faltamTexto() }}. O app sugere um treino com os músculos que ainda não são trabalhados.</span>
+                  } @else {
+                    <span>O app vê quais músculos a ficha ainda não trabalha e sugere um treino para completar.</span>
+                  }
+                </span>
+                <app-icon class="seta" name="chevron" [size]="18" [stroke]="2.2" />
+              </a>
+            } @else {
+              <div class="caminho caminho--desligado" aria-disabled="true">
+                <span class="caminho__icone"><app-icon name="check" [size]="24" [stroke]="2" /></span>
+                <span class="caminho__txt">
+                  <strong>Completar a ficha</strong>
+                  <span>A ficha já trabalha todos os grupos musculares principais.</span>
+                </span>
+              </div>
+            }
+          </li>
         </ul>
       }
     </section>
@@ -57,6 +83,7 @@ import { PlanService } from '../core/plan.service';
     .caminho__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 14px; line-height: 1.35; }
     .caminho__txt strong { font-family: var(--font-display); font-size: 18px; }
     .seta { flex: none; color: var(--muted); }
+    .caminho--desligado { opacity: 0.6; }
   `,
 })
 export class NewWorkout {
@@ -64,6 +91,7 @@ export class NewWorkout {
   readonly conjunto = input<string>();
 
   protected readonly nav = inject(NavegacaoService);
+  protected readonly ex = inject(ExerciseService);
   private readonly plans = inject(PlanService);
   private readonly router = inject(Router);
 
@@ -72,6 +100,15 @@ export class NewWorkout {
     return c ? this.plans.fichas().find((f) => f.conjunto?.id === c)?.conjunto : undefined;
   });
   protected readonly nome = computed(() => this.alvo()?.nome ?? '');
+
+  /** Grupos musculares principais que nenhum treino da ficha trabalha (vazio enquanto os exercícios carregam). */
+  protected readonly faltam = computed(() => {
+    const c = this.alvo();
+    if (!c || !this.ex.ready()) return [];
+    const ids = this.plans.fichas().filter((f) => f.conjunto?.id === c.id).flatMap((f) => f.itens.map((i) => i.exerciseId));
+    return gruposFaltantes(this.ex.exercises(), ids);
+  });
+  protected readonly faltamTexto = computed(() => listaEm(this.faltam().map((k) => GRUPOS.find((g) => g.key === k)?.label ?? k)));
 
   protected manual(): void {
     const c = this.alvo();

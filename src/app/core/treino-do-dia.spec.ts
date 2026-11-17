@@ -1,5 +1,5 @@
 import { Exercise } from './models';
-import { repartir, treinoDoDia } from './treino-do-dia';
+import { gruposFaltantes, listaEm, repartir, treinoDoDia } from './treino-do-dia';
 
 function ex(id: string, extra: Partial<Exercise> = {}): Exercise {
   return {
@@ -128,5 +128,49 @@ describe('repartir', () => {
   it('garante ao menos 1 por grupo enquanto houver vaga e não passa do total', () => {
     expect(repartir(3, 5)).toEqual([1, 1, 1, 0, 0]);
     expect(repartir(0, 2)).toEqual([0, 0]);
+  });
+});
+
+describe('gruposFaltantes', () => {
+  const base = [
+    ex('supino', { primaryMuscles: ['chest'] }),
+    ex('remada', { primaryMuscles: ['middle back'] }),
+    ex('agachamento', { primaryMuscles: ['quadriceps'] }),
+    ex('rosca', { primaryMuscles: ['biceps'] }),
+    ex('esteira', { category: 'cardio', primaryMuscles: ['quadriceps', 'calves'] }),
+    ex('abdominal', { primaryMuscles: ['abdominals'] }),
+  ];
+
+  it('ficha vazia: faltam todos os grupos principais, dos maiores para os menores', () => {
+    expect(gruposFaltantes(base, [])).toEqual(['pernas', 'costas', 'peito', 'ombros', 'abdomen', 'biceps', 'triceps']);
+  });
+
+  it('devolve só o que nenhum exercício da ficha trabalha', () => {
+    expect(gruposFaltantes(base, ['supino', 'remada'])).toEqual(['pernas', 'ombros', 'abdomen', 'biceps', 'triceps']);
+  });
+
+  it('cardio não conta como pernas', () => {
+    expect(gruposFaltantes(base, ['esteira'])).toContain('pernas');
+    expect(gruposFaltantes(base, ['esteira', 'agachamento'])).not.toContain('pernas');
+  });
+
+  it('ficha completa não tem faltantes (ombros e tríceps incluídos)', () => {
+    const todos = [...base, ex('desenvolvimento', { primaryMuscles: ['shoulders'] }), ex('triceps_corda', { primaryMuscles: ['triceps'] })];
+    const ids = ['supino', 'remada', 'agachamento', 'rosca', 'abdominal', 'desenvolvimento', 'triceps_corda'];
+    expect(gruposFaltantes(todos, ids)).toEqual([]);
+  });
+
+  it('ignora ids que não estão na base e não conta antebraço ou pescoço', () => {
+    expect(gruposFaltantes(base, ['nao_existe'])).toHaveSize(7);
+    expect(gruposFaltantes([ex('rosca_punho', { primaryMuscles: ['forearms'] })], ['rosca_punho'])).toHaveSize(7);
+  });
+});
+
+describe('listaEm', () => {
+  it('junta com vírgulas e "e" no final', () => {
+    expect(listaEm([])).toBe('');
+    expect(listaEm(['Pernas'])).toBe('Pernas');
+    expect(listaEm(['Pernas', 'Ombros'])).toBe('Pernas e Ombros');
+    expect(listaEm(['Pernas', 'Ombros', 'Abdômen'])).toBe('Pernas, Ombros e Abdômen');
   });
 });

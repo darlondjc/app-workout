@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ExerciseService, GRUPOS } from '../core/exercise.service';
 import { Icon } from '../core/icon';
@@ -7,7 +7,7 @@ import { PlanService } from '../core/plan.service';
 import { Carregando } from '../core/spinner';
 import { Nivel } from '../core/suggestion';
 import { ToastService } from '../core/toast.service';
-import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
+import { TreinoDoDia, gruposFaltantes, listaEm, treinoDoDia } from '../core/treino-do-dia';
 
 @Component({
   selector: 'app-daily-workout',
@@ -17,8 +17,21 @@ import { TreinoDoDia, treinoDoDia } from '../core/treino-do-dia';
     <section class="page">
       <header>
         <button type="button" class="voltar" (click)="nav.voltar('/fichas')"><app-icon name="back" [size]="18" [stroke]="2.2" /> Voltar</button>
-        <h1 class="titulo">Treino do dia</h1>
-        <p class="apoio">Escolha o que quer treinar hoje. Eu sugiro um treino com exercícios que não estão nas suas fichas.</p>
+        <h1 class="titulo">{{ modoCompletar() ? 'Completar a ficha' : 'Treino do dia' }}</h1>
+        @if (!modoCompletar()) {
+          <p class="apoio">Escolha o que quer treinar hoje. Eu sugiro um treino com exercícios que não estão nas suas fichas.</p>
+        } @else if (!ex.ready()) {
+          <p class="apoio">Vendo o que falta na ficha…</p>
+        } @else if (faltantes().length === 0) {
+          <p class="apoio">A ficha {{ fichaAtual() }} já trabalha todos os grupos musculares principais. Se quiser, escolha grupos abaixo para um treino extra.</p>
+        } @else {
+          <p class="apoio">
+            Faltam na ficha {{ fichaAtual() }}: {{ faltamTexto() }}. Já deixei marcado{{ escolhidos().length > 1 ? 's' : '' }} {{ escolhidosTexto() }} para este treino; você pode trocar.
+            @if (faltantes().length > maxGrupos) {
+              Os outros ficam para um próximo treino de complemento.
+            }
+          </p>
+        }
       </header>
 
       @if (!ex.ready()) {
@@ -234,6 +247,31 @@ export class DailyWorkout {
   /** Mais que isso deixaria o treino grande demais. */
   protected readonly maxGrupos = 2;
   protected readonly escolhidos = signal<string[]>([]);
+
+  /** Vem do endereço quando o treino é para completar o que falta na ficha (precisa do `conjunto`). */
+  readonly completar = input<string>();
+  protected readonly modoCompletar = computed(() => !!this.completar() && !!this.conjunto());
+  /** Grupos principais que nenhum treino da ficha trabalha (vazio enquanto os exercícios carregam). */
+  protected readonly faltantes = computed(() => {
+    const c = this.conjunto();
+    if (!this.modoCompletar() || !c || !this.ex.ready()) return [];
+    const ids = this.plans.fichas().filter((f) => f.conjunto?.id === c).flatMap((f) => f.itens.map((i) => i.exerciseId));
+    return gruposFaltantes(this.ex.exercises(), ids);
+  });
+  private readonly rotulo = (k: string) => GRUPOS.find((g) => g.key === k)?.label ?? k;
+  protected readonly faltamTexto = computed(() => listaEm(this.faltantes().map(this.rotulo)));
+  protected readonly escolhidosTexto = computed(() => listaEm(this.escolhidos().map(this.rotulo)));
+  private completarAplicado = false;
+
+  constructor() {
+    // Para completar a ficha, já vêm marcados os maiores grupos que faltam (até o limite de grupos); a pessoa pode trocar.
+    effect(() => {
+      const faltam = this.faltantes();
+      if (this.completarAplicado || faltam.length === 0) return;
+      this.completarAplicado = true;
+      untracked(() => this.escolhidos.set(faltam.slice(0, this.maxGrupos)));
+    });
+  }
   protected readonly cardio = signal(false);
   protected readonly nivel = signal<Nivel>('intermediate');
   protected readonly maximo = signal(8);
@@ -286,7 +324,9 @@ export class DailyWorkout {
     const r = this.resultado();
     if (!r || r.itens.length === 0) return;
     const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const { treino, ficha } = this.plans.adicionarTreino(`Treino do dia · ${hoje}`, r.itens, this.conjunto());
+    const grupos = (this.pedido()?.grupos ?? []).map(this.rotulo);
+    const nome = this.modoCompletar() && grupos.length > 0 ? `Complemento · ${listaEm(grupos)}` : `Treino do dia · ${hoje}`;
+    const { treino, ficha } = this.plans.adicionarTreino(nome, r.itens, this.conjunto());
     this.toast.mostrar(`Treino adicionado à ficha ${ficha}`);
     this.router.navigate(['/treino', treino.id], { replaceUrl: true });
   }
