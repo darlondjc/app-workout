@@ -13,10 +13,6 @@
             <p class="posicao">Exercício {{ indice() + 1 }} de {{ f.itens.length }}</p>
           }
         </div>
-        <div class="total" role="timer" aria-label="Tempo de treino">
-          <app-icon name="clock" [size]="14" [stroke]="2.4" />
-          <span>{{ tempoTotal() }}</span>
-        </div>
       </header>
 
       @if (confirmandoSaida()) {
@@ -130,25 +126,20 @@
 
         <div class="faixa" role="group" aria-label="Rodadas">
           @for (c of faixa(); track c.k) {
-            <button type="button" class="celula" [class.celula--feita]="c.feita" [class.celula--agora]="c.k === foco() && !mostrarDescanso()" [class.pisca-a]="c.pisca.a" [class.pisca-b]="c.pisca.b" [attr.aria-label]="'Rodada ' + c.n" (click)="escolher(c.k)">
+            <button type="button" class="celula" [class.celula--feita]="c.feita" [class.celula--agora]="c.k === foco()" [class.pisca-a]="c.pisca.a" [class.pisca-b]="c.pisca.b" [attr.aria-label]="'Rodada ' + c.n" (click)="escolher(c.k)">
               <small>@if (c.feita) {<app-icon name="check" [size]="12" [stroke]="3.4" />}R{{ c.n }}</small>
               <b>{{ c.texto }}</b>
             </button>
           }
         </div>
 
-        @if (mostrarDescanso()) {
-          <ng-container *ngTemplateOutlet="descansoTpl" />
-        } @else if (foco() < 0) {
+        @if (foco() < 0) {
           <ng-container *ngTemplateOutlet="concluidoTpl" />
         } @else {
           @let r = rodadas()[foco()];
           <section class="foco foco--par" aria-label="Rodada em foco">
             <div class="foco__topo">
               <span class="foco__rotulo">Rodada {{ r.n }} de {{ rodadas().length }}</span>
-              @if (descansando()) {
-                <span class="tempo tempo--mini" [class.estourou]="estourou()"><app-icon name="clock" [size]="13" [stroke]="2.4" />{{ tempo() }}</span>
-              }
             </div>
             @for (m of [p.a, p.b]; track m; let j = $index) {
               @let sr = j === 0 ? r.a : r.b;
@@ -187,6 +178,14 @@
               }
             </button>
           </section>
+        }
+
+        <!-- Uma rodada só não tem descanso entre rodadas: o cronômetro não faz sentido. -->
+        @if (rodadas().length > 1) {
+          <div class="descanso" role="timer" aria-live="off">
+            <p class="descanso__rotulo">{{ descansando() ? 'Descansando' : 'Descanso depois de cada rodada' }}</p>
+            <p class="tempo" [class.estourou]="estourou()">{{ tempo() }}</p>
+          </div>
         }
       } @else {
         <div class="exercicio">
@@ -231,25 +230,20 @@
 
         <div class="faixa" role="group" aria-label="Séries">
           @for (c of faixa(); track c.k) {
-            <button type="button" class="celula" [class.celula--feita]="c.feita" [class.celula--agora]="c.k === foco() && !mostrarDescanso()" [class.pisca-a]="c.pisca.a" [class.pisca-b]="c.pisca.b" [attr.aria-label]="'Série ' + c.n" (click)="escolher(c.k)">
+            <button type="button" class="celula" [class.celula--feita]="c.feita" [class.celula--agora]="c.k === foco()" [class.pisca-a]="c.pisca.a" [class.pisca-b]="c.pisca.b" [attr.aria-label]="'Série ' + c.n" (click)="escolher(c.k)">
               <small>@if (c.feita) {<app-icon name="check" [size]="12" [stroke]="3.4" />}S{{ c.n }}</small>
               <b>{{ c.texto }}</b>
             </button>
           }
         </div>
 
-        @if (mostrarDescanso()) {
-          <ng-container *ngTemplateOutlet="descansoTpl" />
-        } @else if (foco() < 0) {
+        @if (foco() < 0) {
           <ng-container *ngTemplateOutlet="concluidoTpl" />
         } @else {
           @let s = series()[foco()];
           <section class="foco" aria-label="Série em foco">
             <div class="foco__topo">
               <span class="foco__rotulo">Série {{ s.n }} de {{ series().length }}</span>
-              @if (descansando()) {
-                <span class="tempo tempo--mini" [class.estourou]="estourou()"><app-icon name="clock" [size]="13" [stroke]="2.4" />{{ tempo() }}</span>
-              }
             </div>
             <div class="passos">
               <div class="stp">
@@ -284,6 +278,14 @@
           </section>
         }
 
+        <!-- Com uma série só (como o cardio) não há descanso entre séries: o cronômetro não faz sentido. -->
+        @if (series().length > 1) {
+          <div class="descanso" role="timer" aria-live="off">
+            <p class="descanso__rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
+            <p class="tempo" [class.estourou]="estourou()">{{ tempo() }}</p>
+          </div>
+        }
+
         <div class="acoes">
           <button type="button" class="todos__botao" aria-haspopup="dialog" (click)="abrirNotas()">
             <app-icon name="clipboard" [size]="14" [stroke]="2.4" />
@@ -301,43 +303,6 @@
           </button>
         </div>
       }
-
-      <ng-template #descansoTpl>
-        <section class="descanso" [class.descanso--par]="!!par()" [class.estourou]="estourou()" role="timer" aria-live="off">
-          <p class="descanso__rotulo">Descansando</p>
-          <div class="descanso__corpo">
-            <div class="anel">
-              <svg viewBox="0 0 176 176" aria-hidden="true">
-                <circle class="anel__trilho" cx="88" cy="88" r="80" />
-                <circle class="anel__arco" cx="88" cy="88" r="80" transform="rotate(-90 88 88)" [attr.stroke-dasharray]="circunferencia" [attr.stroke-dashoffset]="anelDeslocamento()" />
-              </svg>
-              <div class="anel__centro">
-                <span class="tempo" [class.estourou]="estourou()">{{ tempo() }}</span>
-                <span class="anel__limite">{{ estourou() ? '+' + texto(descansoAtivo() - limiteAtivo()) + ' do limite' : 'de ' + texto(limiteAtivo()) }}</span>
-              </div>
-            </div>
-            <div class="descanso__acoes">
-              <button type="button" (click)="ajustarLimite(-15)">−15 s</button>
-              <button type="button" class="descanso__pular" (click)="pular()"><app-icon name="skip" [size]="14" [stroke]="2.4" /> Pular descanso</button>
-              <button type="button" (click)="ajustarLimite(15)">+15 s</button>
-            </div>
-          </div>
-        </section>
-        @let alvo = foco();
-        <section class="proxima">
-          <div class="proxima__texto">
-            <p class="proxima__rotulo">A seguir · {{ par() ? 'Rodada' : 'Série' }} {{ alvo + 1 }} de {{ par() ? rodadas().length : series().length }}</p>
-            @if (par()) {
-              @for (m of [par()!.a, par()!.b]; track m; let j = $index) {
-                <p class="proxima__valor proxima__valor--par">{{ letraDoPar() }}{{ j + 1 }} {{ seriesDe(m)[alvo]?.reps ?? '–' }} × {{ seriesDe(m)[alvo] ? kg(seriesDe(m)[alvo].carga) : '–' }} kg</p>
-              }
-            } @else {
-              <p class="proxima__valor">{{ series()[alvo].reps }} {{ item()?.unidade === 'min' ? 'min' : 'reps' }} × {{ kg(series()[alvo].carga) }} kg</p>
-            }
-          </div>
-          <button type="button" class="btn btn--destaque proxima__ir" (click)="comecar()">Começar <app-icon name="chevron" [size]="18" [stroke]="3" /></button>
-        </section>
-      </ng-template>
 
       <ng-template #concluidoTpl>
         <section class="concluido">
