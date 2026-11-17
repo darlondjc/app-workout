@@ -171,7 +171,6 @@ describe('Workout — marcar séries em bloco', () => {
       expect(ok()!.textContent).toContain('Concluir série 1');
       expect(el().querySelector('.foco__rotulo')!.textContent).toContain('Série 1 de 3');
       clicar(ok());
-      clicar(el().querySelector('.proxima__ir'));
       expect(ok()!.textContent).toContain('Concluir série 2');
     });
 
@@ -215,48 +214,39 @@ describe('Workout — marcar séries em bloco', () => {
       expect(c.textContent).toContain('+150 kg');
     });
 
-    describe('descanso', () => {
+    describe('cronômetro de descanso na tela', () => {
       beforeEach(() => jasmine.clock().install().mockDate(new Date(2026, 9, 23, 10, 0, 0)));
       afterEach(() => jasmine.clock().uninstall());
 
-      it('mostra o cartão de descanso e a próxima série; "Começar" o esconde sem parar o cronômetro', () => {
+      it('é um cartão simples, sempre à vista: "Descanso" parado e "Descansando" depois de marcar uma série', () => {
+        const cartao = () => el().querySelector('.descanso')!;
+        expect(cartao().textContent).toContain('Descanso');
+        expect(cartao().textContent).not.toContain('Descansando');
+        expect(cartao().textContent).toContain('00:00');
         clicar(ok());
-        expect(el().querySelector('.descanso')).not.toBeNull();
-        expect(el().querySelector('.proxima__valor')!.textContent).toContain('10 reps × 20 kg');
-        clicar(el().querySelector('.proxima__ir'));
-        expect(el().querySelector('.descanso')).toBeNull();
-        jasmine.clock().tick(4000);
-        fixture.detectChanges();
-        expect(el().querySelector('.tempo--mini')!.textContent).toContain('00:04');
+        expect(cartao().textContent).toContain('Descansando');
+        // Sem anel, sem "Começar" e sem tela de descanso no lugar da série: só o cronômetro.
+        expect(el().querySelector('.anel, .proxima, .descanso__acoes')).toBeNull();
+        expect(ok()).not.toBeNull();
       });
 
-      it('"Pular descanso" para o cronômetro; a próxima série fica sem descanso guardado', () => {
-        clicar(ok());
-        jasmine.clock().tick(5000);
-        clicar(botao('Pular descanso'));
-        expect(el().querySelector('.descanso')).toBeNull();
-        expect(el().querySelector('.tempo')).toBeNull();
-        clicar(ok());
-        expect(plans.emAndamento()?.series[0][1].descanso).toBeUndefined();
+      it('não depende de iniciar nada: o topo não mostra tempo total do treino', () => {
+        expect(el().querySelector('.total')).toBeNull();
       });
 
-      it('−15 s e +15 s mudam o tempo de descanso previsto', () => {
-        clicar(ok());
-        clicar(botao('+15 s'));
-        expect(el().querySelector('.anel__limite')!.textContent).toContain('01:15');
-        expect(plans.emAndamento()?.descanso?.limite).toBe(75);
-        clicar(botao('−15 s'));
-        clicar(botao('−15 s'));
-        expect(plans.emAndamento()?.descanso?.limite).toBe(45);
-      });
-
-      it('passando do limite, o anel avisa quanto passou e segue contando', () => {
+      it('passando do limite da ficha, o tempo fica vermelho e segue contando', () => {
         clicar(ok());
         jasmine.clock().tick(68000);
         fixture.detectChanges();
-        expect(el().querySelector('.descanso')!.classList).toContain('estourou');
-        expect(el().querySelector('.anel__limite')!.textContent).toContain('+00:08');
-        expect(el().querySelector('.tempo')!.textContent!.trim()).toBe('01:08');
+        const tempoEl = el().querySelector('.descanso .tempo')!;
+        expect(tempoEl.classList).toContain('estourou');
+        expect(tempoEl.textContent!.trim()).toBe('01:08');
+      });
+
+      it('com uma série só (como o cardio) não há cronômetro', () => {
+        clicar(botao('Tirar série'));
+        clicar(botao('Tirar série'));
+        expect(el().querySelector('.descanso')).toBeNull();
       });
     });
   });
@@ -678,12 +668,8 @@ describe('Workout — exercícios conjugados', () => {
   const item = (exerciseId: string, extra: object = {}) => ({ exerciseId, series: 3, reps: 12, carga: 20, descanso: 60, ...extra });
   const celulas = () => [...el().querySelectorAll('.celula')] as HTMLButtonElement[];
   const ok = () => el().querySelector('.foco__ok');
-  /** Conclui a rodada em foco (se o descanso está na tela, toca em "Começar" antes). */
-  const concluir = () => {
-    const comecar = el().querySelector('.proxima__ir');
-    if (comecar) clicar(comecar);
-    clicar(ok());
-  };
+  /** Conclui a rodada em foco. */
+  const concluir = () => clicar(ok());
   const proximo = () => clicar(el().querySelector('.proximo'));
   const anterior = () => clicar(el().querySelector('.anterior'));
   const botao = (texto: string) =>
@@ -738,16 +724,13 @@ describe('Workout — exercícios conjugados', () => {
     expect(link.querySelector('.lupa')).not.toBeNull();
   });
 
-  it('concluir a rodada marca a série dos dois exercícios, mostra o descanso e depois a próxima rodada', () => {
+  it('concluir a rodada marca a série dos dois exercícios e passa o foco para a próxima', () => {
     abrir(par());
     clicar(ok());
     expect(feitas(0)).toEqual([true, false, false]);
     expect(feitas(1)).toEqual([true, false, false]);
     expect(celulas()[0].classList.contains('celula--feita')).toBeTrue();
-    expect(el().querySelector('.descanso')).not.toBeNull();
-    expect(el().querySelector('.proxima__rotulo')!.textContent).toContain('Rodada 2 de 3');
-    clicar(el().querySelector('.proxima__ir'));
-    expect(el().querySelector('.descanso')).toBeNull();
+    expect(el().querySelector('.descanso')!.textContent).toContain('Descansando');
     expect(el().querySelector('.foco__rotulo')!.textContent).toContain('Rodada 2 de 3');
     expect(celulas()[1].classList.contains('celula--agora')).toBeTrue();
   });
@@ -761,7 +744,7 @@ describe('Workout — exercícios conjugados', () => {
     expect(estado().descanso?.limite).toBe(90);
   });
 
-  it('"Começar" esconde o descanso, mas o cronômetro segue e guarda um descanso só por rodada, na primeira série dela', () => {
+  it('guarda um descanso só por rodada, na primeira série dela', () => {
     abrir(par());
     clicar(ok());
     jasmine.clock().tick(40000);

@@ -70,13 +70,9 @@ export class Workout {
     return (p ? this.itemDe(p.b)?.descanso : this.item()?.descanso) || 60;
   });
   private descansoDesde = 0;
-  /** O cartão de descanso fica oculto depois de "Começar" (o cronômetro segue contando, para guardar o descanso da série). */
-  protected readonly descansoOculto = signal(false);
   protected readonly confirmandoSaida = signal(false);
   /** Série (ou rodada) escolhida na faixa para editar; sem escolha, a em foco é a primeira que falta. */
   protected readonly serieEscolhida = signal<number | null>(null);
-  /** Relógio de 1 s: o tempo total do treino. */
-  private readonly agora = signal(Date.now());
   /** Quantas vezes cada série (pela chave do exercício e do número) foi preenchida sozinha; o valor mudando refaz a animação. */
   protected readonly piscadas = signal<Record<number, number>>({});
   protected chave(i: number, n: number): number {
@@ -228,16 +224,6 @@ export class Workout {
     return b.tipo === 'solo' ? [this.nomeDe(b.i)] : [this.nomeDe(b.a), this.nomeDe(b.b)];
   });
 
-  /** Tempo total do treino em andamento (desde a primeira série marcada). */
-  protected readonly tempoTotal = computed(() => {
-    const ini = this.estado()?.iniciadoEm;
-    const s = ini ? Math.max(0, Math.floor((this.agora() - ini) / 1000)) : 0;
-    const h = Math.floor(s / 3600);
-    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-    const ss = String(s % 60).padStart(2, '0');
-    return h > 0 ? `${h}:${m}:${ss}` : `${m}:${ss}`;
-  });
-
   /** Músculos principais do exercício i, para os rótulos do cabeçalho. */
   protected musculosDe(i: number): string[] {
     const it = this.itemDe(i);
@@ -275,37 +261,10 @@ export class Workout {
     return { feito, diferenca: temAntes ? feito - antes : null };
   });
 
-  /** O cartão de descanso aparece enquanto o cronômetro conta e a pessoa não tocou em "Começar". */
-  protected readonly mostrarDescanso = computed(() => this.descansando() && !this.descansoOculto() && this.foco() >= 0);
-
-  protected readonly circunferencia = 2 * Math.PI * 80;
-  protected readonly anelDeslocamento = computed(() => this.circunferencia * (1 - Math.min(1, this.descansoAtivo() / Math.max(1, this.limiteAtivo()))));
-  protected texto(segundos: number): string {
-    const m = String(Math.floor(segundos / 60)).padStart(2, '0');
-    return `${m}:${String(Math.floor(segundos % 60)).padStart(2, '0')}`;
-  }
   protected readonly estourou = computed(() => this.descansando() && this.descansoAtivo() >= this.limiteAtivo());
 
   protected escolher(k: number): void {
     this.serieEscolhida.set(k);
-    this.descansoOculto.set(true);
-  }
-
-  /** "Começar": esconde o cartão de descanso; o cronômetro segue, e o tempo vira o descanso da série que for marcada. */
-  protected comecar(): void {
-    this.descansoOculto.set(true);
-  }
-
-  /** "Pular descanso": para o cronômetro; a próxima série fica sem descanso guardado. */
-  protected pular(): void {
-    this.zerarDescanso();
-  }
-
-  /** −15 s / +15 s mudam o tempo de descanso previsto (o limite do anel), não o que já passou. */
-  protected ajustarLimite(delta: number): void {
-    const novo = Math.max(15, this.limiteAtivo() + delta);
-    this.limiteAtivo.set(novo);
-    this.plans.andamento(this.id(), (a) => (a.descanso ? { ...a, descanso: { ...a.descanso, limite: novo } } : a));
   }
 
   /** As rodadas do par da vez: a série k de cada exercício. Se um tem mais séries, as últimas rodadas têm só um. */
@@ -366,9 +325,7 @@ export class Workout {
         this.iniciarDescanso(d.decorrido + fora, d.limite);
       });
     });
-    const relogio = setInterval(() => this.agora.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => {
-      clearInterval(relogio);
       // Saiu com o treino ainda em andamento (pausa, ou ver as instruções de um exercício): guarda o cronômetro para retomar.
       if (this.descansando() && this.estado()) {
         const descanso = { decorrido: (Date.now() - this.descansoDesde) / 1000, limite: this.limiteAtivo(), saiuEm: Date.now(), pausado: this.pausado };
@@ -785,7 +742,6 @@ export class Workout {
     this.limiteAtivo.set(limite);
     this.descansoAtivo.set(Math.floor(decorrido));
     this.descansando.set(true);
-    this.descansoOculto.set(false);
     // Guardado desde o início: se o app for fechado ou reiniciado, o cronômetro retoma de onde estava (com o tempo fora).
     const descanso = { decorrido, limite, saiuEm: Date.now(), pausado: false };
     this.plans.andamento(this.id(), (a) => ({ ...a, descanso }));
