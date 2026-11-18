@@ -1,38 +1,35 @@
 import { Exercise, Ficha, Sessao } from './models';
-import { MUSCULOS, PESO_SECUNDARIO, calcularMusculos } from './musculos';
+import { LOOKBACK_DIAS, MUSCULOS, calcularMusculos } from './musculos';
 
-/** Fichas com pontuação até esta diferença da melhor contam como empate, e o rodízio decide. */
-export const MARGEM_EMPATE = 0.05;
-/** Pontuação de uma ficha em que não dá para saber os músculos: nem a favorita, nem a última. */
-export const NEUTRA = 0.5;
+/** Treinos com média de dias parados até esta diferença do mais parado contam como empate, e o rodízio decide. */
+export const MARGEM_EMPATE_DIAS = 1;
 
 /**
- * Quão atrasados estão os músculos que a ficha trabalha, de 0 (todos muito trabalhados) a 1 (todos parados).
- * Cada série pesa 1 para o músculo principal e `PESO_SECUNDARIO` para os secundários. Cardio, alongamento e
- * exercícios desconhecidos não contam; sem nenhum exercício contável, devolve `null`.
+ * Há quantos dias, em média, os músculos que o treino trabalha foram treinados de forma direta (como músculo
+ * principal), com cada músculo pesando pelas séries do treino. Músculo sem treino nos últimos `LOOKBACK_DIAS` conta
+ * como parado há esse tempo, o máximo. Cardio, alongamento e exercícios desconhecidos não contam; sem nenhum exercício
+ * contável, devolve `null`.
+ *
+ * Mede o tempo parado, e não o volume acumulado: um treino feito uma vez por semana, com poucos exercícios, não
+ * parece "atrasado" só porque soma menos séries que músculos treinados em vários treinos.
  */
 export function pontuacaoDaFicha(
   ficha: Ficha,
-  nivelDe: ReadonlyMap<string, number>,
+  diasParado: ReadonlyMap<string, number>,
   exercicioDe: (id: string) => Exercise | undefined,
 ): number | null {
   let peso = 0;
-  let atraso = 0;
+  let soma = 0;
   for (const item of ficha.itens) {
     const e = exercicioDe(item.exerciseId);
     if (!e || e.category === 'cardio' || e.category === 'stretching') continue;
     for (const m of MUSCULOS) {
-      const p = e.primaryMuscles.some((x) => m.fontes.includes(x))
-        ? 1
-        : e.secondaryMuscles.some((x) => m.fontes.includes(x))
-          ? PESO_SECUNDARIO
-          : 0;
-      if (p === 0) continue;
-      peso += p * item.series;
-      atraso += p * item.series * (1 - (nivelDe.get(m.id) ?? 0));
+      if (!e.primaryMuscles.some((x) => m.fontes.includes(x))) continue;
+      peso += item.series;
+      soma += item.series * (diasParado.get(m.id) ?? LOOKBACK_DIAS);
     }
   }
-  return peso > 0 ? atraso / peso : null;
+  return peso > 0 ? soma / peso : null;
 }
 
 /**
@@ -49,9 +46,10 @@ export function treinosDaFichaAtiva(fichas: Ficha[], ativaId: string | null, his
 }
 
 /**
- * Escolhe o treino a sugerir entre as fichas (já na ordem da lista): o que trabalha os músculos menos trabalhados
- * nos últimos treinos. Quando as pontuações empatam (ou não há histórico de músculos), vale o rodízio: a ficha
- * seguinte à última concluída, A, B, C… Fichas sem exercício contável (só cardio, por exemplo) valem `NEUTRA`.
+ * Escolhe o treino a sugerir entre as fichas (já na ordem da lista): o que trabalha os músculos parados há mais
+ * tempo, ou seja, o treino mais antigo da divisão. Quando os tempos empatam (ou não há histórico), vale o rodízio: a
+ * ficha seguinte à última concluída, A, B, C… Fichas sem exercício contável (só cardio, por exemplo) valem a média das
+ * outras: não ganham de quem está mais parado nem perdem para quem acabou de ser treinado.
  */
 export function escolherProximaFicha(
   fichas: Ficha[],
@@ -65,8 +63,11 @@ export function escolherProximaFicha(
   const idx = ultima ? fichas.findIndex((f) => f.id === ultima.fichaId) : -1;
   const emRodizio = fichas.map((_, i) => fichas[(idx + 1 + i) % fichas.length]);
 
-  const nivelDe = new Map(calcularMusculos(historico, hoje, exercicioDe).map((m) => [m.id, m.nivel]));
-  const notas = new Map(emRodizio.map((f) => [f.id, pontuacaoDaFicha(f, nivelDe, exercicioDe) ?? NEUTRA]));
-  const melhor = Math.max(...notas.values());
-  return emRodizio.find((f) => notas.get(f.id)! >= melhor - MARGEM_EMPATE) ?? emRodizio[0];
+  const diasParado = new Map(calcularMusculos(historico, hoje, exercicioDe).map((m) => [m.id, m.diasDesdeUltimo ?? LOOKBACK_DIAS]));
+  const medidas = new Map(emRodizio.map((f) => [f.id, pontuacaoDaFicha(f, diasParado, exercicioDe)]));
+  const conhecidas = [...medidas.values()].filter((v): v is number => v !== null);
+  const media = conhecidas.length > 0 ? conhecidas.reduce((a, b) => a + b, 0) / conhecidas.length : 0;
+  const nota = (f: Ficha) => medidas.get(f.id) ?? media;
+  const maior = Math.max(...emRodizio.map(nota));
+  return emRodizio.find((f) => nota(f) >= maior - MARGEM_EMPATE_DIAS) ?? emRodizio[0];
 }

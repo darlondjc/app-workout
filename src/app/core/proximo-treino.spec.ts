@@ -23,7 +23,7 @@ const peito = ficha('A', 'supino');
 const costas = ficha('B', 'remada');
 const pernas = ficha('C', 'agachamento');
 
-describe('próximo treino pelos músculos menos trabalhados', () => {
+describe('próximo treino pelo tempo parado dos músculos', () => {
   it('sem fichas, não sugere nada', () => {
     expect(escolherProximaFicha([], [], hoje, exercicioDe)).toBeNull();
   });
@@ -55,11 +55,60 @@ describe('próximo treino pelos músculos menos trabalhados', () => {
     expect(escolherProximaFicha([peito, costas], h, hoje, exercicioDe)?.id).toBe('B');
   });
 
-  it('ficha só de cardio vale pontuação neutra: ganha de quem acabou de ser treinado', () => {
+  it('ficha só de cardio vale a média das outras: ganha de quem acabou de ser treinado', () => {
     const cardio = ficha('D', 'esteira');
     expect(pontuacaoDaFicha(cardio, new Map(), exercicioDe)).toBeNull();
     const h = [sessao('A', '2026-11-04', 'supino'), sessao('A', '2026-11-05', 'supino'), sessao('A', '2026-11-06', 'supino')];
     expect(escolherProximaFicha([peito, cardio], h, hoje, exercicioDe)?.id).toBe('D');
+  });
+});
+
+describe('próximo treino: o mais antigo da divisão', () => {
+  const ex2 = (id: string, primary: string) => ex(id, [primary]);
+  const exercicios: Record<string, Exercise> = Object.fromEntries(
+    [
+      ['rosca', 'biceps'], ['triceps_corda', 'triceps'], ['hiper', 'lower back'],
+      ['agachamento', 'quadriceps'], ['flexora', 'hamstrings'], ['panturrilha', 'calves'], ['abdominal', 'abdominals'],
+      ['puxada', 'lats'], ['remada', 'middle back'], ['lateral', 'shoulders'], ['supino', 'chest'],
+    ].map(([id, m]) => [id, ex2(id, m)]),
+  );
+  const de = (id: string) => exercicios[id];
+  const divisao = [
+    ficha('A', 'rosca', 'triceps_corda', 'hiper'),
+    ficha('B', 'agachamento', 'flexora', 'panturrilha', 'abdominal'),
+    ficha('C', 'puxada', 'remada', 'lateral', 'abdominal'),
+    ficha('D', 'supino', 'panturrilha'),
+  ];
+  const feito = (f: string, data: string) => sessao(f, data, ...divisao.find((x) => x.id === f)!.itens.map((i) => i.exerciseId));
+
+  it('sugere o treino feito há mais tempo, mesmo que outro tenha músculos com menos volume acumulado', () => {
+    // C há 12 dias, A há 9, B há 7 e D há 2: pernas (B) é só uma vez por semana, mas C está parado há mais tempo.
+    const h = [feito('C', '2026-10-26'), feito('A', '2026-10-29'), feito('B', '2026-10-31'), feito('D', '2026-11-05')];
+    expect(escolherProximaFicha(divisao, h, hoje, de)?.id).toBe('C');
+  });
+
+  it('mede pelos músculos, não pela ficha: o que foi treinado em outro treino também conta', () => {
+    // A foi feito há 9 dias, mas B treinou o abdômen e a panturrilha depois; entre B e D, B tem músculos parados há mais tempo.
+    const h = [feito('A', '2026-10-29'), feito('D', '2026-11-05')];
+    expect(escolherProximaFicha([divisao[1], divisao[3]], h, hoje, de)?.id).toBe('B');
+  });
+
+  it('músculo nunca treinado conta como o mais parado', () => {
+    const h = [feito('A', '2026-11-06')];
+    expect(escolherProximaFicha([divisao[0], divisao[1]], h, hoje, de)?.id).toBe('B');
+  });
+
+  it('diferença de menos de um dia na média é empate e o rodízio decide', () => {
+    // B há 8 dias (média 7,75, com o abdômen treinado por C há 7) e C há 7 (média 7): B está só 0,75 dia à frente.
+    // O último concluído do histórico é B, então o rodízio aponta C; sem a margem de empate, B ganharia.
+    const h = [feito('C', '2026-10-31'), feito('B', '2026-10-30')];
+    expect(escolherProximaFicha([divisao[1], divisao[2]], h, hoje, de)?.id).toBe('C');
+  });
+
+  it('diferença maior que um dia não é empate: o mais parado ganha do rodízio', () => {
+    // Agora B está 2 dias à frente de C (B há 9 dias e C há 7): o rodízio ainda aponta C, mas B está parado há mais tempo.
+    const h = [feito('C', '2026-10-31'), feito('B', '2026-10-29')];
+    expect(escolherProximaFicha([divisao[1], divisao[2]], h, hoje, de)?.id).toBe('B');
   });
 });
 

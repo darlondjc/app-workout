@@ -134,8 +134,8 @@ export class PlanService {
   private assinaturaDaFichaAtiva: string | null = null;
 
   /**
-   * Refaz a sugestão entre os treinos da ficha ativa: o que trabalha os músculos menos trabalhados nos treinos
-   * recentes e, em caso de empate (ou sem histórico), o rodízio A, B, C… É chamado só em dois momentos: ao concluir
+   * Refaz a sugestão entre os treinos da ficha ativa: o que trabalha os músculos parados há mais tempo (o
+   * treino mais antigo da divisão) e, em caso de empate (ou sem histórico), o rodízio A, B, C… É chamado só em dois momentos: ao concluir
    * um treino e ao salvar um treino da ficha ativa (a mudança pode incluir músculos que estão frios).
    */
   private recalcularProxima(): void {
