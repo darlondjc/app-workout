@@ -37,6 +37,9 @@ const BASE: Record<string, Exercise> = {
   agachamento: ex('agachamento', ['quadriceps'], ['glutes', 'hamstrings', 'calves']),
   remada: ex('remada', ['lats', 'middle back'], ['biceps']),
   abdutora: ex('abdutora', ['abductors']),
+  encolhimento: ex('encolhimento', ['traps'], ['forearms']),
+  levantamento: ex('levantamento', ['hamstrings'], ['traps', 'lower back']),
+  pescoco: ex('pescoco', ['neck']),
   esteira: ex('esteira', ['quadriceps'], [], 'cardio'),
   alongar: ex('alongar', ['hamstrings'], [], 'stretching'),
 };
@@ -53,6 +56,46 @@ const estado = (lista: EstadoMusculo[], id: string) => lista.find((e) => e.id ==
 const calcular = (h: Sessao[]) => calcularMusculos(h, HOJE, exercicioDe);
 
 describe('musculos', () => {
+  describe('trapézio e pescoço', () => {
+    it('o exercício de trapézio conta para o pescoço com o peso de secundário, e para o trapézio com peso cheio', () => {
+      const r = calcular([treino(0, reg('encolhimento', 4))]);
+      expect(estado(r, 'trapezio').pontos).toBeCloseTo(4, 5);
+      expect(estado(r, 'pescoco').pontos).toBeCloseTo(4 * PESO_SECUNDARIO, 5);
+    });
+
+    it('o exercício de pescoço continua valendo mais que o de trapézio', () => {
+      const direto = estado(calcular([treino(0, reg('pescoco', 4))]), 'pescoco');
+      const indireto = estado(calcular([treino(0, reg('encolhimento', 4))]), 'pescoco');
+      expect(direto.pontos).toBeGreaterThan(indireto.pontos);
+      expect(direto.pontos).toBeCloseTo(4, 5);
+    });
+
+    it('trapézio só como secundário (levantamento terra) não conta para o pescoço', () => {
+      const r = calcular([treino(0, reg('levantamento', 4))]);
+      expect(estado(r, 'pescoco').pontos).toBe(0);
+      expect(estado(r, 'trapezio').pontos).toBeCloseTo(4 * PESO_SECUNDARIO, 5);
+    });
+
+    it('o último treino "direto" do pescoço só vem de exercício de pescoço', () => {
+      const so = estado(calcular([treino(2, reg('encolhimento', 4))]), 'pescoco');
+      expect(so.pontos).toBeGreaterThan(0);
+      expect(so.ultimoTreino).toBeNull();
+      const com = estado(calcular([treino(5, reg('pescoco', 3)), treino(2, reg('encolhimento', 4))]), 'pescoco');
+      expect(com.ultimoTreino).toBe(atras(5));
+      expect(com.series7).toBe(3); // só as 3 séries de pescoço; as 4 de trapézio não entram
+    });
+
+    it('o exercício de trapézio aparece entre os que dão a cor do pescoço, como secundário', () => {
+      const lista = exerciciosFeitos([treino(0, reg('encolhimento', 4))], HOJE, exercicioDe, 'pescoco');
+      expect(lista.map((x) => [x.id, x.papel, x.series])).toEqual([['encolhimento', 'secundario', 4]]);
+    });
+
+    it('a lista para escolher o que treinar no pescoço continua só com exercícios de pescoço', () => {
+      const lista = exerciciosDoMusculo([BASE['encolhimento'], BASE['pescoco']], 'pescoco');
+      expect(lista.map((e) => e.id)).toEqual(['pescoco']);
+    });
+  });
+
   describe('calcularMusculos', () => {
     it('sem histórico, todos os músculos ficam zerados e na ordem de MUSCULOS', () => {
       const r = calcular([]);

@@ -5,7 +5,8 @@ import { deIso, dias } from './stats';
  * Quanto cada músculo foi trabalhado nos treinos recentes, para o mapa do corpo.
  *
  * Cada série feita conta para os músculos do exercício: 1 ponto para o principal e `PESO_SECUNDARIO` para os
- * secundários. O ponto vale menos quanto mais antigo o treino (cai pela metade a cada `MEIA_VIDA_DIAS`), então
+ * secundários (o trapézio, quando é o principal do exercício, também conta para o pescoço como secundário: ver
+ * `indiretas`). O ponto vale menos quanto mais antigo o treino (cai pela metade a cada `MEIA_VIDA_DIAS`), então
  * treinar várias vezes seguidas acumula e ficar semanas sem treinar esvazia. É uma estimativa simples de carga
  * recente, não uma medida de recuperação.
  */
@@ -24,6 +25,12 @@ export interface Musculo {
   curto: string;
   /** Músculos da base de exercícios (`primaryMuscles`/`secondaryMuscles`) que contam para este. */
   fontes: string[];
+  /**
+   * Músculos da base que, quando são o principal do exercício, contam para este com o peso de secundário: não é o
+   * mesmo que treinar o músculo direto, mas também não é nada. Ex.: o trapézio sai do crânio e da nuca, e o
+   * encolhimento exige o pescoço, que quase não tem exercício próprio na base.
+   */
+  indiretas?: string[];
 }
 
 /** Os músculos mostrados no mapa. Abdutores do quadril contam nos glúteos; dorsais e meio das costas formam uma região só. */
@@ -34,7 +41,7 @@ export const MUSCULOS: Musculo[] = [
   { id: 'triceps', nome: 'Tríceps', curto: 'Tríceps', fontes: ['triceps'] },
   { id: 'antebracos', nome: 'Antebraços', curto: 'Antebraço', fontes: ['forearms'] },
   { id: 'abdomen', nome: 'Abdômen', curto: 'Abdômen', fontes: ['abdominals'] },
-  { id: 'pescoco', nome: 'Pescoço', curto: 'Pescoço', fontes: ['neck'] },
+  { id: 'pescoco', nome: 'Pescoço', curto: 'Pescoço', fontes: ['neck'], indiretas: ['traps'] },
   { id: 'trapezio', nome: 'Trapézio', curto: 'Trapézio', fontes: ['traps'] },
   { id: 'costas', nome: 'Dorsais e meio das costas', curto: 'Costas', fontes: ['lats', 'middle back'] },
   { id: 'lombar', nome: 'Lombar', curto: 'Lombar', fontes: ['lower back'] },
@@ -85,7 +92,8 @@ function* seriesNoPeriodo(historico: Sessao[], base: Date, exercicioDe: (id: str
 
 function papelNoMusculo(e: Exercise, m: Musculo): 'principal' | 'secundario' | null {
   if (e.primaryMuscles.some((x) => m.fontes.includes(x))) return 'principal';
-  return e.secondaryMuscles.some((x) => m.fontes.includes(x)) ? 'secundario' : null;
+  if (e.secondaryMuscles.some((x) => m.fontes.includes(x))) return 'secundario';
+  return m.indiretas?.some((x) => e.primaryMuscles.includes(x)) ? 'secundario' : null;
 }
 
 export interface ExercicioFeito {
