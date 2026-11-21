@@ -29,7 +29,7 @@ import { ToastService } from '../core/toast.service';
             </div>
             <ul class="treinos">
               @for (f of b.fichas; track f.id) {
-                <li><a [routerLink]="['/ficha', f.id]">{{ f.nome }}</a> <span class="apoio">{{ f.itens.length }} exerc.</span></li>
+                <li><a [routerLink]="['/ficha', f.id]">{{ f.nome }}</a> <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span></li>
               }
             </ul>
             <div class="acoes">

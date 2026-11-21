@@ -184,7 +184,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
                   </button>
                   <span class="tag"><app-icon name="link" [size]="13" [stroke]="2.4" /> Conjugado</span>
                   <button type="button" class="gs" [attr.aria-expanded]="abertoChave('par:' + b.id)" (click)="alternarChave('par:' + b.id)">
-                    <span>desc. {{ b.descanso }} s após a rodada</span>
+                    <span>descanso de {{ b.descanso }} s após a rodada</span>
                     <app-icon [name]="abertoChave('par:' + b.id) ? 'up' : 'down'" [size]="14" [stroke]="2.6" />
                   </button>
                 </div>
@@ -687,10 +687,10 @@ export class PlanEditor {
     return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg`;
   }
 
-  /** "3 × 12 · 47,5 kg · desc. 60 s" (exercícios em minutos: "3 × 12 min · …"). */
+  /** "3 × 12 · 47,5 kg · descanso 60 s" (exercícios em minutos: "3 × 12 min · …"). */
   protected resumo(item: ItemFicha): string {
     const n = (v: number) => v.toLocaleString('pt-BR');
-    return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg · desc. ${n(item.descanso)} s`;
+    return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg · descanso ${n(item.descanso)} s`;
   }
 
   protected alternarMenu(indice: number, evento: Event): void {

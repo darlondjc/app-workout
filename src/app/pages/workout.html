@@ -1,5 +1,15 @@
 @if (ficha(); as f) {
-  @if (item(); as it) {
+  @if (!exerciciosProntos()) {
+    <section class="page">
+      @if (exerciciosComErro()) {
+        <h1 class="titulo">Sem conexão</h1>
+        <p class="apoio">Não foi possível carregar os exercícios. O que você já marcou neste treino está guardado.</p>
+        <button type="button" class="btn btn--claro" (click)="carregarExercicios()">Tentar de novo</button>
+      } @else {
+        <app-carregando texto="Carregando o treino…" />
+      }
+    </section>
+  } @else if (item(); as it) {
     <div class="treino">
       <header class="topo">
         <button type="button" class="sair" (click)="sair()" aria-label="Sair do treino">

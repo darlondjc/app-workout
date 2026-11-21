@@ -1,3 +1,4 @@
+import { Carregando } from '../core/spinner';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -37,7 +38,7 @@ function lerPreferencia(): boolean {
 
 @Component({
   selector: 'app-workout',
-  imports: [NgTemplateOutlet, RouterLink, Icon, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
+  imports: [NgTemplateOutlet, RouterLink, Icon, Carregando, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'fecharMenuMembro()' },
   templateUrl: './workout.html',
@@ -51,6 +52,12 @@ export class Workout {
   /** Resumo mostrado depois de gravar o treino; ao fechar, volta para o início. */
   protected readonly resumo = signal<DadosResumo | null>(null);
   private readonly ex = inject(ExerciseService);
+  /** Sem o arquivo de exercícios o treino não mostra nomes nem fotos: espera, ou avisa e deixa tentar de novo. */
+  protected readonly exerciciosProntos = this.ex.ready;
+  protected readonly exerciciosComErro = this.ex.error;
+  protected carregarExercicios(): void {
+    this.ex.carregar();
+  }
   private readonly toast = inject(ToastService);
   private readonly social = inject(SocialService);
   private readonly peso = inject(PesoService);
