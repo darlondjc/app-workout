@@ -29,6 +29,7 @@ describe('Library', () => {
             categoria: (c: string) => c,
             equipamento: (e: string) => e,
             imagem: () => '',
+            miniatura: () => '',
           },
         },
       ],

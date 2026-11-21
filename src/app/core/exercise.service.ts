@@ -127,6 +127,11 @@ export class ExerciseService {
     return `exercises/${id}/${indice}.jpg`;
   }
 
+  /** Miniatura em WebP (320 px) para listas e cartões; a foto inteira (`imagem`) fica para a tela do exercício. */
+  miniatura(id: string): string {
+    return `exercises/${id}/thumb.webp`;
+  }
+
   animacao(id: string): string {
     return `exercises/${id}/anim.webp`;
   }

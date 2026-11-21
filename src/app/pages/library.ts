@@ -98,7 +98,7 @@ const ESTADO = {
         @for (e of visiveis(); track e.id) {
           <li class="card linha">
             <a class="linha__link" [routerLink]="['/exercicio', e.id]">
-              <img class="thumb" [src]="ex.imagem(e.id, 0)" alt="" loading="lazy" decoding="async" />
+              <img class="thumb" [src]="ex.miniatura(e.id)" alt="" loading="lazy" decoding="async" />
               <span class="linha__texto">
                 <span class="linha__nome">{{ ex.nome(e) }}</span>
                 <span class="apoio">{{ subtitulo(e) }}</span>

@@ -108,7 +108,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
                 @for (it of f.itens; track it.exerciseId) {
                   <li class="card item">
                     <a class="item__foto" [routerLink]="['/exercicio', it.exerciseId]" aria-label="Ver instruções do exercício">
-                      <img [src]="ex.imagem(it.exerciseId, 0)" alt="" loading="lazy" />
+                      <img [src]="ex.miniatura(it.exerciseId)" alt="" loading="lazy" />
                     </a>
                     <span class="item__txt">
                       <a class="item__nome" [routerLink]="['/exercicio', it.exerciseId]">{{ nome(it.exerciseId) }}</a>

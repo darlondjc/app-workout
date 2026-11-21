@@ -334,7 +334,7 @@ export class MapaMuscular {
       return {
         id: f.id,
         nome: e ? this.ex.nome(e) : f.id,
-        imagem: this.ex.imagem(f.id, 0),
+        imagem: this.ex.miniatura(f.id),
         series: f.series,
         treinos: f.treinos,
         quando: haDias(f.diasDesdeUltimo),
@@ -346,7 +346,7 @@ export class MapaMuscular {
     const norm = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const q = norm(this.busca().trim());
     const todos = exerciciosDoMusculo(this.ex.exercises(), id)
-      .map((e) => ({ id: e.id, nome: this.ex.nome(e), equipamento: this.ex.equipamento(e.equipment), imagem: this.ex.imagem(e.id, 0) }))
+      .map((e) => ({ id: e.id, nome: this.ex.nome(e), equipamento: this.ex.equipamento(e.equipment), imagem: this.ex.miniatura(e.id) }))
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     const filtrados = q ? todos.filter((x) => norm(`${x.nome} ${x.equipamento}`).includes(q)) : todos;
     return { modo, feitos, temFeitos: feitos.length > 0, nome: this.nome(id).toLowerCase(), total: todos.length, itens: filtrados.slice(0, this.mostrados()), restantes: Math.max(0, filtrados.length - this.mostrados()) };
