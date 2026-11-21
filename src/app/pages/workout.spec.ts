@@ -89,6 +89,26 @@ describe('Workout — marcar séries em bloco', () => {
     expect(plans.historico().length).toBe(0);
   });
 
+  it('Esc fecha a pergunta mesmo com o foco fora dela, sem concluir o treino', () => {
+    proximo();
+    clicar(botao('Finalizar treino'));
+    expect(el().querySelector('[role="alertdialog"]')).not.toBeNull();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el().querySelector('[role="alertdialog"]')).toBeNull();
+    expect(plans.historico().length).toBe(0);
+  });
+
+  it('Esc fecha a folha "Sair do treino" e o treino continua em andamento', () => {
+    marcar(0);
+    clicar(el().querySelector('.sair'));
+    expect(el().querySelector('[role="alertdialog"]')!.textContent).toContain('Sair do treino?');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el().querySelector('[role="alertdialog"]')).toBeNull();
+    expect(plans.emAndamento()).not.toBeNull();
+  });
+
   it('"Marcar e finalizar" grava todas as séries de todos os exercícios, inclusive os não visitados', () => {
     proximo();
     clicar(botao('Finalizar treino'));

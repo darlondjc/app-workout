@@ -40,7 +40,7 @@ function lerPreferencia(): boolean {
   selector: 'app-workout',
   imports: [NgTemplateOutlet, RouterLink, Icon, Carregando, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'fecharMenuMembro()' },
+  host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'aoApertarEsc()' },
   templateUrl: './workout.html',
   styleUrls: ['./workout.scss', './workout-conjugado.scss'],
 })
@@ -602,6 +602,13 @@ export class Workout {
   protected alternarMenuMembro(i: number, evento: Event): void {
     evento.stopPropagation();
     this.menuMembro.set(this.menuMembro() === i ? null : i);
+  }
+
+  /** Esc fecha o que estiver aberto, mesmo com o foco fora da folha (ele fica no botão que a abriu). */
+  protected aoApertarEsc(): void {
+    if (this.confirmandoSaida()) this.confirmandoSaida.set(false);
+    else if (this.perguntandoFaltantes()) this.perguntandoFaltantes.set(false);
+    else this.fecharMenuMembro();
   }
 
   protected fecharMenuMembro(): void {
