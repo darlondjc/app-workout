@@ -1,3 +1,4 @@
+import { Esqueleto } from '../core/esqueleto';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ExerciseService, GRUPOS } from '../core/exercise.service';
@@ -5,7 +6,6 @@ import { DiaPersonalizado, diaValido, gerarFichas, nomeDoDia } from '../core/fic
 import { Icon } from '../core/icon';
 import { NavegacaoService } from '../core/navegacao.service';
 import { PlanService } from '../core/plan.service';
-import { Carregando } from '../core/spinner';
 import { Nivel } from '../core/suggestion';
 import { ToastService } from '../core/toast.service';
 
@@ -14,7 +14,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
 
 @Component({
   selector: 'app-custom-plan',
-  imports: [RouterLink, Icon, Carregando],
+  imports: [Esqueleto, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -29,7 +29,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
           <p class="apoio">Não foi possível carregar os exercícios.</p>
           <button type="button" class="btn btn--escuro" (click)="ex.carregar()">Tentar de novo</button>
         } @else {
-          <app-carregando texto="Carregando exercícios…" />
+          <app-esqueleto modelo="formulario" texto="Carregando exercícios…" />
         }
       } @else if (!resultado()) {
         <fieldset>

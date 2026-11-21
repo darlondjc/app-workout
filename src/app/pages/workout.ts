@@ -1,4 +1,4 @@
-import { Carregando } from '../core/spinner';
+import { Esqueleto } from '../core/esqueleto';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -38,7 +38,7 @@ function lerPreferencia(): boolean {
 
 @Component({
   selector: 'app-workout',
-  imports: [NgTemplateOutlet, RouterLink, Icon, Carregando, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
+  imports: [NgTemplateOutlet, RouterLink, Icon, Esqueleto, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'aoApertarEsc()' },
   templateUrl: './workout.html',

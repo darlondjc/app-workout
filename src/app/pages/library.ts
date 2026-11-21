@@ -1,3 +1,4 @@
+import { Esqueleto } from '../core/esqueleto';
 import { BarraTopo } from '../core/barra-topo';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NavegacaoService } from '../core/navegacao.service';
@@ -5,7 +6,6 @@ import { RouterLink } from '@angular/router';
 import { Exercise } from '../core/models';
 import { ExerciseService, FILTRO_CARDIO, GRUPOS } from '../core/exercise.service';
 import { Icon } from '../core/icon';
-import { Carregando } from '../core/spinner';
 import { FavoritosService } from '../core/favoritos.service';
 import { PlanService } from '../core/plan.service';
 import { ToastService } from '../core/toast.service';
@@ -26,7 +26,7 @@ const ESTADO = {
 
 @Component({
   selector: 'app-library',
-  imports: [RouterLink, BarraTopo, Icon, Carregando],
+  imports: [Esqueleto, RouterLink, BarraTopo, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -140,7 +140,7 @@ const ESTADO = {
               <button type="button" class="btn btn--escuro" (click)="ex.carregar()">Tentar de novo</button>
             </li>
           } @else {
-            <li><app-carregando texto="Carregando exercícios…" /></li>
+            <li><app-esqueleto modelo="lista" [quantidade]="6" texto="Carregando exercícios…" /></li>
           }
         }
       </ul>
