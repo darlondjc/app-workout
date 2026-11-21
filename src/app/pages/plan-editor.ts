@@ -309,11 +309,13 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
       border-bottom: 2px solid transparent;
       background: transparent;
       padding: 2px 0;
+      min-height: 44px;
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: 30px;
+      font-size: clamp(22px, 7vw, 30px);
       line-height: 1.1;
       letter-spacing: -0.5px;
+      text-overflow: ellipsis;
     }
     .nome:hover,
     .nome:focus {
@@ -330,8 +332,8 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
     }
     .barra-btn {
       flex: none;
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       border: 0;
       border-radius: 50%;
       background: var(--soft);
@@ -372,7 +374,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
     }
     .alca {
       flex: none;
-      width: 24px;
+      width: 44px;
       height: 44px;
       padding: 0;
       border: 0;
@@ -433,7 +435,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
       flex: none;
     }
     .item .btn-icone {
-      width: 36px;
+      width: 44px;
       height: 44px;
       border-radius: 10px;
     }

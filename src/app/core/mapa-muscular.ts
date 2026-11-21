@@ -218,7 +218,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .titulo { margin: 0; font-size: 14px; font-weight: 500; color: var(--muted); }
     .lados { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--soft); }
-    .lados button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; }
+    .lados button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; }
     .lados button[aria-pressed='true'] { background: var(--ink-bg); color: var(--accent); }
 
     .palco { perspective: 1000px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
@@ -271,7 +271,7 @@ const NIVEIS_LEGENDA = [0, 0.18, 0.4, 0.68, 1];
     .linha__txt { display: flex; flex-direction: column; min-width: 0; font-size: 14px; line-height: 1.25; }
     .linha__txt .apoio { font-size: 12px; }
 
-    .como summary { cursor: pointer; list-style: none; font-size: 13px; font-weight: 600; color: var(--muted); min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .como summary { cursor: pointer; list-style: none; font-size: 13px; font-weight: 600; color: var(--muted); min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .como summary::-webkit-details-marker { display: none; }
     .como summary::after { content: ''; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform 0.2s; }
     .como[open] summary::after { transform: rotate(-135deg); }

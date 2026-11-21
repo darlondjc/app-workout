@@ -180,7 +180,7 @@ import { Carregando } from '../core/spinner';
     .secao-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
     .secao-topo--amigos { margin-top: 14px; }
     .secao { margin: 0; font-size: 20px; }
-    .novo { position: relative; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--ink-bg); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+    .novo { position: relative; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--ink-bg); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
     .sub { font-size: 18px; margin: 0 0 8px; }
     .rot { font-size: 15px; font-weight: 500; color: var(--muted); }
     .criar { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -213,7 +213,7 @@ import { Carregando } from '../core/spinner';
     .amigo__seta { flex: none; color: var(--muted); }
     .pedido { padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .texto { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; font-size: 14px; }
-    .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
+    .mini { min-height: 44px; padding: 0 12px; font-size: 14px; flex: none; }
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
     .acoes-topo { display: inline-flex; gap: 8px; }
     .erro { color: var(--perigo); font-size: 14px; }

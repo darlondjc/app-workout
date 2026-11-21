@@ -146,7 +146,7 @@ import { EventoCard } from './evento-card';
     .mais { flex: none; min-width: 52px; margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); text-decoration: none; padding: 4px; border-radius: 14px; }
     .mais app-icon { width: 36px; height: 36px; border-radius: 50%; border: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: center; }
     .fim-lista { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0 16px; min-height: 64px; }
-    .fim-lista .btn { min-height: 40px; font-size: 14px; }
+    .fim-lista .btn { min-height: 44px; font-size: 14px; }
     .reacao { padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
     .reacao p { margin: 0; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
     .quando { margin-left: 6px; font-size: 12px; }

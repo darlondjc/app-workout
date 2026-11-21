@@ -99,7 +99,7 @@ import { baseDoApp } from './group-invite';
     .campo::placeholder { letter-spacing: 0.03em; }
     .pessoa { padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
     .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mini { min-height: 40px; padding: 0 14px; font-size: 14px; flex: none; }
+    .mini { min-height: 44px; padding: 0 14px; font-size: 14px; flex: none; }
     .erro { color: var(--perigo); }
     button:disabled { opacity: 0.6; }
   `,

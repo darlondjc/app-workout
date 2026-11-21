@@ -206,7 +206,7 @@ function lerDispensadas(): string[] {
     .rot { font-size: 14px; font-weight: 500; color: var(--muted); margin: 0; }
     .meta__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .passo { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
-    .passo button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font: inherit; font-size: 18px; }
+    .passo button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font: inherit; font-size: 18px; }
     .passo span { min-width: 28px; text-align: center; }
     .grande { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1; margin: 0; }
     .grande small { font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--muted); }
@@ -215,16 +215,16 @@ function lerDispensadas(): string[] {
     .insights { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
     .insight { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--card); border-left: 4px solid var(--line); font-size: 14px; line-height: 1.35; }
     .insight__txt { flex: 1; min-width: 0; }
-    .insight__x { flex: none; width: 32px; height: 32px; margin: -4px -8px -4px 0; border: 0; border-radius: 50%; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+    .insight__x { flex: none; width: 44px; height: 44px; margin: -4px -8px -4px 0; border: 0; border-radius: 50%; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
     .insight--conquista { border-left-color: var(--accent); background: var(--accent-soft); }
     .insight--incentivo { border-left-color: var(--ink); }
     .cal__topo { display: flex; align-items: center; justify-content: space-between; }
     .mes { font-family: var(--font-display); font-size: 18px; margin: 0; }
-    .seta { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--soft); display: flex; align-items: center; justify-content: center; color: var(--ink); }
+    .seta { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--soft); display: flex; align-items: center; justify-content: center; color: var(--ink); }
     .seta:disabled { opacity: 0.35; }
     .cal__semana, .cal__grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px 4px; text-align: center; }
     .cal__semana { font-size: 12px; color: var(--muted); }
-    .cel { width: 36px; height: 36px; justify-self: center; border-radius: 50%; border: 1.5px solid transparent; background: transparent; font: inherit; font-size: 14px; color: var(--ink); padding: 0; }
+    .cel { width: 44px; height: 44px; justify-self: center; border-radius: 50%; border: 1.5px solid transparent; background: transparent; font: inherit; font-size: 14px; color: var(--ink); padding: 0; }
     .cel--vazia { pointer-events: none; }
     .cel.hoje { border-color: var(--ink); }
     .cel.feito { background: var(--ink-bg); color: var(--accent); font-weight: 700; }
@@ -233,7 +233,7 @@ function lerDispensadas(): string[] {
     .ponto { width: 10px; height: 10px; border-radius: 50%; background: var(--progresso); flex: none; }
     .dia-detalhe { border-top: 1px solid var(--soft); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
     .sessao { display: flex; flex-direction: column; gap: 2px; }
-    .ver-treino { align-self: flex-start; min-height: 36px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent-ink); }
+    .ver-treino { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent-ink); }
     .numeros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .num--largo { grid-column: 1 / -1; }
     .num { gap: 2px; }

@@ -38,7 +38,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
             <input type="text" inputmode="decimal" autocomplete="off" [attr.aria-label]="m.rotulo + ' (' + m.unidade + ')'" [placeholder]="exemplo(m.chave)" [value]="texto()[m.chave]" (input)="digitou(m.chave, $event)" />
           </label>
         }
-        <label class="campo">
+        <label class="campo campo--dia">
           <span class="apoio">Dia</span>
           <span class="data">
             <span class="data__texto">{{ textoDia() }}</span>
@@ -78,7 +78,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
     .atuais dd { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 20px; }
     .atuais small { font-family: var(--font); font-weight: 500; color: var(--muted); font-size: 12px; }
     .form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-    .form .btn { grid-column: 1 / -1; }
+    .form .btn, .campo--dia { grid-column: 1 / -1; }
     .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .campo input:not([type='date']) {
       display: block;

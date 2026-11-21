@@ -124,7 +124,7 @@ const METRICAS: { valor: Metrica; rotulo: string; unidade: string; ajuda: string
       background: var(--soft);
     }
     .periodos button {
-      min-height: 32px;
+      min-height: 44px;
       padding: 0 12px;
       border: 0;
       border-radius: 999px;

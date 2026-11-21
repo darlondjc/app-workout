@@ -34,7 +34,7 @@ import { Progress } from './progress';
     .medalhas { display: flex; flex-direction: column; gap: 10px; }
     .medalhas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .sub { font-size: 18px; margin: 0; }
-    .ver-todas { min-height: 32px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--accent-ink); }
+    .ver-todas { min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--accent-ink); }
   `,
 })
 export class PerfilStats {
