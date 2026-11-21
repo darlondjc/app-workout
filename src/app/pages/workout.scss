@@ -65,8 +65,8 @@
   border: 0;
   color: inherit;
   padding: 0;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--dark2);
   display: flex;
@@ -169,7 +169,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 8px 0 12px;
   border-radius: 999px;
   background: rgba(200, 236, 58, 0.14);
@@ -230,7 +230,7 @@ button.ver {
 }
 .sugestao__botao {
   flex: none;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 14px;
   border: 0;
   border-radius: 999px;
@@ -242,8 +242,8 @@ button.ver {
 }
 .sugestao__fechar {
   flex: none;
-  width: 30px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -407,6 +407,28 @@ button.ver {
   width: 36px;
   height: 36px;
 }
+/* O botão se vê com 36 px, mas a área de toque é de 44 px: o número da carga (ex.: "62,5") precisa do espaço no celular. */
+.stp__btn::after,
+.vbox__btn::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.stp__btn,
+.vbox__btn {
+  position: relative;
+}
+@media (max-width: 400px) {
+  .stp {
+    padding-inline: 6px;
+  }
+  .stp__linha {
+    gap: 2px;
+  }
+  .valor--grande {
+    font-size: 28px;
+  }
+}
 .stp__btn:active,
 .vbox__btn:active {
   transform: scale(0.94);
@@ -414,7 +436,7 @@ button.ver {
 .valor {
   width: 100%;
   min-width: 0;
-  height: 40px;
+  height: 44px;
   border-radius: 10px;
   border: 1px solid #3a4046;
   background: #14171a;
@@ -427,7 +449,7 @@ button.ver {
   border: 0;
   background: transparent;
   padding: 0;
-  height: 40px;
+  height: 44px;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 32px;
@@ -471,7 +493,7 @@ button.ver {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 14px;
   white-space: nowrap;
   border-radius: 999px;
@@ -663,7 +685,7 @@ button.ver {
   letter-spacing: 0.04em;
 }
 .nota-botao {
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 14px;
   white-space: nowrap;
   border: 1px solid #3a4046;
@@ -728,7 +750,7 @@ button.ver {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 40px;
+  min-height: 44px;
   cursor: pointer;
   font-size: 14px;
   color: #d5dad6;

@@ -178,17 +178,17 @@ const JANELA_FOTO_MS = 24 * 3600 * 1000;
     .foto__x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; display: flex; align-items: center; justify-content: center; }
     .erro-foto { margin: 0; font-size: 13px; color: var(--perigo); }
     .acoes { display: flex; gap: 6px; }
-    .acao { min-height: 40px; min-width: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    .acao { min-height: 44px; min-width: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
     .previa { margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid var(--line); background: var(--soft); border-radius: 0 10px 10px 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
     .acao--texto { margin-left: auto; font-weight: 600; font-size: 13px; }
     .acao.ativa { background: var(--ink-bg); color: var(--accent); border-color: var(--ink); }
     .comentarios { border-top: 1px solid var(--soft); padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
     .comentario { display: flex; align-items: flex-start; gap: 8px; }
     .comentario p { margin: 0; flex: 1; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
-    .apagar { width: 32px; height: 32px; border: 0; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+    .apagar { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
     .novo { display: flex; gap: 8px; }
-    .novo input { flex: 1; min-width: 0; min-height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; background: var(--card); }
-    .novo .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+    .novo input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; background: var(--card); }
+    .novo .btn { min-height: 44px; padding: 0 14px; font-size: 14px; }
   `,
 })
 export class EventoCard {

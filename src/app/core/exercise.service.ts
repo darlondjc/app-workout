@@ -38,7 +38,12 @@ export class ExerciseService {
   readonly exercises = signal<Exercise[]>([]);
   readonly labels = signal<Labels | null>(null);
   readonly names = signal<Record<string, string>>({});
-  private readonly passos = signal<Record<string, string[]>>({});
+  /** Passos em português e em inglês: só são baixados quando a tela de um exercício pede (são ~700 KB). */
+  private readonly passos = signal<Record<string, string[]> | null>(null);
+  private readonly passosEn = signal<Record<string, string[]> | null>(null);
+  private baixandoPassos = false;
+  private baixandoPassosEn = false;
+  private falhouPassos = false;
   readonly ready = signal(false);
   readonly error = signal(false);
 
@@ -74,13 +79,11 @@ export class ExerciseService {
       exercises: this.http.get<Exercise[]>('data/exercises.json'),
       labels: this.http.get<Labels>('data/i18n/pt-BR.labels.json'),
       names: this.http.get<Record<string, string>>('data/i18n/pt-BR.names.json'),
-      passos: this.http.get<Record<string, string[]>>('data/i18n/pt-BR.instructions.json'),
     }).subscribe({
-      next: ({ exercises, labels, names, passos }) => {
+      next: ({ exercises, labels, names }) => {
         this.exercises.set(exercises);
         this.labels.set(labels);
         this.names.set(names);
-        this.passos.set(passos);
         this.ready.set(true);
       },
       error: () => this.error.set(true),
@@ -95,10 +98,46 @@ export class ExerciseService {
     return this.names()[e.id] ?? e.name;
   }
 
-  /** Passos em português; se faltar tradução, devolve o original em inglês. */
-  instrucoes(e: Exercise): { passos: string[]; traduzido: boolean } {
-    const pt = this.passos()[e.id];
-    return pt?.length ? { passos: pt, traduzido: true } : { passos: e.instructions, traduzido: false };
+  /** Baixa os passos do exercício (português; o inglês só se faltar a tradução). Chame ao abrir a tela do exercício. */
+  carregarInstrucoes(id: string): void {
+    const pt = this.passos();
+    if (pt === null) {
+      if (this.baixandoPassos) return;
+      this.baixandoPassos = true;
+      this.http.get<Record<string, string[]>>('data/i18n/pt-BR.instructions.json').subscribe({
+        next: (d) => {
+          this.passos.set(d);
+          this.baixandoPassos = false;
+          if (!d[id]?.length) this.carregarInstrucoes(id);
+        },
+        error: () => {
+          // Sem rede e sem cópia guardada: a tela fica sem passos (sem aviso de idioma) até o app ser recarregado.
+          this.baixandoPassos = false;
+          this.falhouPassos = true;
+          this.passos.set({});
+          this.passosEn.set({});
+        },
+      });
+      return;
+    }
+    if (pt[id]?.length || this.passosEn() !== null || this.baixandoPassosEn) return;
+    this.baixandoPassosEn = true;
+    this.http.get<Record<string, string[]>>('data/i18n/en.instructions.json').subscribe({
+      next: (d) => this.passosEn.set(d),
+      error: () => this.passosEn.set({}),
+      complete: () => (this.baixandoPassosEn = false),
+    });
+  }
+
+  /** Passos em português; se faltar tradução, devolve o original em inglês. `carregando` enquanto o arquivo não chegou. */
+  instrucoes(e: Exercise): { passos: string[]; traduzido: boolean; carregando?: boolean } {
+    const pt = this.passos();
+    if (pt === null) return { passos: [], traduzido: true, carregando: true };
+    if (this.falhouPassos) return { passos: [], traduzido: true };
+    if (pt[e.id]?.length) return { passos: pt[e.id], traduzido: true };
+    const en = this.passosEn();
+    if (en === null && !e.instructions?.length) return { passos: [], traduzido: false, carregando: true };
+    return { passos: e.instructions?.length ? e.instructions : (en?.[e.id] ?? []), traduzido: false };
   }
 
   musculo(chave: string): string {
@@ -125,6 +164,11 @@ export class ExerciseService {
 
   imagem(id: string, indice: 0 | 1): string {
     return `exercises/${id}/${indice}.jpg`;
+  }
+
+  /** Miniatura em WebP (320 px) para listas e cartões; a foto inteira (`imagem`) fica para a tela do exercício. */
+  miniatura(id: string): string {
+    return `exercises/${id}/thumb.webp`;
   }
 
   animacao(id: string): string {

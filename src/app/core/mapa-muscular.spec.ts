@@ -40,6 +40,7 @@ function montar(historico: Sessao[]) {
           equipamento: () => 'Halteres',
           nivel: () => 'Iniciante',
           imagem: (id: string) => `exercises/${id}/0.jpg`,
+          miniatura: (id: string) => `exercises/${id}/thumb.webp`,
         },
       },
     ],

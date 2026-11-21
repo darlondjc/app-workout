@@ -159,8 +159,8 @@ describe('PlanEditor — card do exercício', () => {
   });
 
   it('fechado, cada exercício mostra só o resumo, sem os campos', () => {
-    expect(resumo(0)).toBe('3 × 12 · 47,5 kg · desc. 60 s');
-    expect(resumo(1)).toBe('4 × 10 · 0 kg · desc. 90 s');
+    expect(resumo(0)).toBe('3 × 12 · 47,5 kg · descanso 60 s');
+    expect(resumo(1)).toBe('4 × 10 · 0 kg · descanso 90 s');
     expect(el().querySelectorAll('.campos').length).toBe(0);
   });
 
@@ -180,7 +180,7 @@ describe('PlanEditor — card do exercício', () => {
     carga.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     expect(plans.get(fichaId)!.itens[0].carga).toBe(50);
-    expect(resumo(0)).toBe('3 × 12 · 50 kg · desc. 60 s');
+    expect(resumo(0)).toBe('3 × 12 · 50 kg · descanso 60 s');
   });
 
   it('nome e foto continuam levando às instruções', () => {
@@ -281,7 +281,7 @@ describe('PlanEditor — exercícios conjugados', () => {
   it('o descanso do par fica no cabeçalho do bloco e é o do segundo exercício', () => {
     abrir([item('rosca', { par: 'p', descanso: 30 }), item('triceps', { par: 'p', descanso: 90 })]);
     const resumo = el().querySelector('.gs')!;
-    expect(resumo.textContent).toContain('desc. 90 s após a rodada');
+    expect(resumo.textContent).toContain('descanso de 90 s após a rodada');
     clicar(resumo);
     const campo = el().querySelector('.campos--par input') as HTMLInputElement;
     campo.value = '120';
@@ -289,7 +289,7 @@ describe('PlanEditor — exercícios conjugados', () => {
     fixture.detectChanges();
     expect(plans.get(fichaId)!.itens[1].descanso).toBe(120);
     expect(plans.get(fichaId)!.itens[0].descanso).toBe(30);
-    expect(el().querySelector('.gs')!.textContent).toContain('desc. 120 s após a rodada');
+    expect(el().querySelector('.gs')!.textContent).toContain('descanso de 120 s após a rodada');
   });
 
   it('cada exercício do par tem as suas séries, reps e carga', () => {

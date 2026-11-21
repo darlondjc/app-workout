@@ -1,5 +1,15 @@
 @if (ficha(); as f) {
-  @if (item(); as it) {
+  @if (!exerciciosProntos()) {
+    <section class="page">
+      @if (exerciciosComErro()) {
+        <h1 class="titulo">Sem conexão</h1>
+        <p class="apoio">Não foi possível carregar os exercícios. O que você já marcou neste treino está guardado.</p>
+        <button type="button" class="btn btn--claro" (click)="carregarExercicios()">Tentar de novo</button>
+      } @else {
+        <app-carregando texto="Carregando o treino…" />
+      }
+    </section>
+  } @else if (item(); as it) {
     <div class="treino">
       <header class="topo">
         <button type="button" class="sair" (click)="sair()" aria-label="Sair do treino">
@@ -17,7 +27,7 @@
 
       @if (confirmandoSaida()) {
         <button type="button" class="fundo" tabindex="-1" aria-label="Fechar e continuar treinando" (click)="confirmandoSaida.set(false)"></button>
-        <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="saida-titulo" aria-describedby="saida-texto" (keydown.escape)="confirmandoSaida.set(false)">
+        <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="saida-titulo" aria-describedby="saida-texto">
           <h2 id="saida-titulo" class="folha__titulo">Sair do treino?</h2>
           <p id="saida-texto" class="folha__texto">Pausando, o treino fica guardado e você continua de onde parou. Cancelando, o que você marcou neste treino é descartado.</p>
           <button type="button" class="btn btn--destaque" (click)="pausar()">Pausar treino</button>
@@ -28,7 +38,7 @@
 
       @if (perguntandoFaltantes()) {
         <button type="button" class="fundo" tabindex="-1" aria-label="Voltar ao treino" (click)="perguntandoFaltantes.set(false)"></button>
-        <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="falta-titulo" aria-describedby="falta-texto" (keydown.escape)="perguntandoFaltantes.set(false)">
+        <div class="folha" role="alertdialog" aria-modal="true" aria-labelledby="falta-titulo" aria-describedby="falta-texto">
           <h2 id="falta-titulo" class="folha__titulo">Marcar o que falta como feito?</h2>
           <p id="falta-texto" class="folha__texto">
             {{ faltantes() === 1 ? 'Falta 1 série' : 'Faltam ' + faltantes() + ' séries' }} sem marcar. Posso marcar

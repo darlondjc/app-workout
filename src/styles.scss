@@ -275,7 +275,8 @@ p {
 
 .chip {
   flex: none;
-  min-height: 40px;
+  min-height: 44px;
+  min-width: 44px;
   padding: 0 16px;
   border-radius: 999px;
   border: none;
@@ -333,7 +334,7 @@ p {
 }
 
 .select {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   border-radius: 999px;
   border: 1.5px solid var(--line);

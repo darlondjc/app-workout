@@ -3,6 +3,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { ExerciseService } from '../core/exercise.service';
 import { PlanService } from '../core/plan.service';
 import { SocialService } from '../core/social.service';
 import { TelaLigada } from '../core/tela-ligada';
@@ -43,6 +44,8 @@ describe('Workout — marcar séries em bloco', () => {
         { provide: SocialService, useValue: { ativo: signal(false) } },
       ],
     });
+    // Os testes não baixam o arquivo de exercícios; o treino só aparece com ele carregado.
+    TestBed.inject(ExerciseService).ready.set(true);
     plans = TestBed.inject(PlanService);
     spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     const [ficha] = plans.criarComItens([
@@ -84,6 +87,26 @@ describe('Workout — marcar séries em bloco', () => {
     expect(dialogo.textContent).toContain('Marcar o que falta como feito?');
     expect(dialogo.textContent).toContain('Faltam 5 séries');
     expect(plans.historico().length).toBe(0);
+  });
+
+  it('Esc fecha a pergunta mesmo com o foco fora dela, sem concluir o treino', () => {
+    proximo();
+    clicar(botao('Finalizar treino'));
+    expect(el().querySelector('[role="alertdialog"]')).not.toBeNull();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el().querySelector('[role="alertdialog"]')).toBeNull();
+    expect(plans.historico().length).toBe(0);
+  });
+
+  it('Esc fecha a folha "Sair do treino" e o treino continua em andamento', () => {
+    marcar(0);
+    clicar(el().querySelector('.sair'));
+    expect(el().querySelector('[role="alertdialog"]')!.textContent).toContain('Sair do treino?');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el().querySelector('[role="alertdialog"]')).toBeNull();
+    expect(plans.emAndamento()).not.toBeNull();
   });
 
   it('"Marcar e finalizar" grava todas as séries de todos os exercícios, inclusive os não visitados', () => {
@@ -629,6 +652,7 @@ describe('Workout — tela ligada', () => {
         { provide: TelaLigada, useValue: tela },
       ],
     });
+    TestBed.inject(ExerciseService).ready.set(true);
     plans = TestBed.inject(PlanService);
     spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     const [ficha] = plans.criarComItens([{ nome: 'Ficha A', itens: [{ exerciseId: 'x1', series: 1, reps: 10, carga: 20, descanso: 60 }] }]);
@@ -688,6 +712,7 @@ describe('Workout — exercícios conjugados', () => {
     TestBed.configureTestingModule({
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: SocialService, useValue: { ativo: signal(false) } }],
     });
+    TestBed.inject(ExerciseService).ready.set(true);
     plans = TestBed.inject(PlanService);
     spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     [{ id: fichaId }] = plans.criarComItens([{ nome: 'Braços', itens: itens as never }]);
@@ -919,5 +944,28 @@ describe('Workout — exercícios conjugados', () => {
     clicar(botao('Usar 42 kg'));
     expect(estado().series[0].map((s) => s.carga)).toEqual([42, 42, 42]);
     expect(el().querySelector('.sugestao')).toBeNull();
+  });
+
+  describe('exercícios ainda não carregados', () => {
+    it('mostra "Carregando o treino…" em vez dos códigos dos exercícios', () => {
+      abrir([item('rosca'), item('martelo')]);
+      const ex = TestBed.inject(ExerciseService);
+      ex.ready.set(false);
+      fixture.detectChanges();
+      expect(el().textContent).toContain('Carregando o treino…');
+      expect(el().textContent).not.toContain('rosca');
+    });
+
+    it('avisa a falta de conexão e deixa tentar de novo', () => {
+      abrir([item('rosca'), item('martelo')]);
+      const ex = TestBed.inject(ExerciseService);
+      ex.ready.set(false);
+      ex.error.set(true);
+      const carregar = spyOn(ex, 'carregar');
+      fixture.detectChanges();
+      expect(el().textContent).toContain('Sem conexão');
+      clicar([...el().querySelectorAll('button')].find((b) => b.textContent?.includes('Tentar de novo')) as HTMLElement);
+      expect(carregar).toHaveBeenCalled();
+    });
   });
 });

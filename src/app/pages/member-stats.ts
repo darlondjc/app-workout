@@ -151,20 +151,20 @@ type Aba = 'timeline' | 'estatisticas';
     .vazio { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
     .pedir { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
     .pedir .apoio { margin: 0; }
-    .mini { min-height: 40px; padding: 0 14px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+    .mini { min-height: 44px; padding: 0 14px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
     .linha-botoes { display: flex; gap: 8px; }
     .sub { font-size: 18px; margin: 0; }
     .medalhas { display: flex; flex-direction: column; gap: 10px; }
     .medalhas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .ver-todas { min-height: 32px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--accent-ink); }
+    .ver-todas { min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--accent-ink); }
     .desfazer { border: 0; background: none; font: inherit; color: var(--perigo); min-height: 44px; }
     .fim-lista { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0 16px; min-height: 64px; }
-    .fim-lista .btn { min-height: 40px; font-size: 14px; }
+    .fim-lista .btn { min-height: 44px; font-size: 14px; }
     /* Abas sempre à vista, coladas acima da barra de navegação (73 px + a área segura do aparelho). Ficam coladas na rolagem (sticky) em vez de fixas: com pouco conteúdo ficam no pé da tela e no fim da página sentam no lugar delas, sem cobrir nada (11 px = folga que o <main> deixa acima da barra de navegação). */
     .abas-fixas { position: sticky; z-index: 9; bottom: calc(73px + env(safe-area-inset-bottom, 0px)); margin: auto -20px -11px; box-sizing: border-box; padding: 6px 20px; background: color-mix(in srgb, var(--card) 96%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); box-shadow: 0 -1px 0 var(--line); }
     /* Dois botões separados, cada um com o seu fundo e um vão entre eles. */
     .abas-sociais { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
-    .abas-sociais button { min-height: 38px; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; background: var(--soft); font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .abas-sociais button { min-height: 44px; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; background: var(--soft); font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
     /* A aba escolhida fica escura, com letra branca: aparece bem mesmo de relance. */
     .abas-sociais button[aria-selected='true'] { background: var(--ink-bg); color: #fff; }
     .erro { color: var(--perigo); font-size: 14px; }

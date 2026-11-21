@@ -57,7 +57,7 @@ export function montarLinhas(s: Sessao, nomeDe: (id: string) => string): LinhaEx
       <section class="ex">
         <h4 class="ex__titulo">
           <button type="button" class="ex__topo" aria-haspopup="dialog" [attr.aria-label]="'Ver imagem de ' + r.nome" (click)="verExercicio.emit(r.id)">
-            <img class="ex__img" [src]="ex.imagem(r.id, 0)" alt="" loading="lazy" />
+            <img class="ex__img" [src]="ex.miniatura(r.id)" alt="" loading="lazy" />
             <span class="ex__nome">{{ r.nome }}</span>
           </button>
         </h4>

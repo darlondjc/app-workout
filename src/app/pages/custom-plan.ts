@@ -108,7 +108,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
                 @for (it of f.itens; track it.exerciseId) {
                   <li class="card item">
                     <a class="item__foto" [routerLink]="['/exercicio', it.exerciseId]" aria-label="Ver instruções do exercício">
-                      <img [src]="ex.imagem(it.exerciseId, 0)" alt="" loading="lazy" />
+                      <img [src]="ex.miniatura(it.exerciseId)" alt="" loading="lazy" />
                     </a>
                     <span class="item__txt">
                       <a class="item__nome" [routerLink]="['/exercicio', it.exerciseId]">{{ nome(it.exerciseId) }}</a>
@@ -153,7 +153,7 @@ const dia = (): DiaPersonalizado => ({ grupos: [], cardio: false, nome: '' });
     .bloco { display: flex; flex-direction: column; gap: 8px; }
     .bloco__topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .bloco__topo h3 { font-family: var(--font-display); font-size: 16px; margin: 0; min-width: 0; }
-    .btn-mini { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--line); background: transparent; font: inherit; font-size: 13px; font-weight: 600; }
+    .btn-mini { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--line); background: transparent; font: inherit; font-size: 13px; font-weight: 600; }
     .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
     .item { display: flex; align-items: center; gap: 12px; padding: 10px; }
     .item__foto img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: var(--img-fundo); display: block; }

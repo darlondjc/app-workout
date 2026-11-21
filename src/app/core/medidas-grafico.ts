@@ -64,10 +64,10 @@ const PERIODOS: { valor: PeriodoMedida; rotulo: string }[] = [
     .topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .rot { font-size: 14px; font-weight: 500; color: var(--muted); margin: 0; }
     .periodos { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--soft); }
-    .periodos button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font-size: 13px; font-weight: 700; color: var(--muted); }
+    .periodos button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font-size: 13px; font-weight: 700; color: var(--muted); }
     .periodos button[aria-checked='true'] { background: var(--ink-bg); color: var(--accent); }
     .escolha { display: flex; flex-wrap: wrap; gap: 6px; }
-    .escolha button { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; font-size: 13px; font-weight: 700; color: var(--muted); }
+    .escolha button { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; font-size: 13px; font-weight: 700; color: var(--muted); }
     .escolha button[aria-checked='true'] { background: var(--ink-bg); border-color: var(--ink-bg); color: var(--accent); }
     .grande { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1; margin: 0; }
     .grande small { font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--muted); }

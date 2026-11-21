@@ -114,7 +114,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
                   </button>
                   @if (l.ex) {
                     <a [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
-                      <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
+                      <img class="mini" [src]="ex.miniatura(l.ex.id)" alt="" loading="lazy" />
                     </a>
                   }
                   <div class="item__texto">
@@ -184,7 +184,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
                   </button>
                   <span class="tag"><app-icon name="link" [size]="13" [stroke]="2.4" /> Conjugado</span>
                   <button type="button" class="gs" [attr.aria-expanded]="abertoChave('par:' + b.id)" (click)="alternarChave('par:' + b.id)">
-                    <span>desc. {{ b.descanso }} s após a rodada</span>
+                    <span>descanso de {{ b.descanso }} s após a rodada</span>
                     <app-icon [name]="abertoChave('par:' + b.id) ? 'up' : 'down'" [size]="14" [stroke]="2.6" />
                   </button>
                 </div>
@@ -202,7 +202,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
                         <span class="rot">{{ b.letra }}{{ k + 1 }}</span>
                         @if (m.ex) {
                           <a [routerLink]="['/exercicio', m.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
-                            <img class="mini mini--par" [src]="ex.imagem(m.ex.id, 0)" alt="" loading="lazy" />
+                            <img class="mini mini--par" [src]="ex.miniatura(m.ex.id)" alt="" loading="lazy" />
                           </a>
                         }
                         <div class="item__texto">
@@ -309,11 +309,13 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
       border-bottom: 2px solid transparent;
       background: transparent;
       padding: 2px 0;
+      min-height: 44px;
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: 30px;
+      font-size: clamp(22px, 7vw, 30px);
       line-height: 1.1;
       letter-spacing: -0.5px;
+      text-overflow: ellipsis;
     }
     .nome:hover,
     .nome:focus {
@@ -330,8 +332,8 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
     }
     .barra-btn {
       flex: none;
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       border: 0;
       border-radius: 50%;
       background: var(--soft);
@@ -372,7 +374,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
     }
     .alca {
       flex: none;
-      width: 24px;
+      width: 44px;
       height: 44px;
       padding: 0;
       border: 0;
@@ -413,13 +415,16 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
       line-height: 1.2;
       color: inherit;
       text-decoration: none;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
     }
     .item__resumo {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       align-self: flex-start;
-      min-height: 28px;
+      min-height: 44px;
       padding: 0;
       border: 0;
       background: none;
@@ -433,7 +438,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
       flex: none;
     }
     .item .btn-icone {
-      width: 36px;
+      width: 44px;
       height: 44px;
       border-radius: 10px;
     }
@@ -685,10 +690,10 @@ export class PlanEditor {
     return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg`;
   }
 
-  /** "3 × 12 · 47,5 kg · desc. 60 s" (exercícios em minutos: "3 × 12 min · …"). */
+  /** "3 × 12 · 47,5 kg · descanso 60 s" (exercícios em minutos: "3 × 12 min · …"). */
   protected resumo(item: ItemFicha): string {
     const n = (v: number) => v.toLocaleString('pt-BR');
-    return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg · desc. ${n(item.descanso)} s`;
+    return `${n(item.series)} × ${n(item.reps)}${item.unidade === 'min' ? ' min' : ''} · ${n(item.carga)} kg · descanso ${n(item.descanso)} s`;
   }
 
   protected alternarMenu(indice: number, evento: Event): void {

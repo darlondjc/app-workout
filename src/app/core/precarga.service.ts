@@ -67,7 +67,7 @@ export class PrecargaService {
     try {
       // Espera o app assentar para não disputar banda com o que a pessoa está abrindo.
       await new Promise((r) => setTimeout(r, 3000));
-      const urlsDe = (id: string) => [this.ex.imagem(id, 0), this.ex.animacao(id)];
+      const urlsDe = (id: string) => [this.ex.miniatura(id), this.ex.imagem(id, 0), this.ex.animacao(id)];
       for (const id of await baixarImagens(faltam, urlsDe)) this.prontos.add(id);
       salvar(this.prontos);
     } finally {

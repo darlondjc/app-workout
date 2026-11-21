@@ -42,7 +42,9 @@
 
     <div id="painel" role="tabpanel" [attr.aria-labelledby]="aba() === 'como' ? 'aba-como' : 'aba-evolucao'">
       @if (aba() === 'como') {
-        @if (!instrucoes().traduzido) {
+        @if (instrucoes().carregando) {
+          <app-carregando texto="Carregando as instruções…" />
+        } @else if (!instrucoes().traduzido) {
           <p class="apoio aviso-idioma">Instruções disponíveis apenas em inglês.</p>
         }
         <ol class="passos" [attr.lang]="instrucoes().traduzido ? 'pt-BR' : 'en'">
@@ -89,7 +91,7 @@
           @for (o of opcoesFiltradas(); track o.id) {
             <li class="opcao-linha" [class.selecionada]="pendente() === o.id">
               <button type="button" class="opcao" [attr.aria-pressed]="pendente() === o.id" (click)="trocar(o.id)">
-                <img class="opcao__img" [src]="ex.imagem(o.id, 0)" alt="" loading="lazy" />
+                <img class="opcao__img" [src]="ex.miniatura(o.id)" alt="" loading="lazy" />
                 <span class="opcao__txt">
                   <span class="opcao__nome">{{ ex.nome(o) }}</span>
                   <span class="apoio">{{ ex.equipamento(o.equipment) }} · {{ ex.nivel(o.level) }}</span>

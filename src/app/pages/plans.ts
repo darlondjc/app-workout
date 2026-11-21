@@ -330,8 +330,8 @@ import { ToastService } from '../core/toast.service';
       gap: 8px;
     }
     .linha .btn-icone {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 20px;
     }
     .linha .grupos {

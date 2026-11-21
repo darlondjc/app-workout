@@ -98,7 +98,7 @@
       }
       <button type="button" class="miniaturas" aria-haspopup="dialog" aria-label="Ver exercícios do treino de hoje" (click)="exerciciosAbertos.set(true)">
         @for (item of ficha.itens.slice(0, 3); track item.exerciseId) {
-          <img [src]="exercicios.imagem(item.exerciseId, 0)" alt="" loading="lazy" />
+          <img [src]="exercicios.miniatura(item.exerciseId)" alt="" loading="lazy" />
         }
         @if (ficha.itens.length > 3) {
           <span class="mais">+{{ ficha.itens.length - 3 }}</span>
@@ -218,7 +218,7 @@
         @for (item of ficha.itens; track $index) {
           <li>
             <button type="button" class="exercicio" aria-haspopup="dialog" [attr.aria-label]="'Ver imagem de ' + nomeExercicio(item.exerciseId)" (click)="exercicioAberto.set(item.exerciseId)">
-              <img [src]="exercicios.imagem(item.exerciseId, 0)" alt="" loading="lazy" />
+              <img [src]="exercicios.miniatura(item.exerciseId)" alt="" loading="lazy" />
               <span class="exercicio__texto">
                 <span class="exercicio__nome">{{ nomeExercicio(item.exerciseId) }}</span>
                 <span class="apoio">{{ prescricao(item) }}</span>

@@ -111,7 +111,7 @@ describe('EventoCard: ver treino', () => {
           },
         },
         { provide: PlanService, useValue: { historico: signal<Sessao[]>([treino]) } },
-        { provide: ExerciseService, useValue: { get: () => ({ id: 'supino', equipment: 'barbell', level: 'beginner' }), nome: () => 'Supino reto', imagem: () => 'x.jpg', equipamento: () => 'Barra', nivel: () => 'Iniciante' } },
+        { provide: ExerciseService, useValue: { get: () => ({ id: 'supino', equipment: 'barbell', level: 'beginner' }), nome: () => 'Supino reto', imagem: () => 'x.jpg', miniatura: () => 'x.webp', equipamento: () => 'Barra', nivel: () => 'Iniciante' } },
       ],
     });
   });

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Dialogo } from '../core/dialogo';
 import { EvolucaoExercicio } from '../core/evolucao-exercicio';
@@ -39,6 +39,11 @@ export class ExerciseDetail {
   /** Exercício escolhido para a troca, esperando a confirmação (e, em treino, "só neste treino ou na ficha"). */
   protected readonly pendente = signal<string | null>(null);
 
+  constructor() {
+    // Os passos (~700 KB) só são baixados quando alguém abre a tela de um exercício.
+    effect(() => this.ex.carregarInstrucoes(this.id()));
+  }
+
   protected readonly exercicio = computed(() => this.ex.get(this.id()));
   protected readonly nome = computed(() => {
     const e = this.exercicio();
@@ -47,7 +52,7 @@ export class ExerciseDetail {
 
   protected readonly instrucoes = computed(() => {
     const e = this.exercicio();
-    return e ? this.ex.instrucoes(e) : { passos: [], traduzido: true };
+    return e ? this.ex.instrucoes(e) : { passos: [], traduzido: true, carregando: false };
   });
 
   private readonly fichaAtiva = computed(() => this.plans.fichas().find((f) => f.id === this.plans.ativaId()) ?? this.plans.fichas()[0]);

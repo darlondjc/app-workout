@@ -29,7 +29,7 @@ import { ToastService } from '../core/toast.service';
             </div>
             <ul class="treinos">
               @for (f of b.fichas; track f.id) {
-                <li><a [routerLink]="['/ficha', f.id]">{{ f.nome }}</a> <span class="apoio">{{ f.itens.length }} exerc.</span></li>
+                <li><a [routerLink]="['/ficha', f.id]">{{ f.nome }}</a> <span class="apoio">{{ f.itens.length }} {{ f.itens.length === 1 ? 'exercício' : 'exercícios' }}</span></li>
               }
             </ul>
             <div class="acoes">
@@ -55,7 +55,8 @@ import { ToastService } from '../core/toast.service';
     .bloco__topo { display: flex; flex-direction: column; }
     .bloco__nome { font-family: var(--font-display); font-size: 17px; }
     .treinos { list-style: none; margin: 0; padding: 0; }
-    .treinos li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--soft); font-size: 14px; }
+    .treinos a { display: inline-flex; align-items: center; min-height: 44px; }
+    .treinos li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--soft); font-size: 14px; }
     .acoes { display: flex; gap: 8px; }
     .acoes .btn { flex: 1; }
     .perigo { color: var(--perigo); }

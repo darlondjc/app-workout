@@ -161,7 +161,7 @@ import { Carregando } from '../core/spinner';
     .sair { border: 0; background: none; font: inherit; color: var(--perigo); min-height: 44px; }
     .pedido { padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mini { min-height: 40px; padding: 0 12px; font-size: 14px; flex: none; }
+    .mini { min-height: 44px; padding: 0 12px; font-size: 14px; flex: none; }
     .qr { display: flex; justify-content: center; padding: 12px; background: #fff; border-radius: 12px; margin-bottom: 12px; }
     .qr svg { width: min(260px, 100%); height: auto; }
     .acoes { display: flex; gap: 10px; margin-top: 16px; }

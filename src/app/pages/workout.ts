@@ -1,3 +1,4 @@
+import { Carregando } from '../core/spinner';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -37,9 +38,9 @@ function lerPreferencia(): boolean {
 
 @Component({
   selector: 'app-workout',
-  imports: [NgTemplateOutlet, RouterLink, Icon, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
+  imports: [NgTemplateOutlet, RouterLink, Icon, Carregando, ExerciseImage, ConcluirTreino, Dialogo, ResumoTreino, TituloEmDuasLinhas],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'fecharMenuMembro()' },
+  host: { '(document:click)': 'fecharMenuMembro()', '(document:keydown.escape)': 'aoApertarEsc()' },
   templateUrl: './workout.html',
   styleUrls: ['./workout.scss', './workout-conjugado.scss'],
 })
@@ -51,6 +52,12 @@ export class Workout {
   /** Resumo mostrado depois de gravar o treino; ao fechar, volta para o início. */
   protected readonly resumo = signal<DadosResumo | null>(null);
   private readonly ex = inject(ExerciseService);
+  /** Sem o arquivo de exercícios o treino não mostra nomes nem fotos: espera, ou avisa e deixa tentar de novo. */
+  protected readonly exerciciosProntos = this.ex.ready;
+  protected readonly exerciciosComErro = this.ex.error;
+  protected carregarExercicios(): void {
+    this.ex.carregar();
+  }
   private readonly toast = inject(ToastService);
   private readonly social = inject(SocialService);
   private readonly peso = inject(PesoService);
@@ -595,6 +602,13 @@ export class Workout {
   protected alternarMenuMembro(i: number, evento: Event): void {
     evento.stopPropagation();
     this.menuMembro.set(this.menuMembro() === i ? null : i);
+  }
+
+  /** Esc fecha o que estiver aberto, mesmo com o foco fora da folha (ele fica no botão que a abriu). */
+  protected aoApertarEsc(): void {
+    if (this.confirmandoSaida()) this.confirmandoSaida.set(false);
+    else if (this.perguntandoFaltantes()) this.perguntandoFaltantes.set(false);
+    else this.fecharMenuMembro();
   }
 
   protected fecharMenuMembro(): void {

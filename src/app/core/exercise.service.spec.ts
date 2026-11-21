@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ExerciseService, FILTRO_CARDIO } from './exercise.service';
 import { Exercise } from './models';
@@ -33,5 +33,51 @@ describe('ExerciseService — filtro de cardio', () => {
 
   it('sem filtro, todos aparecem', () => {
     expect(svc.buscar('', '', '', '').length).toBe(4);
+  });
+});
+
+describe('ExerciseService — instruções sob demanda', () => {
+  let svc: ExerciseService;
+  let http: HttpTestingController;
+  const supino = ex('supino', 'strength', ['chest']);
+  const semTraducao = ex('raro', 'strength', ['chest']);
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    svc = TestBed.inject(ExerciseService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  it('não baixa as instruções ao abrir o app (só dados da lista)', () => {
+    http.expectOne('data/exercises.json');
+    http.expectOne('data/i18n/pt-BR.labels.json');
+    http.expectOne('data/i18n/pt-BR.names.json');
+    http.expectNone('data/i18n/pt-BR.instructions.json');
+  });
+
+  it('enquanto o arquivo não chega, avisa que está carregando', () => {
+    expect(svc.instrucoes(supino).carregando).toBeTrue();
+  });
+
+  it('baixa uma vez só, mesmo pedindo de novo, e devolve os passos em português', () => {
+    svc.carregarInstrucoes('supino');
+    svc.carregarInstrucoes('supino');
+    http.expectOne('data/i18n/pt-BR.instructions.json').flush({ supino: ['Deite no banco.'] });
+    expect(svc.instrucoes(supino)).toEqual({ passos: ['Deite no banco.'], traduzido: true });
+    http.expectNone('data/i18n/en.instructions.json');
+  });
+
+  it('sem tradução, busca os passos em inglês e marca como não traduzido', () => {
+    svc.carregarInstrucoes('raro');
+    http.expectOne('data/i18n/pt-BR.instructions.json').flush({});
+    expect(svc.instrucoes(semTraducao).carregando).toBeTrue();
+    http.expectOne('data/i18n/en.instructions.json').flush({ raro: ['Lie down.'] });
+    expect(svc.instrucoes(semTraducao)).toEqual({ passos: ['Lie down.'], traduzido: false });
+  });
+
+  it('se o arquivo falhar, para de mostrar "carregando"', () => {
+    svc.carregarInstrucoes('supino');
+    http.expectOne('data/i18n/pt-BR.instructions.json').error(new ProgressEvent('error'));
+    expect(svc.instrucoes(supino)).toEqual({ passos: [], traduzido: true });
   });
 });
