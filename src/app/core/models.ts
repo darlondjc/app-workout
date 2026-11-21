@@ -7,9 +7,10 @@ export interface Exercise {
   equipment: string | null;
   primaryMuscles: string[];
   secondaryMuscles: string[];
-  instructions: string[];
+  /** Passos em inglês; fora de `exercises.json` (vêm de `en.instructions.json`, só quando faltar a tradução). */
+  instructions?: string[];
   category: string;
-  images: string[];
+  images?: string[];
 }
 
 export interface Labels {

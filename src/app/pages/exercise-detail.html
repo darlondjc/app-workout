@@ -42,7 +42,9 @@
 
     <div id="painel" role="tabpanel" [attr.aria-labelledby]="aba() === 'como' ? 'aba-como' : 'aba-evolucao'">
       @if (aba() === 'como') {
-        @if (!instrucoes().traduzido) {
+        @if (instrucoes().carregando) {
+          <app-carregando texto="Carregando as instruções…" />
+        } @else if (!instrucoes().traduzido) {
           <p class="apoio aviso-idioma">Instruções disponíveis apenas em inglês.</p>
         }
         <ol class="passos" [attr.lang]="instrucoes().traduzido ? 'pt-BR' : 'en'">

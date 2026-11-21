@@ -46,7 +46,6 @@ describe('FichaCompartilhada (link de ficha)', () => {
     http.expectOne('data/exercises.json').flush(EXERCICIOS);
     http.expectOne('data/i18n/pt-BR.labels.json').flush({ force: {}, level: {}, mechanic: {}, equipment: {}, category: {}, muscles: {} });
     http.expectOne('data/i18n/pt-BR.names.json').flush({ supino: 'Supino reto', remada: 'Remada curvada' });
-    http.expectOne('data/i18n/pt-BR.instructions.json').flush({});
   }
 
   async function abrir(d: string): Promise<HTMLElement> {
