@@ -5,7 +5,7 @@ import { EvolucaoExercicio } from '../core/evolucao-exercicio';
 import { evolucaoDoExercicio } from '../core/evolucao';
 import { equivalentes } from '../core/equivalentes';
 import { ExerciseImage } from '../core/exercise-image';
-import { Carregando } from '../core/spinner';
+import { Esqueleto } from '../core/esqueleto';
 import { ExerciseService, normalizar } from '../core/exercise.service';
 import { NavegacaoService } from '../core/navegacao.service';
 import { Icon } from '../core/icon';
@@ -14,7 +14,7 @@ import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-exercise-detail',
-  imports: [Icon, ExerciseImage, Carregando, EvolucaoExercicio, Dialogo],
+  imports: [Icon, ExerciseImage, Esqueleto, EvolucaoExercicio, Dialogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './exercise-detail.html',
   styleUrl: './exercise-detail.scss',

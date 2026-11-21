@@ -43,7 +43,7 @@
     <div id="painel" role="tabpanel" [attr.aria-labelledby]="aba() === 'como' ? 'aba-como' : 'aba-evolucao'">
       @if (aba() === 'como') {
         @if (instrucoes().carregando) {
-          <app-carregando texto="Carregando as instruções…" />
+          <app-esqueleto modelo="texto" [quantidade]="5" texto="Carregando as instruções…" />
         } @else if (!instrucoes().traduzido) {
           <p class="apoio aviso-idioma">Instruções disponíveis apenas em inglês.</p>
         }
@@ -160,5 +160,5 @@
     <button type="button" class="btn btn--escuro" (click)="ex.carregar()">Tentar de novo</button>
   </section>
 } @else {
-  <section class="page"><app-carregando texto="Carregando exercício…" /></section>
+  <section class="page"><app-esqueleto modelo="detalhe" texto="Carregando exercício…" /></section>
 }

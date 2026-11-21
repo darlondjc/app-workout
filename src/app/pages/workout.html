@@ -6,7 +6,7 @@
         <p class="apoio">Não foi possível carregar os exercícios. O que você já marcou neste treino está guardado.</p>
         <button type="button" class="btn btn--claro" (click)="carregarExercicios()">Tentar de novo</button>
       } @else {
-        <app-carregando texto="Carregando o treino…" />
+        <app-esqueleto modelo="treino" texto="Carregando o treino…" />
       }
     </section>
   } @else if (item(); as it) {
