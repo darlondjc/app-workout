@@ -114,7 +114,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
                   </button>
                   @if (l.ex) {
                     <a [routerLink]="['/exercicio', l.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
-                      <img class="mini" [src]="ex.imagem(l.ex.id, 0)" alt="" loading="lazy" />
+                      <img class="mini" [src]="ex.miniatura(l.ex.id)" alt="" loading="lazy" />
                     </a>
                   }
                   <div class="item__texto">
@@ -202,7 +202,7 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
                         <span class="rot">{{ b.letra }}{{ k + 1 }}</span>
                         @if (m.ex) {
                           <a [routerLink]="['/exercicio', m.item.exerciseId]" [queryParams]="{ ficha: id() }" aria-label="Ver instruções do exercício">
-                            <img class="mini mini--par" [src]="ex.imagem(m.ex.id, 0)" alt="" loading="lazy" />
+                            <img class="mini mini--par" [src]="ex.miniatura(m.ex.id)" alt="" loading="lazy" />
                           </a>
                         }
                         <div class="item__texto">
@@ -415,13 +415,16 @@ type BlocoDaTela = BlocoSolo | BlocoPar;
       line-height: 1.2;
       color: inherit;
       text-decoration: none;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
     }
     .item__resumo {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       align-self: flex-start;
-      min-height: 28px;
+      min-height: 44px;
       padding: 0;
       border: 0;
       background: none;

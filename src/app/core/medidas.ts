@@ -21,7 +21,7 @@ export const MEDIDAS: readonly Medida[] = [
   { chave: 'musculo', curto: 'Massa muscular', rotulo: 'Massa muscular', unidade: 'kg', min: 5, max: 100, casas: 1 },
   { chave: 'visceral', curto: 'Visceral', rotulo: 'Gordura visceral', unidade: 'nível', min: 1, max: 30, casas: 0 },
   { chave: 'cintura', curto: 'Abdômen', rotulo: 'Circunferência abdominal', unidade: 'cm', min: 40, max: 250, casas: 1 },
-  { chave: 'tmb', curto: 'TMB', rotulo: 'Taxa metabólica basal', unidade: 'kcal', min: 500, max: 5000, casas: 0 },
+  { chave: 'tmb', curto: 'Gasto em repouso', rotulo: 'Taxa metabólica basal', unidade: 'kcal', min: 500, max: 5000, casas: 0 },
 ];
 
 export type ValoresMedidas = Partial<Record<ChaveMedida, number>>;

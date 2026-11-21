@@ -219,13 +219,16 @@ import { ToastService } from '../core/toast.service';
     .ficha li {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       gap: 12px;
-      padding: 8px 0;
       border-top: 1px solid var(--soft);
       font-size: 14px;
     }
     .ficha li a {
       min-width: 0;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
     }
     .acoes {
       display: flex;
