@@ -46,6 +46,8 @@ public/exercises/<id>/anim.webp       animação das duas fotos em loop (gerada)
 tools/gerar_animacoes.py              gera os anim.webp a partir das fotos
 tools/novos_exercicios.json           exercícios acrescentados à mão (sem foto), com nome e passos em português
 tools/adicionar_exercicios.mjs        coloca esses exercícios na base e corrige grupos musculares (pode rodar de novo)
+tools/ilustracoes.json                quais exercícios novos usam qual ilustração do open-exercise-illustrations
+tools/importar_ilustracoes.py         baixa essas ilustrações e gera 0.jpg, 1.jpg, anim.webp e thumb.webp
 src/app/core/                         serviços (exercícios, fichas, avisos) e componentes de apoio
 src/app/pages/                        telas (as maiores têm .html e .scss ao lado do .ts)
 ```
@@ -78,7 +80,7 @@ Uma barra no topo aparece quando há requisições ou troca de tela demorando ma
 
 ## Dados e créditos
 
-Os exercícios e as imagens vêm do [free-exercise-db](https://github.com/yuhonas/free-exercise-db), em domínio público (Unlicense). A licença está em `public/data/LICENSE-free-exercise-db.md`. Os exercícios de `tools/novos_exercicios.json` foram escritos para este projeto, sem copiar texto de outras bases, e não têm foto: o app mostra `public/exercises/_sem-foto.svg` no lugar. As traduções dos nomes, dos rótulos e das instruções são deste projeto e merecem revisão.
+Os exercícios e as imagens vêm do [free-exercise-db](https://github.com/yuhonas/free-exercise-db), em domínio público (Unlicense). A licença está em `public/data/LICENSE-free-exercise-db.md`. Os exercícios de `tools/novos_exercicios.json` foram escritos para este projeto, sem copiar texto de outras bases, e 19 deles têm ilustração do [open-exercise-illustrations](https://github.com/hitmanrepo/open-exercise-illustrations) (CC0, gerada por IA; veja `public/data/LICENSE-open-exercise-illustrations.md`). Os demais não têm imagem: o app mostra `public/exercises/_sem-foto.svg` no lugar. As traduções dos nomes, dos rótulos e das instruções são deste projeto e merecem revisão.
 
 ### Animações
 
