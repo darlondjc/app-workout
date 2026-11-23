@@ -53,6 +53,17 @@ export class App {
       const alvo = e.target as Element | null;
       if (alvo?.closest?.('a, img, button, svg') && !alvo.closest('input, textarea, [contenteditable]')) e.preventDefault();
     });
+    // Exercícios sem foto (os acrescentados à mão) têm o arquivo da imagem ausente: troca por uma imagem-padrão, uma vez só.
+    document.addEventListener(
+      'error',
+      (e) => {
+        const img = e.target;
+        if (img instanceof HTMLImageElement && img.src.includes('/exercises/') && !img.src.includes('_sem-foto')) {
+          img.src = 'exercises/_sem-foto.svg';
+        }
+      },
+      true,
+    );
     // Quando a internet volta, avisa que o que ficou guardado no aparelho está sendo enviado.
     let estavaOffline = !this.nuvem.online();
     effect(() => {
