@@ -492,6 +492,17 @@ button.ver {
 }
 
 /* Cronômetro de descanso: conta desde a última série marcada e fica vermelho passado o limite da ficha. */
+.linha-descanso {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.ajuste-series {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
 .descanso {
   padding: 8px 18px;
   border-radius: 20px;
@@ -500,6 +511,15 @@ button.ver {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+/* Ao lado dos botões de série: ocupa só o espaço que sobra, com o tempo sob o rótulo. */
+.linha-descanso .descanso {
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
 }
 .descanso__rotulo {
   margin: 0;
