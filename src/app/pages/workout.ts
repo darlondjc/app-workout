@@ -1,5 +1,5 @@
 import { Esqueleto } from '../core/esqueleto';
-import { NgTemplateOutlet } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TituloEmDuasLinhas } from '../core/ajuste-titulo';
@@ -322,6 +322,9 @@ export class Workout {
   constructor() {
     // A tela fica acesa enquanto o treino está aberto, para não apagar entre as séries.
     this.tela.ligar();
+    // O fundo da página (a faixa da barra de status) fica da mesma cor da tela, que é sempre escura.
+    const raiz = inject(DOCUMENT).documentElement;
+    raiz.classList.add('em-treino');
     // Treino retomado depois de uma pausa: o cronômetro continua de onde estava.
     effect(() => {
       const d = this.estado()?.descanso;
@@ -340,6 +343,7 @@ export class Workout {
       }
       this.pararDescanso();
       this.tela.desligar();
+      raiz.classList.remove('em-treino');
     });
   }
 

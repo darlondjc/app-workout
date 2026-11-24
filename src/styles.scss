@@ -74,6 +74,12 @@ body {
   touch-action: manipulation;
 }
 
+/* Tela de treino (sempre escura): a faixa da barra de status acompanha a cor da tela. */
+html.em-treino,
+html.em-treino body {
+  background: var(--escuro-fixo);
+}
+
 body {
   background: var(--fora);
   color: var(--ink);
