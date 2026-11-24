@@ -231,13 +231,6 @@ export class Workout {
     return b.tipo === 'solo' ? [this.nomeDe(b.i)] : [this.nomeDe(b.a), this.nomeDe(b.b)];
   });
 
-  /** Músculos principais do exercício i, para os rótulos do cabeçalho. */
-  protected musculosDe(i: number): string[] {
-    const it = this.itemDe(i);
-    const e = it ? this.ex.get(it.exerciseId) : undefined;
-    return (e?.primaryMuscles ?? []).slice(0, 2).map((m) => this.ex.musculo(m));
-  }
-
   /** O que a pessoa fez na série k da última vez (ou na última série, se k passou), para mostrar sob o valor. */
   protected dica(i: number, k: number, campo: 'reps' | 'carga'): string {
     const r = this.anteriorDe(i);

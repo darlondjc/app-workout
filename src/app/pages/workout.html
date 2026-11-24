@@ -205,12 +205,6 @@
           </a>
           <div class="exercicio__texto">
             <h1 [appTituloEmDuasLinhas]="nome()">{{ nome() }}</h1>
-            <div class="meta">
-              @for (g of musculosDe(indice()); track g) {
-                <span class="musculo">{{ g }}</span>
-              }
-              <span class="meta__plano">{{ series().length }} × {{ it.reps }}{{ it.unidade === 'min' ? ' min' : '' }}{{ series().length > 1 ? ' · ' + it.descanso + ' s' : '' }}</span>
-            </div>
             <div class="ver-linha">
               <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
               @if (ultimasSeries().length > 0) {
