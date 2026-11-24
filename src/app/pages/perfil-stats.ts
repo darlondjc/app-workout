@@ -5,15 +5,29 @@ import { MedalhasFaixa } from '../core/medalhas-faixa';
 import { MedalhasGaleria } from '../core/medalhas-galeria';
 import { MedalhasService } from '../core/medalhas.service';
 import { PlanService } from '../core/plan.service';
+import { MedidasGrafico } from '../core/medidas-grafico';
+import { PesoGrafico } from '../core/peso-grafico';
 import { Progress } from './progress';
 
 /** As estatísticas da própria pessoa, na aba Stats do Perfil: calendário, medalhas conquistadas e o resto. */
 @Component({
   selector: 'app-perfil-stats',
-  imports: [Dialogo, MedalhasFaixa, MedalhasGaleria, Progress],
+  imports: [Dialogo, MedalhasFaixa, MedalhasGaleria, MedidasGrafico, PesoGrafico, Progress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-progress [historico]="plans.historico()" [calendarioPrimeiro]="true">
+    <div class="secoes" role="tablist" aria-label="Estatísticas">
+      @for (s of secoes; track s.chave) {
+        <button type="button" role="tab" [attr.aria-selected]="secao() === s.chave" (click)="secao.set(s.chave)">{{ s.rotulo }}</button>
+      }
+    </div>
+
+    @if (secao() === 'saude') {
+      <div class="saude" role="tabpanel">
+        <app-peso-grafico />
+        <app-medidas-grafico />
+      </div>
+    } @else {
+    <app-progress [historico]="plans.historico()" [calendarioPrimeiro]="true" [semSaude]="true">
       <section class="medalhas" aria-labelledby="t-med">
         <div class="medalhas__topo">
           <h2 id="t-med" class="sub">Medalhas</h2>
@@ -22,6 +36,7 @@ import { Progress } from './progress';
         <app-medalhas-faixa [conquistas]="conquistas()" (abrir)="abrirGaleria($event)" />
       </section>
     </app-progress>
+    }
 
     @if (galeriaAberta()) {
       <app-dialogo titulo="Medalhas" [subtitulo]="resumoConquistas()" (fechar)="fecharGaleria()">
@@ -31,6 +46,10 @@ import { Progress } from './progress';
   `,
   styles: `
     :host { display: block; }
+    .secoes { display: flex; padding: 3px; gap: 2px; margin-bottom: 10px; border-radius: 999px; background: var(--soft); }
+    .secoes button { flex: 1; min-height: 44px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: 14px; font-weight: 700; color: var(--muted); }
+    .secoes button[aria-selected='true'] { background: var(--ink-bg); color: var(--accent); }
+    .saude { display: flex; flex-direction: column; gap: 10px; }
     .medalhas { display: flex; flex-direction: column; gap: 10px; }
     .medalhas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .sub { font-size: 18px; margin: 0; }
@@ -38,6 +57,12 @@ import { Progress } from './progress';
   `,
 })
 export class PerfilStats {
+  protected readonly secoes = [
+    { chave: 'treino', rotulo: 'Treino' },
+    { chave: 'saude', rotulo: 'Saúde' },
+  ] as const;
+  protected readonly secao = signal<'treino' | 'saude'>('treino');
+
   protected readonly plans = inject(PlanService);
   private readonly medalhas = inject(MedalhasService);
 

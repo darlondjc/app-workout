@@ -9,11 +9,29 @@ const LARGURA = 320;
 const ALTURA = 150;
 const MARGEM = { esq: 42, dir: 14, topo: 14, base: 26 };
 
+/** Espaço mínimo (em unidades do gráfico) entre dois rótulos de data, para não se sobreporem. */
+const ESPACO_ROTULO = 40;
+
 const PERIODOS: { valor: PeriodoPeso; rotulo: string; sufixo: string }[] = [
   { valor: 'semana', rotulo: 'Semana', sufixo: 'na semana' },
   { valor: 'mes', rotulo: 'Mês', sufixo: 'no mês' },
   { valor: 'ano', rotulo: 'Ano', sufixo: 'no ano' },
 ];
+
+/** Quais pontos levam data e valor: da esquerda para a direita, só os que cabem sem se sobrepor; o último sempre aparece. */
+function escolherRotulos(xs: number[]): Set<number> {
+  const mostrados: number[] = [];
+  xs.forEach((cx, i) => {
+    const ultimo = mostrados.at(-1);
+    if (ultimo === undefined || cx - xs[ultimo] >= ESPACO_ROTULO) mostrados.push(i);
+  });
+  const fim = xs.length - 1;
+  if (fim >= 0 && mostrados.at(-1) !== fim) {
+    if (mostrados.length > 1 && xs[fim] - xs[mostrados.at(-1)!] < ESPACO_ROTULO) mostrados.pop();
+    mostrados.push(fim);
+  }
+  return new Set(mostrados);
+}
 
 /** Evolução do peso corporal: linha com botões para ver a semana, o mês ou o ano. */
 @Component({
@@ -42,11 +60,13 @@ const PERIODOS: { valor: PeriodoPeso; rotulo: string; sufixo: string }[] = [
             @if (grafico().pontos.length > 1) {
               <path class="linha-peso" [attr.d]="grafico().caminho" />
             }
-            @for (p of grafico().pontos; track p.rotulo) {
+            @for (p of grafico().pontos; track $index) {
               <circle class="ponto-peso" [attr.cx]="p.cx" [attr.cy]="p.cy" r="4" />
+              @if (p.mostrar) {
+                <text class="valor" [attr.x]="p.cx" [attr.y]="p.cy - 9" [attr.text-anchor]="p.ancora">{{ kg(p.kg) }}</text>
+                <text class="eixo data-ponto" [attr.x]="p.cx" [attr.y]="altura - 6" [attr.text-anchor]="p.ancora">{{ p.rotulo }}</text>
+              }
             }
-            <text class="eixo" [attr.x]="margem.esq" [attr.y]="altura - 6" text-anchor="start">{{ grafico().inicio }}</text>
-            <text class="eixo" [attr.x]="largura - margem.dir" [attr.y]="altura - 6" text-anchor="end">{{ grafico().fim }}</text>
           </svg>
           @if (periodo() === 'ano') {
             <p class="apoio nota">Cada ponto é a média do mês.</p>
@@ -76,6 +96,7 @@ const PERIODOS: { valor: PeriodoPeso; rotulo: string; sufixo: string }[] = [
     .nota { font-size: 12px; margin: 0; }
     .grafico { width: 100%; height: auto; display: block; }
     .grade { stroke: var(--soft); stroke-width: 1; }
+    .valor { font-size: 11px; font-weight: 700; fill: var(--ink); font-family: var(--font); }
     .eixo { font-size: 11px; fill: var(--muted); font-family: var(--font); }
     .linha-peso { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     .ponto-peso { fill: var(--accent); stroke: var(--ink); stroke-width: 2; }
@@ -105,15 +126,19 @@ export class PesoGrafico {
     const max = s.maximo + folga;
     const x = (v: number) => MARGEM.esq + v * (LARGURA - MARGEM.esq - MARGEM.dir);
     const y = (kg: number) => MARGEM.topo + (1 - (kg - min) / (max - min)) * (ALTURA - MARGEM.topo - MARGEM.base);
-    const pontos = s.pontos.map((p) => ({ cx: x(p.x), cy: y(p.kg), kg: p.kg, rotulo: p.rotulo }));
+    const base = s.pontos.map((p) => ({ cx: x(p.x), cy: y(p.kg), kg: p.kg, rotulo: p.rotulo }));
+    const mostrados = escolherRotulos(base.map((p) => p.cx));
+    const pontos = base.map((p, i) => ({
+      ...p,
+      mostrar: mostrados.has(i),
+      ancora: p.cx < MARGEM.esq + 16 ? 'start' : p.cx > LARGURA - MARGEM.dir - 16 ? 'end' : 'middle',
+    }));
     const caminho = pontos.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.cx.toFixed(1)} ${p.cy.toFixed(1)}`).join(' ');
     const extremos = s.minimo === s.maximo ? [s.maximo] : [s.maximo, s.minimo];
     return {
       pontos,
       caminho,
       linhas: extremos.map((kg) => ({ kg, y: y(kg) })),
-      inicio: s.inicio,
-      fim: s.fim,
       variacao: s.variacao,
       minimo: s.minimo,
       maximo: s.maximo,
