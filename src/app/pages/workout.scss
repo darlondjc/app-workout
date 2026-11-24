@@ -157,17 +157,18 @@ h1 {
   color: var(--accent);
   font-size: 12.5px;
   font-weight: 600;
+  white-space: nowrap;
   text-decoration: none;
   transition: background 0.15s;
 }
 .ver-linha {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 6px;
 }
 button.ver {
   border: 0;
-  padding: 0 12px;
+  padding: 0 10px;
   font-family: inherit;
   cursor: pointer;
 }
@@ -791,4 +792,16 @@ button.ver {
 .chave input:focus-visible + .trilho {
   outline: 2px solid #fff;
   outline-offset: 2px;
+}
+
+/* Telas estreitas: os dois botões do cabeçalho continuam lado a lado. */
+@media (max-width: 380px) {
+  .ver-linha {
+    gap: 4px;
+  }
+  .ver,
+  button.ver {
+    font-size: 12px;
+    padding: 0 8px;
+  }
 }
