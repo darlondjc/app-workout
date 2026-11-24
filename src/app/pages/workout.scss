@@ -500,9 +500,13 @@ button.ver {
 }
 .ajuste-series {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: none;
+}
+.ajuste-series .todos__botao {
+  padding: 0 11px;
+  gap: 4px;
+  font-size: 12px;
 }
 .descanso {
   padding: 8px 18px;
@@ -520,7 +524,14 @@ button.ver {
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
-  gap: 2px;
+  gap: 0;
+  padding: 4px 12px;
+}
+.linha-descanso .descanso__rotulo {
+  font-size: 12px;
+}
+.linha-descanso .tempo {
+  font-size: 24px;
 }
 .descanso__rotulo {
   margin: 0;
