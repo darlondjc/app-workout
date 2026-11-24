@@ -1,5 +1,5 @@
 import { Esqueleto } from '../core/esqueleto';
-import { NgTemplateOutlet } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TituloEmDuasLinhas } from '../core/ajuste-titulo';
@@ -231,13 +231,6 @@ export class Workout {
     return b.tipo === 'solo' ? [this.nomeDe(b.i)] : [this.nomeDe(b.a), this.nomeDe(b.b)];
   });
 
-  /** Músculos principais do exercício i, para os rótulos do cabeçalho. */
-  protected musculosDe(i: number): string[] {
-    const it = this.itemDe(i);
-    const e = it ? this.ex.get(it.exerciseId) : undefined;
-    return (e?.primaryMuscles ?? []).slice(0, 2).map((m) => this.ex.musculo(m));
-  }
-
   /** O que a pessoa fez na série k da última vez (ou na última série, se k passou), para mostrar sob o valor. */
   protected dica(i: number, k: number, campo: 'reps' | 'carga'): string {
     const r = this.anteriorDe(i);
@@ -322,6 +315,9 @@ export class Workout {
   constructor() {
     // A tela fica acesa enquanto o treino está aberto, para não apagar entre as séries.
     this.tela.ligar();
+    // O fundo da página (a faixa da barra de status) fica da mesma cor da tela, que é sempre escura.
+    const raiz = inject(DOCUMENT).documentElement;
+    raiz.classList.add('em-treino');
     // Treino retomado depois de uma pausa: o cronômetro continua de onde estava.
     effect(() => {
       const d = this.estado()?.descanso;
@@ -340,6 +336,7 @@ export class Workout {
       }
       this.pararDescanso();
       this.tela.desligar();
+      raiz.classList.remove('em-treino');
     });
   }
 

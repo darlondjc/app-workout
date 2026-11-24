@@ -205,12 +205,6 @@
           </a>
           <div class="exercicio__texto">
             <h1 [appTituloEmDuasLinhas]="nome()">{{ nome() }}</h1>
-            <div class="meta">
-              @for (g of musculosDe(indice()); track g) {
-                <span class="musculo">{{ g }}</span>
-              }
-              <span class="meta__plano">{{ series().length }} × {{ it.reps }}{{ it.unidade === 'min' ? ' min' : '' }}{{ series().length > 1 ? ' · ' + it.descanso + ' s' : '' }}</span>
-            </div>
             <div class="ver-linha">
               <a class="ver" [routerLink]="['/exercicio', it.exerciseId]" [queryParams]="{ ficha: f.id, treino: 1 }">Ver instruções <app-icon name="chevron" [size]="14" [stroke]="2.6" /></a>
               @if (ultimasSeries().length > 0) {
@@ -288,24 +282,26 @@
           </section>
         }
 
-        <!-- Com uma série só (como o cardio) não há descanso entre séries: o cronômetro não faz sentido. -->
-        @if (series().length > 1) {
-          <div class="descanso" role="timer" aria-live="off">
-            <p class="descanso__rotulo">{{ descansando() ? 'Descansando' : 'Descanso' }}</p>
-            <p class="tempo" [class.estourou]="estourou()">{{ tempo() }}</p>
-          </div>
-        }
-
-        <div class="acoes">
-          <button type="button" class="todos__botao" aria-haspopup="dialog" (click)="abrirNotas()">
-            <app-icon name="clipboard" [size]="14" [stroke]="2.4" />
-            {{ notaExercicio() || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}
-          </button>
+        <div class="linha-descanso">
           <button type="button" class="todos__botao" [disabled]="series().length >= maxSeries" (click)="adicionarSerie()">
             <app-icon name="plus" [size]="14" [stroke]="3" /> Série extra
           </button>
           <button type="button" class="todos__botao" [disabled]="series().length <= 1" (click)="removerSerie()">
             <app-icon name="minus" [size]="14" [stroke]="3" /> Tirar série
+          </button>
+          <!-- Com uma série só (como o cardio) não há descanso entre séries: o cronômetro não faz sentido. -->
+          @if (series().length > 1) {
+            <div class="descanso" role="timer" aria-live="off">
+              <p class="descanso__rotulo">Descanso</p>
+              <p class="tempo" [class.estourou]="estourou()">{{ tempo() }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="acoes">
+          <button type="button" class="todos__botao" aria-haspopup="dialog" (click)="abrirNotas()">
+            <app-icon name="clipboard" [size]="14" [stroke]="2.4" />
+            {{ notaExercicio() || notaTreino() ? 'Editar notas' : 'Adicionar nota' }}
           </button>
           <button type="button" class="todos__botao" (click)="marcarTodos()">
             <app-icon name="check" [size]="14" [stroke]="3" />

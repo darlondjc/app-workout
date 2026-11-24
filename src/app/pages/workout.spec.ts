@@ -241,13 +241,13 @@ describe('Workout — marcar séries em bloco', () => {
       beforeEach(() => jasmine.clock().install().mockDate(new Date(2026, 9, 23, 10, 0, 0)));
       afterEach(() => jasmine.clock().uninstall());
 
-      it('é um cartão simples, sempre à vista: "Descanso" parado e "Descansando" depois de marcar uma série', () => {
+      it('é um cartão simples, sempre à vista, com "Descanso" e o tempo lado a lado, antes e depois de marcar uma série', () => {
         const cartao = () => el().querySelector('.descanso')!;
         expect(cartao().textContent).toContain('Descanso');
-        expect(cartao().textContent).not.toContain('Descansando');
         expect(cartao().textContent).toContain('00:00');
         clicar(ok());
-        expect(cartao().textContent).toContain('Descansando');
+        expect(cartao().textContent).toContain('Descanso');
+        expect(cartao().textContent).toContain('00:00');
         // Sem anel, sem "Começar" e sem tela de descanso no lugar da série: só o cronômetro.
         expect(el().querySelector('.anel, .proxima, .descanso__acoes')).toBeNull();
         expect(ok()).not.toBeNull();

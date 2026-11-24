@@ -146,25 +146,6 @@ h1 {
   font-size: 22px;
   line-height: 1.12;
 }
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.musculo {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--dark2);
-  color: #b9c0ba;
-  font-size: 12px;
-  font-weight: 600;
-}
-.meta__plano {
-  font-size: 12px;
-  font-weight: 500;
-  color: #b9c0ba;
-}
 .ver {
   display: inline-flex;
   align-items: center;
@@ -176,17 +157,18 @@ h1 {
   color: var(--accent);
   font-size: 12.5px;
   font-weight: 600;
+  white-space: nowrap;
   text-decoration: none;
   transition: background 0.15s;
 }
 .ver-linha {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 6px;
 }
 button.ver {
   border: 0;
-  padding: 0 12px;
+  padding: 0 10px;
   font-family: inherit;
   cursor: pointer;
 }
@@ -520,6 +502,44 @@ button.ver {
   justify-content: space-between;
   gap: 12px;
 }
+/* Linha dos botões de série: cada um e o cronômetro ocupam um terço; o cronômetro fica no último. */
+.linha-descanso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 6px;
+}
+.linha-descanso .todos__botao {
+  justify-content: center;
+  padding: 0 6px;
+  gap: 4px;
+  font-size: 12px;
+}
+.linha-descanso .descanso {
+  grid-column: 3;
+  padding: 0 10px;
+  gap: 6px;
+  border-radius: 999px;
+  min-height: 44px;
+}
+.linha-descanso .descanso__rotulo {
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.linha-descanso .tempo {
+  font-size: 14px;
+}
+@media (max-width: 400px) {
+  .linha-descanso .descanso {
+    padding: 0 8px;
+    gap: 4px;
+  }
+  .linha-descanso .descanso__rotulo {
+    font-size: 10px;
+  }
+  .linha-descanso .tempo {
+    font-size: 12.5px;
+  }
+}
 .descanso__rotulo {
   margin: 0;
   font-size: 13px;
@@ -790,4 +810,16 @@ button.ver {
 .chave input:focus-visible + .trilho {
   outline: 2px solid #fff;
   outline-offset: 2px;
+}
+
+/* Telas estreitas: os dois botões do cabeçalho continuam lado a lado. */
+@media (max-width: 380px) {
+  .ver-linha {
+    gap: 4px;
+  }
+  .ver,
+  button.ver {
+    font-size: 12px;
+    padding: 0 8px;
+  }
 }
