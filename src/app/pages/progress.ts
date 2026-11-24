@@ -178,8 +178,10 @@ function lerDispensadas(): string[] {
       <app-mapa-muscular [historico]="historico()" />
 
       @if (editavel()) {
-        <app-peso-grafico />
-        <app-medidas-grafico />
+        @if (!semSaude()) {
+          <app-peso-grafico />
+          <app-medidas-grafico />
+        }
       } @else if (pesos(); as p) {
         <app-peso-grafico [registros]="p" [somenteLeitura]="true" />
       }
@@ -261,6 +263,8 @@ export class Progress {
   readonly editavel = input(true);
   /** Calendário no topo, seguido do que for projetado dentro do componente (usado nas estatísticas de outra pessoa). */
   readonly calendarioPrimeiro = input(false);
+  /** Sem os gráficos de peso e medidas da própria pessoa (ficam na aba Saúde do Perfil). */
+  readonly semSaude = input(false);
   /** Peso que um amigo compartilha; sem ele (ou sem ser amigo), o gráfico de peso não aparece nas estatísticas dos outros. */
   readonly pesos = input<RegistroPeso[] | null>(null);
   /** Preenchido ao ver um amigo: as mensagens falam dele. */
