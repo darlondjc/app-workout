@@ -60,6 +60,87 @@
   color-scheme: dark;
 }
 
+/*
+ * Paletas de cores (Ajustes → Aparência → Paleta). "Padrão" é o que já está em :root e no tema escuro.
+ * As outras têm três cores: principal (60%), secundária (30%) e destaque (10%). Cada uma vale para os dois temas:
+ * no claro o fundo é a principal e o texto a secundária; no escuro, o contrário. O resto é derivado delas.
+ * `--p-ink` é quanto do destaque entra no texto colorido sobre fundo claro (o destaque puro não tem contraste).
+ */
+/* Tahini: principal #ecdfc6 (60%), secundária #1a2238 (30%), destaque #ff6216 (10%). */
+:root[data-paleta='tahini'] {
+  --p-main: #ecdfc6;
+  --p-second: #1a2238;
+  --p-loud: #ff6216;
+  --p-ink: 60%;
+}
+/* Anthracite: principal #d2c6b4 (60%), secundária #2b2d31 (30%), destaque #00e2f2 (10%). */
+:root[data-paleta='anthracite'] {
+  --p-main: #d2c6b4;
+  --p-second: #2b2d31;
+  --p-loud: #00e2f2;
+  --p-ink: 25%;
+}
+/* Pomelo: principal #f2a9b8 (60%), secundária #1a3530 (30%), destaque #ffe01a (10%). */
+:root[data-paleta='pomelo'] {
+  --p-main: #f2a9b8;
+  --p-second: #1a3530;
+  --p-loud: #ffe01a;
+  --p-ink: 25%;
+}
+
+:root[data-paleta='tahini'],
+:root[data-paleta='anthracite'],
+:root[data-paleta='pomelo'] {
+  --accent: var(--p-loud);
+  --on-accent: var(--p-second);
+  --ink-bg: var(--p-second);
+}
+:root[data-paleta='tahini'][data-tema='claro'],
+:root[data-paleta='anthracite'][data-tema='claro'],
+:root[data-paleta='pomelo'][data-tema='claro'] {
+  --bg: var(--p-main);
+  --ink: var(--p-second);
+  --muted: color-mix(in srgb, var(--p-second) 72%, var(--p-main));
+  --card: color-mix(in srgb, var(--p-main) 55%, #fff);
+  --line: color-mix(in srgb, var(--p-second) 24%, var(--p-main));
+  --soft: color-mix(in srgb, var(--p-second) 11%, var(--p-main));
+  --fora: color-mix(in srgb, var(--p-second) 16%, var(--p-main));
+  --esqueleto: var(--soft);
+  --esqueleto-brilho: var(--card);
+  --accent-ink: color-mix(in srgb, var(--p-loud) var(--p-ink), var(--p-second));
+  --accent-soft: color-mix(in srgb, var(--p-loud) 24%, var(--p-main));
+  --accent-soft-borda: color-mix(in srgb, var(--p-loud) 55%, var(--p-main));
+  --foco: var(--accent-ink);
+  --img-fundo: var(--card);
+  --progresso: var(--p-second);
+  --sem-musculo: color-mix(in srgb, var(--p-second) 18%, var(--p-main));
+  --dark2: color-mix(in srgb, var(--p-second) 88%, var(--p-main));
+  color-scheme: light;
+}
+:root[data-paleta='tahini'][data-tema='escuro'],
+:root[data-paleta='anthracite'][data-tema='escuro'],
+:root[data-paleta='pomelo'][data-tema='escuro'] {
+  --bg: var(--p-second);
+  --ink: var(--p-main);
+  --muted: color-mix(in srgb, var(--p-main) 68%, var(--p-second));
+  --card: color-mix(in srgb, var(--p-main) 8%, var(--p-second));
+  --line: color-mix(in srgb, var(--p-main) 22%, var(--p-second));
+  --soft: color-mix(in srgb, var(--p-main) 13%, var(--p-second));
+  --fora: color-mix(in srgb, #000 35%, var(--p-second));
+  --esqueleto: var(--soft);
+  --esqueleto-brilho: var(--line);
+  --ink-bg: color-mix(in srgb, var(--p-main) 16%, var(--p-second));
+  --accent-ink: var(--p-loud);
+  --accent-soft: color-mix(in srgb, var(--p-loud) 14%, transparent);
+  --accent-soft-borda: color-mix(in srgb, var(--p-loud) 34%, transparent);
+  --foco: var(--p-loud);
+  --img-fundo: var(--p-second);
+  --progresso: var(--p-loud);
+  --sem-musculo: color-mix(in srgb, var(--p-main) 20%, var(--p-second));
+  --dark2: color-mix(in srgb, var(--p-main) 16%, var(--p-second));
+  color-scheme: dark;
+}
+
 *,
 *::before,
 *::after {

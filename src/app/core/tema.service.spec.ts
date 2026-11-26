@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { CHAVE_TEMA, TemaService, preferenciaValida } from './tema.service';
+import { CHAVE_PALETA, CHAVE_TEMA, TemaService, paletaValida, preferenciaValida } from './tema.service';
 
 describe('TemaService', () => {
   beforeEach(() => {
@@ -48,5 +48,17 @@ describe('TemaService', () => {
     expect(preferenciaValida('claro')).toBeTrue();
     expect(preferenciaValida('x')).toBeFalse();
     expect(preferenciaValida(null)).toBeFalse();
+  });
+
+  it('paleta: começa em limão, aplica o atributo, guarda e ignora valor inválido', () => {
+    localStorage.removeItem(CHAVE_PALETA);
+    const t = TestBed.inject(TemaService);
+    expect(t.paleta()).toBe('padrao');
+    t.definirPaleta('tahini');
+    expect(document.documentElement.dataset['paleta']).toBe('tahini');
+    expect(localStorage.getItem(CHAVE_PALETA)).toBe('tahini');
+    expect(paletaValida('tahini')).toBeTrue();
+    expect(paletaValida('xyz')).toBeFalse();
+    localStorage.removeItem(CHAVE_PALETA);
   });
 });
