@@ -54,10 +54,10 @@ describe('TemaService', () => {
     localStorage.removeItem(CHAVE_PALETA);
     const t = TestBed.inject(TemaService);
     expect(t.paleta()).toBe('padrao');
-    t.definirPaleta('tahini');
-    expect(document.documentElement.dataset['paleta']).toBe('tahini');
-    expect(localStorage.getItem(CHAVE_PALETA)).toBe('tahini');
-    expect(paletaValida('tahini')).toBeTrue();
+    t.definirPaleta('oceano');
+    expect(document.documentElement.dataset['paleta']).toBe('oceano');
+    expect(localStorage.getItem(CHAVE_PALETA)).toBe('oceano');
+    expect(paletaValida('oceano')).toBeTrue();
     expect(paletaValida('xyz')).toBeFalse();
     localStorage.removeItem(CHAVE_PALETA);
   });
