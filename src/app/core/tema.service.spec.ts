@@ -53,11 +53,11 @@ describe('TemaService', () => {
   it('paleta: começa em limão, aplica o atributo, guarda e ignora valor inválido', () => {
     localStorage.removeItem(CHAVE_PALETA);
     const t = TestBed.inject(TemaService);
-    expect(t.paleta()).toBe('limao');
-    t.definirPaleta('violeta');
-    expect(document.documentElement.dataset['paleta']).toBe('violeta');
-    expect(localStorage.getItem(CHAVE_PALETA)).toBe('violeta');
-    expect(paletaValida('violeta')).toBeTrue();
+    expect(t.paleta()).toBe('padrao');
+    t.definirPaleta('tahini');
+    expect(document.documentElement.dataset['paleta']).toBe('tahini');
+    expect(localStorage.getItem(CHAVE_PALETA)).toBe('tahini');
+    expect(paletaValida('tahini')).toBeTrue();
     expect(paletaValida('xyz')).toBeFalse();
     localStorage.removeItem(CHAVE_PALETA);
   });

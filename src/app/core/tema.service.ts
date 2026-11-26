@@ -6,14 +6,12 @@ export type PreferenciaTema = 'sistema' | 'claro' | 'escuro';
 export const CHAVE_TEMA = 'app-workout:tema:v1';
 export const CHAVE_PALETA = 'app-workout:paleta:v1';
 
-/** Paletas de destaque. As cores de cada uma ficam em `styles.scss` (`data-paleta`); `cor` é só a amostra na tela de Ajustes. */
+/** Paletas de cores. As cores de cada uma ficam em `styles.scss` (`data-paleta`); `cores` (principal, secundária, destaque) é só a amostra em Ajustes. */
 export const PALETAS = [
-  { valor: 'limao', rotulo: 'Limão', cor: '#cdeb3b' },
-  { valor: 'turquesa', rotulo: 'Turquesa', cor: '#4fd6c3' },
-  { valor: 'azul', rotulo: 'Azul', cor: '#7cc4ff' },
-  { valor: 'violeta', rotulo: 'Violeta', cor: '#c3a6ff' },
-  { valor: 'rosa', rotulo: 'Rosa', cor: '#ff9ec7' },
-  { valor: 'laranja', rotulo: 'Laranja', cor: '#ffb24a' },
+  { valor: 'padrao', rotulo: 'Padrão', cores: ['#f3f4f0', '#14171a', '#cdeb3b'] },
+  { valor: 'tahini', rotulo: 'Tahini', cores: ['#ecdfc6', '#1a2238', '#ff6216'] },
+  { valor: 'anthracite', rotulo: 'Anthracite', cores: ['#d2c6b4', '#2b2d31', '#00e2f2'] },
+  { valor: 'pomelo', rotulo: 'Pomelo', cores: ['#f2a9b8', '#1a3530', '#ffe01a'] },
 ] as const;
 
 export type Paleta = (typeof PALETAS)[number]['valor'];
@@ -87,9 +85,9 @@ export class TemaService {
   private lerPaleta(): Paleta {
     try {
       const v = localStorage.getItem(CHAVE_PALETA);
-      return paletaValida(v) ? v : 'limao';
+      return paletaValida(v) ? v : 'padrao';
     } catch {
-      return 'limao';
+      return 'padrao';
     }
   }
 
