@@ -312,13 +312,12 @@ type Aba = 'dados' | 'stats' | 'ajustes';
     .tema { min-height: 44px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; }
     .tema[aria-checked='true'] { border-color: var(--ink); background: var(--soft); }
     .sub2 { font-size: 14px; font-weight: 700; margin: 4px 0 0; }
-    .paletas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .paletas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .paleta { min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; }
     .paleta[aria-checked='true'] { border-color: var(--ink); background: var(--soft); }
-    .paleta__cores { display: flex; width: 72px; height: 22px; border-radius: 11px; overflow: hidden; border: 2px solid var(--ink); }
+    .paleta__cores { display: flex; width: 56px; height: 22px; border-radius: 11px; overflow: hidden; border: 2px solid var(--ink); }
     .paleta__cores span { flex: 1; }
-    .paleta__cores span:first-child { flex: 3; }
-    .paleta__cores span:nth-child(2) { flex: 2; }
+    .paleta__cores span:first-child { flex: 2; }
     .bloco {
       padding: 16px;
       display: flex;

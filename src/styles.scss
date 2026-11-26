@@ -61,84 +61,64 @@
 }
 
 /*
- * Paletas de cores (Ajustes → Aparência → Paleta). "Padrão" é o que já está em :root e no tema escuro.
- * As outras têm três cores: principal (60%), secundária (30%) e destaque (10%). Cada uma vale para os dois temas:
- * no claro o fundo é a principal e o texto a secundária; no escuro, o contrário. O resto é derivado delas.
- * `--p-ink` é quanto do destaque entra no texto colorido sobre fundo claro (o destaque puro não tem contraste).
+ * Paletas de cores (Ajustes → Aparência → Paleta). "Padrão" é o que já está em :root e no tema escuro (verde-limão).
+ * As outras mantêm a estrutura do app (fundos neutros com um leve tom do matiz, texto quase preto, destaque vivo com
+ * texto escuro por cima) e mudam só o matiz. Todas as combinações de texto passam de 4,5:1 de contraste.
  */
-/* Tahini: principal #ecdfc6 (60%), secundária #1a2238 (30%), destaque #ff6216 (10%). */
-:root[data-paleta='tahini'] {
-  --p-main: #ecdfc6;
-  --p-second: #1a2238;
-  --p-loud: #ff6216;
-  --p-ink: 60%;
+/* Oceano */
+:root[data-paleta='oceano'] { --accent: #3dd9c5; --on-accent: #14171a; }
+:root[data-paleta='oceano'][data-tema='claro'] {
+  --bg: #f1f4f4; --ink: #141a1a; --muted: #596464; --card: #ffffff; --line: #c7d1d1; --soft: #e0e6e6; --fora: #e5ebeb;
+  --accent-ink: #0a665c; --foco: #0a665c; --accent-soft: color-mix(in srgb, #3dd9c5 22%, #fff); --accent-soft-borda: color-mix(in srgb, #3dd9c5 50%, #fff);
 }
-/* Anthracite: principal #d2c6b4 (60%), secundária #2b2d31 (30%), destaque #00e2f2 (10%). */
-:root[data-paleta='anthracite'] {
-  --p-main: #d2c6b4;
-  --p-second: #2b2d31;
-  --p-loud: #00e2f2;
-  --p-ink: 25%;
+:root[data-paleta='oceano'][data-tema='escuro'] {
+  --bg: #141a1a; --ink: #f1f4f4; --muted: #a1afaf; --card: #1b2222; --line: #333d3d; --soft: #272f30; --fora: #0b0e0f; --ink-bg: #313a3a;
+  --esqueleto: #272f30; --esqueleto-brilho: #333d3d; --img-fundo: #141a1a;
+  --accent-ink: #3dd9c5; --foco: #3dd9c5; --progresso: #3dd9c5; --accent-soft: color-mix(in srgb, #3dd9c5 14%, transparent); --accent-soft-borda: color-mix(in srgb, #3dd9c5 34%, transparent);
 }
-/* Pomelo: principal #f2a9b8 (60%), secundária #1a3530 (30%), destaque #ffe01a (10%). */
-:root[data-paleta='pomelo'] {
-  --p-main: #f2a9b8;
-  --p-second: #1a3530;
-  --p-loud: #ffe01a;
-  --p-ink: 25%;
+/* Azul */
+:root[data-paleta='azul'] { --accent: #6ab4ff; --on-accent: #14171a; }
+:root[data-paleta='azul'][data-tema='claro'] {
+  --bg: #f1f2f4; --ink: #14161a; --muted: #595e64; --card: #ffffff; --line: #c7cbd1; --soft: #e0e3e6; --fora: #e5e8eb;
+  --accent-ink: #0b4f9c; --foco: #0b4f9c; --accent-soft: color-mix(in srgb, #6ab4ff 22%, #fff); --accent-soft-borda: color-mix(in srgb, #6ab4ff 50%, #fff);
 }
-
-:root[data-paleta='tahini'],
-:root[data-paleta='anthracite'],
-:root[data-paleta='pomelo'] {
-  --accent: var(--p-loud);
-  --on-accent: var(--p-second);
-  --ink-bg: var(--p-second);
+:root[data-paleta='azul'][data-tema='escuro'] {
+  --bg: #14171a; --ink: #f1f2f4; --muted: #a1a7af; --card: #1b1e22; --line: #33373d; --soft: #272b30; --fora: #0b0d0f; --ink-bg: #31353a;
+  --esqueleto: #272b30; --esqueleto-brilho: #33373d; --img-fundo: #14171a;
+  --accent-ink: #6ab4ff; --foco: #6ab4ff; --progresso: #6ab4ff; --accent-soft: color-mix(in srgb, #6ab4ff 14%, transparent); --accent-soft-borda: color-mix(in srgb, #6ab4ff 34%, transparent);
 }
-:root[data-paleta='tahini'][data-tema='claro'],
-:root[data-paleta='anthracite'][data-tema='claro'],
-:root[data-paleta='pomelo'][data-tema='claro'] {
-  --bg: var(--p-main);
-  --ink: var(--p-second);
-  --muted: color-mix(in srgb, var(--p-second) 72%, var(--p-main));
-  --card: color-mix(in srgb, var(--p-main) 55%, #fff);
-  --line: color-mix(in srgb, var(--p-second) 24%, var(--p-main));
-  --soft: color-mix(in srgb, var(--p-second) 11%, var(--p-main));
-  --fora: color-mix(in srgb, var(--p-second) 16%, var(--p-main));
-  --esqueleto: var(--soft);
-  --esqueleto-brilho: var(--card);
-  --accent-ink: color-mix(in srgb, var(--p-loud) var(--p-ink), var(--p-second));
-  --accent-soft: color-mix(in srgb, var(--p-loud) 24%, var(--p-main));
-  --accent-soft-borda: color-mix(in srgb, var(--p-loud) 55%, var(--p-main));
-  --foco: var(--accent-ink);
-  --img-fundo: var(--card);
-  --progresso: var(--p-second);
-  --sem-musculo: color-mix(in srgb, var(--p-second) 18%, var(--p-main));
-  --dark2: color-mix(in srgb, var(--p-second) 88%, var(--p-main));
-  color-scheme: light;
+/* Violeta */
+:root[data-paleta='violeta'] { --accent: #b79cff; --on-accent: #14171a; }
+:root[data-paleta='violeta'][data-tema='claro'] {
+  --bg: #f1f1f4; --ink: #15141a; --muted: #5c5964; --card: #ffffff; --line: #c9c7d1; --soft: #e1e0e6; --fora: #e7e5eb;
+  --accent-ink: #5232b0; --foco: #5232b0; --accent-soft: color-mix(in srgb, #b79cff 22%, #fff); --accent-soft-borda: color-mix(in srgb, #b79cff 50%, #fff);
 }
-:root[data-paleta='tahini'][data-tema='escuro'],
-:root[data-paleta='anthracite'][data-tema='escuro'],
-:root[data-paleta='pomelo'][data-tema='escuro'] {
-  --bg: var(--p-second);
-  --ink: var(--p-main);
-  --muted: color-mix(in srgb, var(--p-main) 68%, var(--p-second));
-  --card: color-mix(in srgb, var(--p-main) 8%, var(--p-second));
-  --line: color-mix(in srgb, var(--p-main) 22%, var(--p-second));
-  --soft: color-mix(in srgb, var(--p-main) 13%, var(--p-second));
-  --fora: color-mix(in srgb, #000 35%, var(--p-second));
-  --esqueleto: var(--soft);
-  --esqueleto-brilho: var(--line);
-  --ink-bg: color-mix(in srgb, var(--p-main) 16%, var(--p-second));
-  --accent-ink: var(--p-loud);
-  --accent-soft: color-mix(in srgb, var(--p-loud) 14%, transparent);
-  --accent-soft-borda: color-mix(in srgb, var(--p-loud) 34%, transparent);
-  --foco: var(--p-loud);
-  --img-fundo: var(--p-second);
-  --progresso: var(--p-loud);
-  --sem-musculo: color-mix(in srgb, var(--p-main) 20%, var(--p-second));
-  --dark2: color-mix(in srgb, var(--p-main) 16%, var(--p-second));
-  color-scheme: dark;
+:root[data-paleta='violeta'][data-tema='escuro'] {
+  --bg: #16141a; --ink: #f1f1f4; --muted: #a5a1af; --card: #1d1b22; --line: #36333d; --soft: #292730; --fora: #0c0b0f; --ink-bg: #33313a;
+  --esqueleto: #292730; --esqueleto-brilho: #36333d; --img-fundo: #16141a;
+  --accent-ink: #b79cff; --foco: #b79cff; --progresso: #b79cff; --accent-soft: color-mix(in srgb, #b79cff 14%, transparent); --accent-soft-borda: color-mix(in srgb, #b79cff 34%, transparent);
+}
+/* Coral */
+:root[data-paleta='coral'] { --accent: #ff8a6b; --on-accent: #14171a; }
+:root[data-paleta='coral'][data-tema='claro'] {
+  --bg: #f4f1f1; --ink: #1a1514; --muted: #645b59; --card: #ffffff; --line: #d1c9c7; --soft: #e6e1e0; --fora: #ebe6e5;
+  --accent-ink: #a52f12; --foco: #a52f12; --accent-soft: color-mix(in srgb, #ff8a6b 22%, #fff); --accent-soft-borda: color-mix(in srgb, #ff8a6b 50%, #fff);
+}
+:root[data-paleta='coral'][data-tema='escuro'] {
+  --bg: #1a1514; --ink: #f4f1f1; --muted: #afa4a1; --card: #221d1b; --line: #3d3533; --soft: #302927; --fora: #0f0c0b; --ink-bg: #3a3331;
+  --esqueleto: #302927; --esqueleto-brilho: #3d3533; --img-fundo: #1a1514;
+  --accent-ink: #ff8a6b; --foco: #ff8a6b; --progresso: #ff8a6b; --accent-soft: color-mix(in srgb, #ff8a6b 14%, transparent); --accent-soft-borda: color-mix(in srgb, #ff8a6b 34%, transparent);
+}
+/* Âmbar */
+:root[data-paleta='ambar'] { --accent: #ffc233; --on-accent: #14171a; }
+:root[data-paleta='ambar'][data-tema='claro'] {
+  --bg: #f4f3f1; --ink: #1a1814; --muted: #646159; --card: #ffffff; --line: #d1cec7; --soft: #e6e4e0; --fora: #ebe9e5;
+  --accent-ink: #7a5200; --foco: #7a5200; --accent-soft: color-mix(in srgb, #ffc233 22%, #fff); --accent-soft-borda: color-mix(in srgb, #ffc233 50%, #fff);
+}
+:root[data-paleta='ambar'][data-tema='escuro'] {
+  --bg: #1a1814; --ink: #f4f3f1; --muted: #afaba1; --card: #22201b; --line: #3d3a33; --soft: #302d27; --fora: #0f0d0b; --ink-bg: #3a3731;
+  --esqueleto: #302d27; --esqueleto-brilho: #3d3a33; --img-fundo: #1a1814;
+  --accent-ink: #ffc233; --foco: #ffc233; --progresso: #ffc233; --accent-soft: color-mix(in srgb, #ffc233 14%, transparent); --accent-soft-borda: color-mix(in srgb, #ffc233 34%, transparent);
 }
 
 *,

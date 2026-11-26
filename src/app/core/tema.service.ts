@@ -6,12 +6,14 @@ export type PreferenciaTema = 'sistema' | 'claro' | 'escuro';
 export const CHAVE_TEMA = 'app-workout:tema:v1';
 export const CHAVE_PALETA = 'app-workout:paleta:v1';
 
-/** Paletas de cores. As cores de cada uma ficam em `styles.scss` (`data-paleta`); `cores` (principal, secundária, destaque) é só a amostra em Ajustes. */
+/** Paletas de cores. As cores de cada uma ficam em `styles.scss` (`data-paleta`); `cores` (fundo, texto, destaque) é só a amostra em Ajustes. */
 export const PALETAS = [
   { valor: 'padrao', rotulo: 'Padrão', cores: ['#f3f4f0', '#14171a', '#cdeb3b'] },
-  { valor: 'tahini', rotulo: 'Tahini', cores: ['#ecdfc6', '#1a2238', '#ff6216'] },
-  { valor: 'anthracite', rotulo: 'Anthracite', cores: ['#d2c6b4', '#2b2d31', '#00e2f2'] },
-  { valor: 'pomelo', rotulo: 'Pomelo', cores: ['#f2a9b8', '#1a3530', '#ffe01a'] },
+  { valor: 'oceano', rotulo: 'Oceano', cores: ['#f1f4f4', '#14171a', '#3dd9c5'] },
+  { valor: 'azul', rotulo: 'Azul', cores: ['#f1f2f4', '#14171a', '#6ab4ff'] },
+  { valor: 'violeta', rotulo: 'Violeta', cores: ['#f1f1f4', '#14171a', '#b79cff'] },
+  { valor: 'coral', rotulo: 'Coral', cores: ['#f4f1f1', '#14171a', '#ff8a6b'] },
+  { valor: 'ambar', rotulo: 'Âmbar', cores: ['#f4f3f1', '#14171a', '#ffc233'] },
 ] as const;
 
 export type Paleta = (typeof PALETAS)[number]['valor'];
