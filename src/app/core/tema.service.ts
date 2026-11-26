@@ -4,6 +4,23 @@ import { Injectable, inject, signal } from '@angular/core';
 export type PreferenciaTema = 'sistema' | 'claro' | 'escuro';
 
 export const CHAVE_TEMA = 'app-workout:tema:v1';
+export const CHAVE_PALETA = 'app-workout:paleta:v1';
+
+/** Paletas de destaque. As cores de cada uma ficam em `styles.scss` (`data-paleta`); `cor` é só a amostra na tela de Ajustes. */
+export const PALETAS = [
+  { valor: 'limao', rotulo: 'Limão', cor: '#cdeb3b' },
+  { valor: 'turquesa', rotulo: 'Turquesa', cor: '#4fd6c3' },
+  { valor: 'azul', rotulo: 'Azul', cor: '#7cc4ff' },
+  { valor: 'violeta', rotulo: 'Violeta', cor: '#c3a6ff' },
+  { valor: 'rosa', rotulo: 'Rosa', cor: '#ff9ec7' },
+  { valor: 'laranja', rotulo: 'Laranja', cor: '#ffb24a' },
+] as const;
+
+export type Paleta = (typeof PALETAS)[number]['valor'];
+
+export function paletaValida(v: unknown): v is Paleta {
+  return PALETAS.some((p) => p.valor === v);
+}
 
 /** Cor da barra de status do aparelho (`theme-color`) em cada tema. */
 const COR_BARRA = { claro: '#14171A', escuro: '#14171A' } as const;
@@ -22,6 +39,7 @@ export class TemaService {
   private readonly consulta = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
 
   readonly preferencia = signal<PreferenciaTema>(this.ler());
+  readonly paleta = signal<Paleta>(this.lerPaleta());
   /** `true` quando o tema em uso agora é o escuro (já resolvido, inclusive em "Sistema"). */
   readonly escuro = signal(false);
 
@@ -34,6 +52,16 @@ export class TemaService {
     this.preferencia.set(p);
     try {
       localStorage.setItem(CHAVE_TEMA, p);
+    } catch {
+      // armazenamento bloqueado: vale só até fechar o app
+    }
+    this.aplicar();
+  }
+
+  definirPaleta(p: Paleta): void {
+    this.paleta.set(p);
+    try {
+      localStorage.setItem(CHAVE_PALETA, p);
     } catch {
       // armazenamento bloqueado: vale só até fechar o app
     }
@@ -56,7 +84,17 @@ export class TemaService {
     }
   }
 
+  private lerPaleta(): Paleta {
+    try {
+      const v = localStorage.getItem(CHAVE_PALETA);
+      return paletaValida(v) ? v : 'limao';
+    } catch {
+      return 'limao';
+    }
+  }
+
   private aplicar(): void {
+    this.doc.documentElement.dataset['paleta'] = this.paleta();
     const t = this.efetivo();
     this.escuro.set(t === 'escuro');
     this.doc.documentElement.dataset['tema'] = t;

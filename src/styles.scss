@@ -60,6 +60,30 @@
   color-scheme: dark;
 }
 
+/*
+ * Paletas de destaque (Ajustes → Aparência → Cor de destaque). "Limão" é o padrão e já está em :root.
+ * Cada paleta define só a cor viva (`--accent`, sempre clara o bastante para texto escuro por cima) e a versão
+ * escura dela para texto sobre fundo claro (`--accent-ink`, `--foco`); o resto é derivado.
+ */
+:root[data-paleta]:not([data-paleta='limao']) {
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, #fff);
+  --accent-soft-borda: color-mix(in srgb, var(--accent) 55%, #fff);
+  --foco: var(--accent-ink);
+}
+:root[data-paleta='turquesa'] { --accent: #4fd6c3; --accent-ink: #00695c; }
+:root[data-paleta='azul'] { --accent: #7cc4ff; --accent-ink: #0b5394; }
+:root[data-paleta='violeta'] { --accent: #c3a6ff; --accent-ink: #5b2fb3; }
+:root[data-paleta='rosa'] { --accent: #ff9ec7; --accent-ink: #a3114f; }
+:root[data-paleta='laranja'] { --accent: #ffb24a; --accent-ink: #8a4b00; }
+/* No tema escuro o destaque também serve de texto e de barra de progresso. */
+:root[data-tema='escuro'][data-paleta]:not([data-paleta='limao']) {
+  --accent-ink: var(--accent);
+  --accent-soft: color-mix(in srgb, var(--accent) 13%, transparent);
+  --accent-soft-borda: color-mix(in srgb, var(--accent) 32%, transparent);
+  --foco: var(--accent);
+  --progresso: var(--accent);
+}
+
 *,
 *::before,
 *::after {
