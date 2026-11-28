@@ -248,7 +248,7 @@ export class EventoCard {
       void this.social.lerFoto(e.autor, e.sessaoId).then((f) => {
         if (cancelado) return;
         this.foto.set(f);
-        if (!f) this.motivoSemFoto.set(this.social.motivosFoto?.get(`${e.autor}/${e.sessaoId}`) ?? 'a foto não foi encontrada (talvez o envio tenha falhado)');
+        if (!f) this.motivoSemFoto.set('ela não está disponível agora, tente de novo mais tarde');
         this.fotoCarregando.set(false);
       });
     });
