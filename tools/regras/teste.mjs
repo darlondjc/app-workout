@@ -86,6 +86,79 @@ async function rodar(rotulo, arquivo) {
     return setDoc(doc(db('m'), `conexoes/${chave('m', 'n')}`), { membros: ['m', 'n'], grupos: ['G6'] });
   });
 
+
+  // ---- Amigos mais chegados (amizades) ----
+  const pedido = (de, para) => ({ id: chave(de, para), membros: [de, para].sort(), de, status: 'pendente' });
+  const pedidoDoc = (u, de, para) => doc(db(u), `amizades/${chave(de, para)}`);
+  const criarPedido = (de, para) => sem((x) => setDoc(doc(x, `amizades/${chave(de, para)}`), pedido(de, para)));
+  t('legítimo: pedir amizade', true, () => setDoc(pedidoDoc('ana', 'ana', 'bia'), pedido('ana', 'bia')));
+  t('legítimo: quem recebeu aceita o pedido', true, async () => {
+    await criarPedido('ana', 'bia');
+    return updateDoc(pedidoDoc('bia', 'ana', 'bia'), { status: 'aceita' });
+  });
+  t('legítimo: qualquer um dos dois desfaz a amizade', true, async () => {
+    await criarPedido('ana', 'bia');
+    return deleteDoc(pedidoDoc('ana', 'ana', 'bia'));
+  });
+  t('ATAQUE: quem pediu aceita o próprio pedido', false, async () => {
+    await criarPedido('ana', 'bia');
+    return updateDoc(pedidoDoc('ana', 'ana', 'bia'), { status: 'aceita' });
+  });
+  t('ATAQUE: criar a amizade já como aceita', false,
+    () => setDoc(pedidoDoc('ana', 'ana', 'bia'), { ...pedido('ana', 'bia'), status: 'aceita' }));
+  t('ATAQUE: pedir em nome de outra pessoa', false,
+    () => setDoc(pedidoDoc('ana', 'ana', 'bia'), { ...pedido('ana', 'bia'), de: 'bia' }));
+  t('ATAQUE: pedido com identificador que não é a chave do par', false,
+    () => setDoc(doc(db('ana'), 'amizades/qualquer'), pedido('ana', 'bia')));
+  t('ATAQUE: terceiro lê o pedido dos outros', false, async () => {
+    await criarPedido('ana', 'bia');
+    return getDoc(pedidoDoc('eva', 'ana', 'bia'));
+  });
+  t('ATAQUE: terceiro apaga a amizade dos outros', false, async () => {
+    await criarPedido('ana', 'bia');
+    return deleteDoc(pedidoDoc('eva', 'ana', 'bia'));
+  });
+  t('legítimo: amigo aceito lê o treino e o que foi compartilhado', true, async () => {
+    await sem(async (x) => {
+      await setDoc(doc(x, `amizades/${chave('eva', 'bia')}`), { ...pedido('eva', 'bia'), status: 'aceita' });
+      await setDoc(doc(x, 'usuarios/bia/compartilhado/peso'), { registros: [] });
+    });
+    return getDoc(doc(db('eva'), 'usuarios/bia/compartilhado/peso'));
+  });
+  t('ATAQUE: pedido ainda pendente não libera o que é só de amigo', false, async () => {
+    await sem(async (x) => {
+      await setDoc(doc(x, `amizades/${chave('eva', 'bia')}`), pedido('eva', 'bia'));
+      await setDoc(doc(x, 'usuarios/bia/compartilhado/peso'), { registros: [] });
+    });
+    return getDoc(doc(db('eva'), 'usuarios/bia/compartilhado/peso'));
+  });
+  t('ATAQUE: colega de grupo (sem ser amigo) lê o que é só de amigo', false, async () => {
+    await sem((x) => setDoc(doc(x, 'usuarios/b/compartilhado/peso'), { registros: [] }));
+    return getDoc(doc(db('a'), 'usuarios/b/compartilhado/peso'));
+  });
+
+  // ---- Código pessoal (codigos) ----
+  t('legítimo: reservar o próprio código', true, () => setDoc(doc(db('ana'), 'codigos/ABCD2345'), { uid: 'ana' }));
+  t('legítimo: consultar um código (para pedir amizade)', true, async () => {
+    await sem((x) => setDoc(doc(x, 'codigos/ABCD2345'), { uid: 'bia' }));
+    return getDoc(doc(db('ana'), 'codigos/ABCD2345'));
+  });
+  t('ATAQUE: sobrescrever o código de outra pessoa', false, async () => {
+    await sem((x) => setDoc(doc(x, 'codigos/ABCD2345'), { uid: 'bia' }));
+    return setDoc(doc(db('ana'), 'codigos/ABCD2345'), { uid: 'ana' });
+  });
+  t('ATAQUE: apontar o código para outra pessoa', false, () => setDoc(doc(db('ana'), 'codigos/ABCD2345'), { uid: 'bia' }));
+  t('ATAQUE: guardar campos extras no código', false,
+    () => setDoc(doc(db('ana'), 'codigos/ABCD2345'), { uid: 'ana', lixo: 'x'.repeat(1000) }));
+  t('ATAQUE: apagar o código de outra pessoa', false, async () => {
+    await sem((x) => setDoc(doc(x, 'codigos/ABCD2345'), { uid: 'bia' }));
+    return deleteDoc(doc(db('ana'), 'codigos/ABCD2345'));
+  });
+  t('ATAQUE: sem login não consulta códigos', false, async () => {
+    await sem((x) => setDoc(doc(x, 'codigos/ABCD2345'), { uid: 'bia' }));
+    return getDoc(doc(env.unauthenticatedContext().firestore(), 'codigos/ABCD2345'));
+  });
+
   let ok = 0;
   const linhas = [];
   for (const c of casos) {
