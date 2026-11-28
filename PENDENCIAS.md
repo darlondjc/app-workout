@@ -34,7 +34,7 @@ Sem mudar API nem comportamento, com os 838 testes como rede de segurança (`npm
 **Decidido: não fazer.** O `maximum-scale=1, user-scalable=no` do `index.html` fica como está (decisão do dono).
 
 Segurança e regras:
-- `atividades`, `curtidas` e `comentarios` sem limite de campos/tamanho (spam de avisos); `sessoes`, `perfis` e `compartilhado` sem validação de tamanho.
+- Limites de campos e tamanho nas regras: feito em `atividades`, `curtidas`, `comentarios`, `sessoes`, `perfis` e `compartilhado` (branch `fix/regras-limites`; **publicar o `firestore.rules` de novo depois de mesclar**).
 - Qualquer pessoa logada cria quantos `codigos` quiser apontando para si (só gera escrita, não dá acesso). Fechar exige gravar código e perfil na mesma operação (`iniciar()` do `SocialService`) e travar `perfis.codigo` depois de definido. Baixa prioridade.
 - Sem `firebase.json` nem cabeçalhos de segurança (CSP, `X-Frame-Options`, `Referrer-Policy`). O app mostra imagens de URLs de terceiros (`avatar.ts`).
 - Texto do "grupo aberto" deveria avisar que quem tem o link vê histórico, fotos e comentários de todos.
@@ -67,7 +67,7 @@ Tela Início (ainda em aberto):
 
 - Dependências do app: `npm install` na raiz.
 - Testes do app: `npm run test:ci` (838 passando) e `npx ng lint`.
-- Testes das regras (precisa de Java): `cd tools/regras && npm install && npm test` (42 casos). Depois, **apagar `tools/regras/node_modules` e os logs** se a pasta ficar como "não rastreada" (o hook de fim de turno reclama).
+- Testes das regras (precisa de Java): `cd tools/regras && npm install && npm test` (64 casos). Depois, **apagar `tools/regras/node_modules` e os logs** se a pasta ficar como "não rastreada" (o hook de fim de turno reclama).
 - Prints do app sem login: o app pede login Google quando o Firebase está configurado. Para tirar prints, trocar `FIREBASE_CONFIG` por `null` em `src/app/core/firebase.config.ts` **só localmente** e reverter com `git checkout -- src/app/core/firebase.config.ts`. Serve com `npx ng serve --port 4300 --host 127.0.0.1`.
 - A skill `ponytail` está em `.claude/skills/ponytail/` e carrega em sessões novas abertas na `main`. O clone original ficou em `/home/user/dietrichgebert/ponytail` (fora do repositório; pode apagar).
 - Ruído conhecido nos testes: `this.plans.estadoNuvem is not a function` aparece também na `main` (mocks de teste incompletos). Não é regressão.
