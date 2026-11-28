@@ -159,6 +159,33 @@ async function rodar(rotulo, arquivo) {
     return getDoc(doc(env.unauthenticatedContext().firestore(), 'codigos/ABCD2345'));
   });
 
+  // ---- Limites de tamanho e de campos ----
+  const grande = (n) => 'x'.repeat(n);
+  const aviso = { autor: 'a', autorNome: 'Ana', autorFoto: null, tipo: 'comentario', eventoId: 'e1', texto: 'oi', criadoEm: 1 };
+  t('legítimo: aviso de comentário com os campos do app', true, () => setDoc(doc(db('a'), 'usuarios/b/atividades/av1'), aviso));
+  t('legítimo: aviso de curtida sem texto', true, () => setDoc(doc(db('a'), 'usuarios/b/atividades/av2'), { autor: 'a', autorNome: 'Ana', autorFoto: null, tipo: 'curtida', eventoId: 'e1', criadoEm: 1 }));
+  t('ATAQUE: aviso com campo extra grande', false, () => setDoc(doc(db('a'), 'usuarios/b/atividades/av1'), { ...aviso, lixo: grande(5000) }));
+  t('ATAQUE: aviso com nome enorme', false, () => setDoc(doc(db('a'), 'usuarios/b/atividades/av1'), { ...aviso, autorNome: grande(5000) }));
+  t('ATAQUE: aviso com tipo inventado', false, () => setDoc(doc(db('a'), 'usuarios/b/atividades/av1'), { ...aviso, tipo: 'spam' }));
+  t('ATAQUE: aviso com foto enorme', false, () => setDoc(doc(db('a'), 'usuarios/b/atividades/av1'), { ...aviso, autorFoto: grande(100000) }));
+  const comentario = { autor: 'a', autorNome: 'Ana', autorFoto: 'https://lh3.googleusercontent.com/x', texto: 'ótimo', criadoEm: 1 };
+  t('legítimo: comentário com os campos do app', true, () => setDoc(doc(db('a'), 'usuarios/b/eventos/e1/comentarios/c1'), comentario));
+  t('ATAQUE: comentário com campo extra grande', false, () => setDoc(doc(db('a'), 'usuarios/b/eventos/e1/comentarios/c1'), { ...comentario, lixo: grande(5000) }));
+  t('ATAQUE: comentário com nome enorme', false, () => setDoc(doc(db('a'), 'usuarios/b/eventos/e1/comentarios/c1'), { ...comentario, autorNome: grande(5000) }));
+  t('legítimo: curtida', true, () => setDoc(doc(db('a'), 'usuarios/b/eventos/e1/curtidas/a'), { criadoEm: 1 }));
+  t('ATAQUE: curtida com campo extra', false, () => setDoc(doc(db('a'), 'usuarios/b/eventos/e1/curtidas/a'), { criadoEm: 1, lixo: grande(5000) }));
+  t('legítimo: perfil como o app grava', true, () => setDoc(doc(db('a'), 'perfis/a'), { nome: 'Ana', foto: grande(12000), codigo: 'ABCD2345', metaSemanal: 3, atualizadoEm: 1 }, { merge: true }));
+  t('legítimo: perfil sem foto', true, () => setDoc(doc(db('a'), 'perfis/a'), { nome: 'Ana', foto: null, atualizadoEm: 1 }, { merge: true }));
+  t('ATAQUE: perfil com nome enorme', false, () => setDoc(doc(db('a'), 'perfis/a'), { nome: grande(5000), foto: null }));
+  t('ATAQUE: perfil com foto enorme', false, () => setDoc(doc(db('a'), 'perfis/a'), { nome: 'Ana', foto: grande(100000) }));
+  t('legítimo: gráfico de peso compartilhado', true, () => setDoc(doc(db('a'), 'usuarios/a/compartilhado/peso'), { registros: [{ data: '2026-01-01', kg: 70 }], atualizadoEm: 1 }));
+  t('ATAQUE: compartilhado com campo extra', false, () => setDoc(doc(db('a'), 'usuarios/a/compartilhado/peso'), { registros: [], lixo: grande(5000) }));
+  t('ATAQUE: compartilhado com lista gigante', false, () => setDoc(doc(db('a'), 'usuarios/a/compartilhado/peso'), { registros: Array.from({ length: 10001 }, () => 1), atualizadoEm: 1 }));
+  t('legítimo: sessão do treino', true, () => setDoc(doc(db('a'), 'usuarios/a/sessoes/s1'), { id: 's1', data: '2026-01-01', fichaId: 'f', nota: 'ombro', registros: [{ exerciseId: 'x', series: [] }] }));
+  t('legítimo: apagar a própria sessão', true, () => deleteDoc(doc(db('a'), 'usuarios/a/sessoes/s1')));
+  t('ATAQUE: sessão com nota enorme', false, () => setDoc(doc(db('a'), 'usuarios/a/sessoes/s1'), { id: 's1', data: '2026-01-01', fichaId: 'f', nota: grande(5000) }));
+  t('ATAQUE: sessão com milhares de exercícios', false, () => setDoc(doc(db('a'), 'usuarios/a/sessoes/s1'), { id: 's1', data: '2026-01-01', fichaId: 'f', registros: Array.from({ length: 101 }, () => ({ exerciseId: 'x', series: [] })) }));
+
   let ok = 0;
   const linhas = [];
   for (const c of casos) {

@@ -60,13 +60,37 @@ service cloud.firestore {
       return t is string && t.size() >= 1 && t.size() <= 280;
     }
 
+    // Limites de tamanho: nada que a pessoa grave pode passar disto (o app usa bem menos), para ninguém encher o banco
+    // nem a caixa de avisos dos outros. `v` pode faltar (campo opcional).
+    function ate(v, n) {
+      return v is string && v.size() <= n;
+    }
+
+    // Foto repetida em avisos e comentários: só o endereço da conta Google (a foto escolhida no app não vai junto).
+    function fotoDeItem(v) {
+      return v == null || ate(v, 2000);
+    }
+
+    // Aviso de curtida ou comentário na caixa do dono do treino.
+    function avisoValido(d) {
+      return d.keys().hasOnly(['autor', 'autorNome', 'autorFoto', 'tipo', 'eventoId', 'texto', 'criadoEm'])
+        && ate(d.autorNome, 100)
+        && fotoDeItem(d.get('autorFoto', null))
+        && d.tipo in ['curtida', 'comentario']
+        && ate(d.eventoId, 200)
+        && d.criadoEm is number;
+    }
+
     // Dados privados (fichas, ficha ativa e treino em andamento).
     match /usuarios/{uid} {
       allow read, write: if logado() && request.auth.uid == uid;
 
       // Histórico de treinos: o dono grava; colegas leem (calendário e estatísticas).
       match /sessoes/{sessaoId} {
-        allow write: if logado() && request.auth.uid == uid;
+        allow write: if logado() && request.auth.uid == uid
+          && (request.resource == null
+            || (ate(request.resource.data.get('nota', ''), 1000)
+              && request.resource.data.get('registros', []).size() <= 100));
         allow read: if euOuContato(uid);
       }
 
@@ -78,7 +102,8 @@ service cloud.firestore {
 
         match /curtidas/{quem} {
           allow read: if euOuContato(uid);
-          allow create: if euOuContato(uid) && quem == request.auth.uid;
+          allow create: if euOuContato(uid) && quem == request.auth.uid
+            && request.resource.data.keys().hasOnly(['criadoEm']);
           allow delete: if logado() && quem == request.auth.uid;
         }
 
@@ -86,7 +111,10 @@ service cloud.firestore {
           allow read: if euOuContato(uid);
           allow create: if euOuContato(uid)
             && request.resource.data.autor == request.auth.uid
-            && textoValido(request.resource.data.texto);
+            && textoValido(request.resource.data.texto)
+            && request.resource.data.keys().hasOnly(['autor', 'autorNome', 'autorFoto', 'texto', 'criadoEm'])
+            && ate(request.resource.data.autorNome, 100)
+            && fotoDeItem(request.resource.data.get('autorFoto', null));
           // Quem escreveu apaga o próprio comentário; o dono do treino apaga qualquer um.
           allow delete: if logado() && (resource.data.autor == request.auth.uid || request.auth.uid == uid);
         }
@@ -105,7 +133,11 @@ service cloud.firestore {
       // corta o acesso.
       match /compartilhado/{item} {
         allow read: if euOuAmigo(uid);
-        allow write: if logado() && request.auth.uid == uid;
+        allow delete: if logado() && request.auth.uid == uid;
+        allow create, update: if logado() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['registros', 'atualizadoEm'])
+          && request.resource.data.registros is list
+          && request.resource.data.registros.size() <= 10000;
       }
 
       // Reações recebidas (curtidas e comentários): só o dono lê; colegas deixam o aviso.
@@ -114,6 +146,7 @@ service cloud.firestore {
         allow create: if logado()
           && request.resource.data.autor == request.auth.uid
           && contatos(request.auth.uid, uid)
+          && avisoValido(request.resource.data)
           && (!('texto' in request.resource.data) || textoValido(request.resource.data.texto));
         // O aviso de curtida tem id fixo por pessoa e treino: curtir de novo o sobrescreve.
         // Só quem o criou o atualiza.
@@ -121,6 +154,7 @@ service cloud.firestore {
           && resource.data.autor == request.auth.uid
           && request.resource.data.autor == request.auth.uid
           && contatos(request.auth.uid, uid)
+          && avisoValido(request.resource.data)
           && (!('texto' in request.resource.data) || textoValido(request.resource.data.texto));
       }
     }
@@ -128,7 +162,10 @@ service cloud.firestore {
     // Nome, foto e meta, visíveis a quem estiver logado e souber o identificador.
     match /perfis/{uid} {
       allow get: if logado();
-      allow create, update: if logado() && request.auth.uid == uid;
+      allow create, update: if logado() && request.auth.uid == uid
+        && ate(request.resource.data.nome, 100)
+        && (request.resource.data.get('foto', null) == null || ate(request.resource.data.foto, 60000))
+        && ate(request.resource.data.get('codigo', ''), 20);
     }
 
     // Código pessoal -> identificador. Só consulta pontual (get), sem listar, e nunca sobrescreve.
