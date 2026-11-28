@@ -1,5 +1,15 @@
 [
   {
+    "versao": "1.34.0",
+    "data": "2026-11-28",
+    "titulo": "Tela Início mais enxuta",
+    "itens": [
+      "O botão + que ficava flutuando sobre o conteúdo virou \"Registrar atividade\", na mesma linha do treino customizado. Ele não cobre mais a meta da semana.",
+      "As medalhas da Início mostram só as que você já ganhou e a próxima a conquistar. As que ainda não têm medalha continuam em Ver todas.",
+      "Minhas fichas não repete mais o treino de hoje, que já aparece no card de cima."
+    ]
+  },
+  {
     "versao": "1.33.0",
     "data": "2026-11-23",
     "titulo": "Mais exercícios para glúteos, panturrilha e outros grupos",

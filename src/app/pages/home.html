@@ -119,11 +119,16 @@
     </article>
   }
 
-  @if (!plans.treinouHoje()) {
-    <a class="btn btn--claro" routerLink="/treino-do-dia">
-      <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino customizado para hoje
-    </a>
-  }
+  <div class="acoes">
+    @if (!plans.treinouHoje()) {
+      <a class="btn btn--claro" routerLink="/treino-do-dia">
+        <app-icon name="clipboard" [size]="18" [stroke]="2.2" /> Treino customizado
+      </a>
+    }
+    <button type="button" class="btn btn--claro" aria-haspopup="dialog" (click)="adicionandoAtividade.set(true)">
+      <app-icon name="plus" [size]="18" [stroke]="2.4" /> Registrar atividade
+    </button>
+  </div>
 
   @if (aviso(); as av) {
     <article class="card aviso-ficha" aria-labelledby="t-aviso-ficha">
@@ -161,7 +166,9 @@
         }
         <button type="button" class="ver-todas" aria-haspopup="dialog" (click)="abrirGaleria(null)">Ver todas</button>
       </div>
-      <app-quadro-medalhas [conquistas]="melhores()" [novas]="novasIds()" (abrir)="abrirGaleria($event)" />
+      @if (melhores().length > 0) {
+        <app-quadro-medalhas [conquistas]="melhores()" [novas]="novasIds()" (abrir)="abrirGaleria($event)" />
+      }
       @if (proxima(); as p) {
         @if (p.proximo; as alvo) {
           <p class="apoio proxima">Próxima: <strong>{{ nomes[alvo.nivel] }}</strong> em {{ p.titulo }} · {{ progresso(p.id, p.atual, alvo.alvo) }}</p>
@@ -170,13 +177,13 @@
     </section>
   }
 
-  @if (plans.fichasEmUso().length > 0) {
+  @if (outrasFichas().length > 0) {
     <section class="lista" aria-labelledby="titulo-fichas">
       <div class="lista__topo">
         <h2 id="titulo-fichas">Minhas fichas</h2>
         <a routerLink="/fichas" class="ver-todas">Ver todas</a>
       </div>
-      @for (f of plans.fichasEmUso().slice(0, 3); track f.id) {
+      @for (f of outrasFichas(); track f.id) {
         <a class="card linha" [routerLink]="['/ficha', f.id]">
           <span class="letra">{{ plans.letra(f.id) }}</span>
           <span class="linha__texto">
@@ -197,10 +204,6 @@
       }
     </section>
   }
-
-  <button type="button" class="fab" aria-haspopup="dialog" aria-label="Adicionar atividade" (click)="adicionandoAtividade.set(true)">
-    <app-icon name="plus" [size]="28" [stroke]="2.6" />
-  </button>
 
   @if (adicionandoAtividade()) {
     <app-atividade-dialogo (adicionar)="adicionarAtividade($event)" (cancelar)="adicionandoAtividade.set(false)" />
