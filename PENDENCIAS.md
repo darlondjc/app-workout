@@ -55,7 +55,7 @@ Performance e custo:
 - `public/` tem 150 MB (139 MB em `exercises/`, ~3.600 arquivos no git): mover para CDN/bucket ou Git LFS.
 - Cada membro de grupo abre listeners de `sessoes` e `eventos` (`social.service.ts` ~1001 e ~810): custo de leituras cresce com o grupo. Pensar num resumo agregado por membro.
 - Fotos em base64 no Firestore (até 400 KB): caro em leitura/escrita e no cache offline; Firebase Storage resolveria (exige plano Blaze).
-- Orçamento do bundle `initial` com erro só em 1 MB; hoje o inicial tem ~384 kB. Baixar o limite para algo como 350/600 kB.
+- Orçamento do bundle `initial`: feito (aviso em 420 kB, erro em 600 kB; hoje ~384 kB).
 
 Tela Início (ainda em aberto):
 - Não confirmei o avatar duplicado (linhas 5 e 16 do `home.html`): só aparece com login Google.
