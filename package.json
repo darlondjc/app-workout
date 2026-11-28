@@ -1,6 +1,6 @@
 {
   "name": "app-workout-ng",
-  "version": "1.25.8",
+  "version": "1.34.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
