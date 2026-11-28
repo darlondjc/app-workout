@@ -41,3 +41,8 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Testes das regras do Firestore (dependências próprias)
+/tools/regras/node_modules
+/tools/regras/*.log
+/tools/regras/firestore.rules

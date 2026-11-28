@@ -1,0 +1,15 @@
+{
+  "name": "testes-regras-firestore",
+  "private": true,
+  "type": "module",
+  "description": "Testes de firestore.rules no emulador. Fica separado do app para não pesar as dependências dele.",
+  "scripts": {
+    "pretest": "node -e \"require('fs').copyFileSync('../../firestore.rules','firestore.rules')\"",
+    "test": "firebase emulators:exec --only firestore --project demo-regras \"node teste.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^14.0.0"
+  }
+}

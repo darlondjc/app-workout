@@ -101,7 +101,7 @@ Os testes ficam ao lado do código, em `src/app/core/*.spec.ts`, e rodam com Kar
 - `firebase.social.spec.ts`: o que `FirebaseSocial` grava e consulta (avisos de curtida com id fixo, comentários, limite de leitura das sessões), com um Firestore falso.
 - `social.service.spec.ts`: o `SocialService` (quem é ouvido, grupos (criar, entrar por link, pedir entrada, sair), o que acontece quando deixam de dividir um grupo, quais erros aparecem na tela, nome e foto atuais de quem fez cada treino ou comentário).
 
-Ainda não há testes das telas (componentes) nem das regras do Firestore; as regras precisam ser testadas no emulador do Firebase.
+Ainda não há testes das telas (componentes). As regras do Firestore têm testes próprios no emulador, em `tools/regras` (veja "Testes das regras" abaixo).
 
 ## Publicação
 
@@ -140,7 +140,7 @@ A aba **Social** lista os **grupos** de que você faz parte e permite criar um n
 - O selo da aba Social também conta as pessoas que entraram nos seus grupos desde a última vez que você os abriu (`SocialService.novosMembros`; guarda no aparelho quem já estava em cada grupo).
 - Se o treino fez a pessoa subir de nível em alguma medalha, o card leva `medalhas` (`MedalhasService.ganhosDoTreino` compara as medalhas antes e depois dele) e a timeline mostra a conquista. Nas estatísticas de um membro, as medalhas são calculadas dos treinos dele que o app lê (os 400 mais recentes) e da meta semanal do perfil.
 - Ao concluir um treino, ele é publicado na timeline (só treinos recentes são publicados; o histórico antigo não é despejado de uma vez). Uma pessoa pode estar em vários grupos.
-- Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `grupos/{codigo}` (nome, dono, membros, acesso, pedidos; o id é o código do convite), `conexoes/{id}` (as duas pessoas e os grupos que têm em comum; é o que as regras usam para liberar a leitura) e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`), `atividades` e `fotos`. Cada pessoa cria as próprias conexões com os outros membros ao entrar no grupo (`SocialService.conectarMembros`). As regras estão em `firestore.rules`. O modelo de amigos individuais (`amizades`, `codigos`) foi removido; amizades antigas deixam de valer.
+- Dados no Firestore: `perfis/{uid}` (nome, foto, meta), `grupos/{codigo}` (nome, dono, membros, acesso, pedidos; o id é o código do convite), `conexoes/{id}` (as duas pessoas e os grupos que têm em comum; é o que as regras usam para liberar a leitura) e, dentro de `usuarios/{uid}`: `sessoes`, `eventos` (com `curtidas` e `comentarios`), `atividades` e `fotos`. Cada pessoa cria as próprias conexões com os outros membros ao entrar no grupo (`SocialService.conectarMembros`). A leitura só vale enquanto as duas pessoas ainda estão em algum dos grupos listados na conexão (até 3 grupos em comum): quem sai de um grupo perde o acesso ao histórico dos colegas mesmo que a conexão não seja apagada. As regras estão em `firestore.rules`. O modelo de amigos individuais (`amizades`, `codigos`) foi removido; amizades antigas deixam de valer.
 
 ### Amigos mais chegados
 
@@ -163,3 +163,15 @@ Além dos grupos, a aba **Social** tem a seção **Amigos mais chegados** (`page
 **Importante:** depois de atualizar o app, publique as regras novas: Console do Firebase → Firestore Database → aba **Regras** → cole o conteúdo de `firestore.rules` → **Publicar**. Sem isso os grupos e a timeline mostram "Sem permissão". A 1.8.1 mudou as regras de `atividades` (quem curtiu pode atualizar o próprio aviso), então publique de novo mesmo que já tenha publicado as da 1.8.0. Sem as regras novas o app continua funcionando, mas curtir de novo um treino que você já curtiu não atualiza o aviso do dono.
 
 Limites desta versão: a timeline carrega de 10 em 10 conforme a rolagem, lendo da nuvem de 15 em 15 treinos por pessoa a cada vez; as estatísticas de outro membro usam os 400 treinos mais recentes dele (os seus são lidos por inteiro, porque a sincronização entre aparelhos precisa do histórico completo); não há notificações push; os nomes e as fotos vêm do Google no momento do login.
+
+## Testes das regras
+
+`tools/regras` roda o `firestore.rules` no emulador do Firestore (precisa de Java). Fica separado do app, com dependências próprias:
+
+```
+cd tools/regras
+npm install
+npm test
+```
+
+Os testes cobrem os fluxos de grupos e conexões (entrar, sair, pedir, aceitar, ler o histórico de um colega) e tentativas de abuso (tirar ou colocar membros ao sair, trocar o dono, colocar alguém no grupo sem pedido, continuar lendo depois de sair). Mexeu em `grupos` ou `conexoes` nas regras? Rode antes de publicar.
