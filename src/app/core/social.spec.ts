@@ -19,6 +19,23 @@ describe('social', () => {
       for (let i = 0; i < 300; i++) expect(gerarCodigo()).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ2-9]{8}$/);
     });
 
+    it('usa o gerador criptográfico, não o Math.random', () => {
+      const mathRandom = spyOn(Math, 'random').and.callThrough();
+      const cripto = spyOn(crypto, 'getRandomValues').and.callThrough();
+      gerarCodigo();
+      expect(cripto).toHaveBeenCalled();
+      expect(mathRandom).not.toHaveBeenCalled();
+    });
+
+    it('usa todo o alfabeto, sem viés visível', () => {
+      const contagem = new Map<string, number>();
+      for (let i = 0; i < 4000; i++) for (const c of gerarCodigo()) contagem.set(c, (contagem.get(c) ?? 0) + 1);
+      expect(contagem.size).toBe(32);
+      // 32 000 sorteios em 32 letras: cerca de 1 000 de cada; a folga é larga para não falhar por acaso.
+      for (const n of contagem.values()) expect(n).toBeGreaterThan(800);
+      for (const n of contagem.values()) expect(n).toBeLessThan(1200);
+    });
+
     it('usa a fonte de aleatoriedade recebida', () => {
       expect(gerarCodigo(() => 0)).toBe('AAAAAAAA');
     });

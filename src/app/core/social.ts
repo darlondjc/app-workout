@@ -188,7 +188,15 @@ export function chaveConexao(a: string, b: string): string {
 
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem O, 0, I, 1 para não confundir
 
-export function gerarCodigo(aleatorio: (n: number) => number = (n) => Math.floor(Math.random() * n)): string {
+/**
+ * Inteiro aleatório em [0, n) vindo do gerador criptográfico do navegador. O código de convite dá acesso ao grupo, então
+ * não pode ser previsível como o `Math.random`. `n` divide 256 (o alfabeto tem 32 letras), então `% n` não tem viés.
+ */
+function aleatorioSeguro(n: number): number {
+  return crypto.getRandomValues(new Uint8Array(1))[0] % n;
+}
+
+export function gerarCodigo(aleatorio: (n: number) => number = aleatorioSeguro): string {
   return Array.from({ length: 8 }, () => ALFABETO[aleatorio(ALFABETO.length)]).join('');
 }
 
