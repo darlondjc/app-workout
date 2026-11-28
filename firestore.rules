@@ -15,9 +15,26 @@ service cloud.firestore {
       return a < b ? a + '_' + b : b + '_' + a;
     }
 
-    // Duas pessoas estão em algum grupo em comum quando existe a ligação entre elas.
+    // O grupo existe e as pessoas indicadas ainda são todas membros dele.
+    function grupoComOsDois(codigo, pessoas) {
+      return exists(/databases/$(database)/documents/grupos/$(codigo))
+        && get(/databases/$(database)/documents/grupos/$(codigo)).data.membros.hasAll(pessoas);
+    }
+
+    // O grupo na posição `i` da ligação existe e ainda reúne as duas pessoas.
+    function grupoEmComum(grupos, i, a, b) {
+      return grupos.size() > i && grupoComOsDois(grupos[i], [a, b]);
+    }
+
+    // Duas pessoas são colegas enquanto dividem um grupo: a ligação (`conexoes`) lista até 3 grupos em comum e vale só
+    // se algum deles ainda reúne as duas. Assim, quem saiu do grupo perde o acesso mesmo que a ligação não tenha sido
+    // apagada (sair sem desfazê-la não deixa a leitura aberta).
     function colegas(a, b) {
-      return exists(/databases/$(database)/documents/conexoes/$(chave(a, b)));
+      let ligacao = /databases/$(database)/documents/conexoes/$(chave(a, b));
+      return exists(ligacao)
+        && (grupoEmComum(get(ligacao).data.get('grupos', []), 0, a, b)
+          || grupoEmComum(get(ligacao).data.get('grupos', []), 1, a, b)
+          || grupoEmComum(get(ligacao).data.get('grupos', []), 2, a, b));
     }
 
     // Amizade aceita entre as duas pessoas (os "amigos mais chegados").
@@ -166,30 +183,40 @@ service cloud.firestore {
           && campos(['membros'])
           && !(request.auth.uid in resource.data.membros)
           && request.resource.data.membros.size() == resource.data.membros.size() + 1
+          && request.resource.data.membros.hasAll(resource.data.membros)
           && request.auth.uid in request.resource.data.membros)
         // Pedir para entrar (grupo com aprovação).
         || (campos(['pedidos'])
           && !(request.auth.uid in resource.data.membros)
           && request.resource.data.pedidos.size() == resource.data.pedidos.size() + 1
+          && request.resource.data.pedidos.hasAll(resource.data.pedidos)
           && request.auth.uid in request.resource.data.pedidos)
         // Cancelar o próprio pedido.
         || (campos(['pedidos'])
+          && request.auth.uid in resource.data.pedidos
           && request.resource.data.pedidos.size() == resource.data.pedidos.size() - 1
-          && !(request.auth.uid in request.resource.data.pedidos))
-        // O dono aceita ou recusa pedidos e escolhe quem pode entrar.
+          && resource.data.pedidos.hasAll(request.resource.data.pedidos)
+          && resource.data.pedidos.toSet().difference(request.resource.data.pedidos.toSet()) == [request.auth.uid].toSet())
+        // O dono aceita ou recusa pedidos e escolhe quem pode entrar. Só entra quem é membro ou pediu para entrar, e o
+        // dono não inventa pedidos (ninguém é colocado num grupo sem ter pedido).
         || (request.auth.uid == resource.data.dono
-          && campos(['membros', 'pedidos', 'acesso']))
+          && campos(['membros', 'pedidos', 'acesso'])
+          && request.resource.data.membros.hasOnly(resource.data.membros.concat(resource.data.pedidos))
+          && request.resource.data.pedidos.hasOnly(resource.data.pedidos))
         // O dono troca a imagem do grupo (JPEG pequeno em base64) ou a tira.
         || (request.auth.uid == resource.data.dono
           && campos(['foto'])
           && (!('foto' in request.resource.data)
             || (request.resource.data.foto is string && request.resource.data.foto.size() <= 60000)))
-        // Sair do grupo (o dono passa o posto para outro membro).
+        // Sair do grupo: a lista nova é a antiga sem quem saiu (ninguém tira nem coloca outras pessoas). Só o dono passa
+        // o posto, e para outro membro.
         || (request.auth.uid in resource.data.membros
           && campos(['membros', 'dono'])
-          && !(request.auth.uid in request.resource.data.membros)
           && request.resource.data.membros.size() == resource.data.membros.size() - 1
-          && request.resource.data.dono in request.resource.data.membros)
+          && resource.data.membros.hasAll(request.resource.data.membros)
+          && resource.data.membros.toSet().difference(request.resource.data.membros.toSet()) == [request.auth.uid].toSet()
+          && request.resource.data.dono in request.resource.data.membros
+          && (request.resource.data.dono == resource.data.dono || resource.data.dono == request.auth.uid))
       );
 
       // Só apaga o grupo quem é a última pessoa nele.
@@ -198,10 +225,6 @@ service cloud.firestore {
 
     // Ligação entre duas pessoas de um mesmo grupo. O identificador é sempre `chave(uidA, uidB)`.
     match /conexoes/{conexaoId} {
-      function grupoComOsDois(codigo, membros) {
-        return get(/databases/$(database)/documents/grupos/$(codigo)).data.membros.hasAll(membros);
-      }
-
       // `resource == null`: ler uma ligação que ainda não existe (para criá-la) precisa passar.
       allow get: if logado() && (resource == null || request.auth.uid in resource.data.membros);
       allow list: if logado() && request.auth.uid in resource.data.membros;
@@ -212,10 +235,12 @@ service cloud.firestore {
         && conexaoId == chave(request.resource.data.membros[0], request.resource.data.membros[1])
         && request.resource.data.grupos.size() == 1
         && grupoComOsDois(request.resource.data.grupos[0], request.resource.data.membros);
-      // Só os dois grupos em comum mudam: incluir (o novo vai por último) exige um grupo com os dois; tirar é livre.
+      // Só os grupos em comum mudam (no máximo 3, os que `colegas` confere): incluir (o novo vai por último) exige um
+      // grupo com os dois; tirar é livre.
       allow update: if logado()
         && request.auth.uid in resource.data.membros
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['grupos'])
+        && request.resource.data.grupos.size() <= 3
         && (request.resource.data.grupos.size() <= resource.data.grupos.size()
           || grupoComOsDois(request.resource.data.grupos[request.resource.data.grupos.size() - 1], resource.data.membros));
       allow delete: if logado() && request.auth.uid in resource.data.membros;
