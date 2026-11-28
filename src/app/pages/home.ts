@@ -157,14 +157,22 @@ export class Home {
   /** Medalhas guardadas no fim do último treino (nada é recalculado a cada tela). */
   protected readonly conquistas = computed(() => ordenarPorNivel(this.medalhas.conquistas()));
   protected readonly novasIds = this.medalhas.idsNovos;
-  /** Na tela inicial só as melhores (as de maior nível, já que a lista vem ordenada); o resto fica em "Ver todas". */
+  /**
+   * Na tela inicial só as medalhas já conquistadas (as de maior nível, já que a lista vem ordenada); as que ainda não
+   * têm medalha e o resto ficam em "Ver todas", e a próxima a conquistar vem numa linha à parte.
+   */
   protected readonly melhores = computed(() => {
     // As que subiram de nível vão primeiro, para o destaque nunca ficar escondido em "Ver todas".
     const novas = this.novasIds();
-    const todas = this.conquistas();
+    const todas = this.conquistas().filter((c) => c.nivel);
     return [...todas.filter((c) => novas.includes(c.id)), ...todas.filter((c) => !novas.includes(c.id))].slice(0, MEDALHAS_NA_INICIAL);
   });
   protected readonly proxima = computed(() => proximaConquista(this.conquistas()));
+  /** As outras fichas em uso: a do treino de hoje já aparece no card de cima (ou como "próximo treino"), então não se repete. */
+  protected readonly outrasFichas = computed(() => {
+    const hoje = this.plans.proxima()?.id;
+    return this.plans.fichasEmUso().filter((f) => f.id !== hoje).slice(0, 3);
+  });
   protected readonly nomes = NOMES_NIVEL;
   protected readonly resumoConquistas = computed(() => {
     const degraus = this.conquistas().flatMap((c) => c.degraus);
