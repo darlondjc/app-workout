@@ -36,7 +36,7 @@ Sem mudar API nem comportamento, com os 838 testes como rede de segurança (`npm
 Segurança e regras:
 - `atividades`, `curtidas` e `comentarios` sem limite de campos/tamanho (spam de avisos); `sessoes`, `perfis` e `compartilhado` sem validação de tamanho.
 - Qualquer pessoa logada cria quantos `codigos` quiser apontando para si (só gera escrita, não dá acesso). Fechar exige gravar código e perfil na mesma operação (`iniciar()` do `SocialService`) e travar `perfis.codigo` depois de definido. Baixa prioridade.
-- Sem `firebase.json` nem cabeçalhos de segurança (CSP, `X-Frame-Options`, `Referrer-Policy`). O app mostra imagens de URLs de terceiros (`avatar.ts`).
+- Cabeçalhos de segurança: o app publica no GitHub Pages, que não aceita cabeçalhos, então o CSP foi para um `<meta>` no `index.html` (feito). `X-Frame-Options`/`frame-ancestors` só existem como cabeçalho (exigiria outro host). **Conferir em produção o login Google com popup** (não deu para testar sem rede) e olhar o console atrás de bloqueios do CSP.
 - Texto do "grupo aberto" deveria avisar que quem tem o link vê histórico, fotos e comentários de todos.
 - Código de convite continua com 8 caracteres (~40 bits). Subir para 10 se quiser mais folga (links e QR ficam maiores).
 - `.claude/settings.json` libera `git push origin main` sem pedir, o que contradiz o `CLAUDE.md`. Decidir se deve continuar.
